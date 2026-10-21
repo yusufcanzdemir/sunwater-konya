@@ -3,12 +3,12 @@ import { fmt } from './ui';
 
 function Card({ label, value, unit, note }: { label: string; value: string; unit: string; note?: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="text-sm text-slate-500">{label}</div>
-      <div className="mt-1 text-2xl font-semibold text-slate-900">
-        {value} <span className="text-base font-normal text-slate-500">{unit}</span>
+    <div className="rounded-lg border border-soil-200 bg-white p-4 shadow-sm">
+      <div className="text-sm text-soil-500">{label}</div>
+      <div className="mt-1 text-2xl font-semibold text-soil-900">
+        {value} <span className="text-base font-normal text-soil-500">{unit}</span>
       </div>
-      {note && <div className="mt-1 text-xs text-slate-500">{note}</div>}
+      {note && <div className="mt-1 text-xs text-soil-500">{note}</div>}
     </div>
   );
 }

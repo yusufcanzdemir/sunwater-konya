@@ -1,12 +1,16 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { MapPin } from 'lucide-react';
+import { Suspense, lazy, useMemo, useState, type ReactNode } from 'react';
 import { buildExplainPayload } from './ai/explain';
 import { parsedFarmToForm, type ParsedFarm } from './ai/parseFarm';
 import { AssumptionsPanel } from './components/AssumptionsPanel';
 import { ExplanationPanel } from './components/ExplanationPanel';
 import { FarmFormView } from './components/FarmFormView';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import type { DrawnField } from './components/FieldMap';
 import { FarmTextInput } from './components/FarmTextInput';
 import { ContextBand, StepNav, TodayAndVision, type Step } from './components/Presentation';
 import { DISCLAIMER, Retrospective } from './components/Retrospective';
+import { SolarPumpDay } from './components/SolarPumpDay';
 import { SummaryCards } from './components/SummaryCards';
 import { fmt } from './components/ui';
 import { WaterBalanceChart } from './components/WaterBalanceChart';
@@ -15,6 +19,7 @@ import { fetchArchive, fetchForecast, geocode, pickBestGeoResult, type GeoResult
 import { seasonLength } from './engine/crops';
 import { analyzeSeason } from './engine/plan';
 import { archiveSeasonWindow, intersectWindows, seasonWindow } from './engine/season';
+import { pumpingDates } from './engine/visuals';
 import { IRRIGATION_METHOD_NAMES } from './engine/waterBalance';
 import { defaultAssumptions, modelSettings, type Assumptions } from './state/assumptions';
 import {
@@ -47,6 +52,8 @@ interface Run {
 }
 
 const FORECAST_DAYS = 16;
+const DRAWN_FIELD_NAME = 'Haritada çizilen tarla';
+const FieldMap = lazy(() => import('./components/FieldMap'));
 const todayIstanbul = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
 const trDate = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : 'Beklenmeyen bir hata oluştu.');
@@ -61,10 +68,10 @@ async function load<T>(p: Promise<T>): Promise<Loaded<T>> {
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children: ReactNode }) {
   return (
-    <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="space-y-4 rounded-xl border border-soil-200 bg-white p-5 shadow-sm">
       <div>
         <h2 className="text-lg font-semibold">{title}</h2>
-        {subtitle && <div className="text-sm text-slate-600">{subtitle}</div>}
+        {subtitle && <div className="text-sm text-soil-600">{subtitle}</div>}
       </div>
       {children}
     </section>
@@ -87,7 +94,7 @@ function StepButtons({ prev, next, onSelect }: { prev?: [Step, string]; next?: [
   return (
     <div className="flex justify-between gap-3">
       {prev ? (
-        <button type="button" onClick={() => onSelect(prev[0])} className="text-sm font-medium text-emerald-800 hover:underline">
+        <button type="button" onClick={() => onSelect(prev[0])} className="text-sm font-medium text-wheat-800 hover:underline">
           ← {prev[1]}
         </button>
       ) : (
@@ -97,7 +104,7 @@ function StepButtons({ prev, next, onSelect }: { prev?: [Step, string]; next?: [
         <button
           type="button"
           onClick={() => onSelect(next[0])}
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          className="rounded-md bg-wheat-700 px-4 py-2 text-sm font-medium text-white hover:bg-wheat-800"
         >
           {next[1]} →
         </button>
@@ -118,6 +125,17 @@ export default function App() {
   const [highlighted, setHighlighted] = useState<Set<keyof FarmForm>>(new Set());
   const [followUp, setFollowUp] = useState<string | null>(null);
   const [step, setStep] = useState<Step>(1);
+  const [drawn, setDrawn] = useState<DrawnField | null>(null);
+  /** Where the map should look: set by geocoding, not by drawing (that would jump the map). */
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+
+  const onFieldDrawn = (field: DrawnField | null) => {
+    setDrawn(field);
+    if (!field) return;
+    updateForm({ locationText: DRAWN_FIELD_NAME, areaDecare: String(Math.round(field.areaDecare * 10) / 10).replace('.', ',') });
+    // Set after updateForm, which clears the geocoded location when the location text changes.
+    setSelectedGeo({ id: 0, name: DRAWN_FIELD_NAME, latitude: field.latitude, longitude: field.longitude });
+  };
 
   const goTo = (s: Step) => {
     setStep(s);
@@ -164,6 +182,7 @@ export default function App() {
         geo = pickBestGeoResult(results);
         if (!geo) throw new Error(`"${input.locationText}" için konum bulunamadı. Başka bir yer adı deneyin.`);
         setSelectedGeo(geo);
+        setMapCenter([geo.latitude, geo.longitude]);
       }
 
       const crop = assumptions.crops[input.crop];
@@ -220,6 +239,13 @@ export default function App() {
     [run, week, retro],
   );
 
+  // This week's pumping days if there are any; out of season, example days from last season.
+  const solarDaySource = useMemo(() => {
+    if (week && pumpingDates(week).length > 0) return { analysis: week, caption: 'Bu haftanın planından' };
+    if (retro && pumpingDates(retro).length > 0) return { analysis: retro, caption: 'Geçen sezondan örnek gün' };
+    return null;
+  }, [week, retro]);
+
   // The panel follows the calculated field, or the form before the first calculation.
   const panelCrop = run?.input.crop ?? (form.crop || null);
   const panelSoil = run?.input.soil ?? (form.soil || null);
@@ -253,11 +279,11 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-cream text-soil-900">
+      <header className="border-b border-soil-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-5">
-          <h1 className="text-2xl font-bold text-emerald-800">Güneşli Sulama Asistanı</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-wheat-800">Güneşli Sulama Asistanı</h1>
+          <p className="text-sm text-soil-600">
             Tarlanızın su ihtiyacı ve güneşe göre sulama planı – FAO-56 yöntemi ve Open-Meteo'nun gerçek hava verisiyle.
           </p>
         </div>
@@ -268,16 +294,16 @@ export default function App() {
         <StepNav current={step} enabled={run != null} onSelect={goTo} />
 
         {step !== 1 && run && (
-          <p className="text-sm text-slate-600">
-            <span className="font-medium text-slate-800">Tarla:</span> {fieldSummary}
+          <p className="text-sm text-soil-600">
+            <span className="font-medium text-soil-800">Tarla:</span> {fieldSummary}
           </p>
         )}
         {step !== 1 && staleNotice}
 
         {step === 1 && (
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="rounded-xl border border-soil-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold">1) Tarlanı anlat</h2>
+              <h2 className="text-lg font-semibold">1) Tarlanı göster</h2>
               <button
                 type="button"
                 onClick={() => {
@@ -285,13 +311,38 @@ export default function App() {
                   setErrors({});
                   setFollowUp(null);
                 }}
-                className="rounded-md border border-emerald-600 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+                className="rounded-md border border-wheat-700 px-3 py-1.5 text-sm font-medium text-wheat-800 hover:bg-wheat-50"
               >
                 Demo tarla yükle
               </button>
             </div>
 
-            <FarmTextInput onParsed={applyParsed} />
+            <div className="mb-5 grid gap-4 lg:grid-cols-2">
+              <div>
+                <p className="mb-2 flex items-start gap-2 text-sm text-soil-700">
+                  <MapPin size={18} className="mt-0.5 shrink-0 text-wheat-700" />
+                  Haritada sol üstteki çizim aracıyla tarlanızın köşelerine tıklayın. Alan ve konum forma kendiliğinden
+                  yazılır.
+                </p>
+                <ErrorBoundary
+                  fallback={
+                    <div className="rounded-lg bg-soil-100 p-4 text-sm text-soil-700">
+                      Harita şu an yüklenemedi. Konumu ve alanı aşağıdaki forma elle yazabilirsiniz.
+                    </div>
+                  }
+                >
+                  <Suspense fallback={<div className="h-80 rounded-lg bg-soil-100 p-4 text-sm text-soil-600">Harita yükleniyor…</div>}>
+                    <FieldMap center={mapCenter} onChange={onFieldDrawn} />
+                  </Suspense>
+                </ErrorBoundary>
+                {drawn && (
+                  <p className="mt-2 text-sm font-medium text-soil-900">
+                    Çizilen tarla: {fmt(drawn.areaDecare, 1)} dekar · {drawn.latitude.toFixed(4)}, {drawn.longitude.toFixed(4)}
+                  </p>
+                )}
+              </div>
+              <FarmTextInput onParsed={applyParsed} />
+            </div>
 
             {highlighted.size > 0 && (
               <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
@@ -308,9 +359,9 @@ export default function App() {
             {geoCandidates.length > 1 && selectedGeo && (
               <div className="mt-4 text-sm">
                 <label className="flex flex-wrap items-center gap-2">
-                  <span className="text-slate-600">Bulunan konum:</span>
+                  <span className="text-soil-600">Bulunan konum:</span>
                   <select
-                    className="rounded-md border border-slate-300 px-2 py-1"
+                    className="rounded-md border border-soil-300 px-2 py-1"
                     value={selectedGeo.id}
                     onChange={(e) => {
                       const geo = geoCandidates.find((g) => g.id === Number(e.target.value)) ?? null;
@@ -328,9 +379,9 @@ export default function App() {
               </div>
             )}
 
-            <div className="mt-5 flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4">
+            <div className="mt-5 flex flex-wrap items-center justify-end gap-3 border-t border-soil-100 pt-4">
               {run && !formChanged && (
-                <button type="button" onClick={() => goTo(2)} className="text-sm font-medium text-emerald-800 hover:underline">
+                <button type="button" onClick={() => goTo(2)} className="text-sm font-medium text-wheat-800 hover:underline">
                   Sonuçlara git →
                 </button>
               )}
@@ -338,7 +389,7 @@ export default function App() {
                 type="button"
                 disabled={loading}
                 onClick={() => void calculate()}
-                className="rounded-md bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+                className="rounded-xl bg-wheat-700 px-6 py-3 text-lg font-semibold text-white shadow-sm hover:bg-wheat-800 disabled:opacity-60"
               >
                 {loading ? 'Hava verisi alınıyor…' : 'Planı hesapla'}
               </button>
@@ -358,6 +409,15 @@ export default function App() {
             {explainPayload && (
               <Section title="Planın, sade Türkçeyle">
                 <ExplanationPanel key={JSON.stringify(explainPayload)} payload={explainPayload} />
+              </Section>
+            )}
+            {run.input.energySource === 'solar_grid' && solarDaySource && (
+              <Section title="Güneş ve pompa, saat saat">
+                <SolarPumpDay
+                  key={solarDaySource.caption}
+                  analysis={solarDaySource.analysis}
+                  caption={solarDaySource.caption}
+                />
               </Section>
             )}
             <Section title="2) Bu haftanın planı" subtitle={`Open-Meteo ${FORECAST_DAYS} günlük tahmin`}>
@@ -403,7 +463,7 @@ export default function App() {
                   maxRotationDays={assumptions.maxRotationDays}
                 />
               ) : (
-                <p className="text-sm text-slate-600">Seçilen dönem için hava verisi bulunamadı.</p>
+                <p className="text-sm text-soil-600">Seçilen dönem için hava verisi bulunamadı.</p>
               )}
             </Section>
 
@@ -436,8 +496,8 @@ export default function App() {
         <TodayAndVision />
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl space-y-1 px-4 py-4 text-xs text-slate-500">
+      <footer className="border-t border-soil-200 bg-white">
+        <div className="mx-auto max-w-6xl space-y-1 px-4 py-4 text-xs text-soil-500">
           <p>{DISCLAIMER}</p>
           <p>Hava verisi: Open-Meteo (tahmin ve arşiv). Hesaplar tarayıcıda, açık formüllerle yapılır; yapay zekâ sayı üretmez.</p>
         </div>

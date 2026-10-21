@@ -25,7 +25,7 @@ export function Field({
 }) {
   return (
     <label className={`flex flex-col gap-1 text-sm ${highlight ? 'rounded ring-2 ring-amber-400 ring-offset-2' : ''}`}>
-      <span className="font-medium text-slate-700">{label}</span>
+      <span className="font-medium text-soil-700">{label}</span>
       {children}
       {error && <span className="text-xs text-red-600">{error}</span>}
     </label>
@@ -33,7 +33,7 @@ export function Field({
 }
 
 export const inputClass =
-  'rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500';
+  'rounded-md border border-soil-300 bg-white px-2.5 py-1.5 text-soil-900 focus:border-wheat-500 focus:outline-none focus:ring-1 focus:ring-wheat-500';
 
 /** Numeric input that keeps the typed text and only commits valid numbers. */
 export function NumberField({

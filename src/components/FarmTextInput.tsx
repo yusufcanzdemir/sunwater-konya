@@ -24,9 +24,9 @@ export function FarmTextInput({ onParsed }: { onParsed: (parsed: ParsedFarm) => 
   }
 
   return (
-    <div className="mb-5 rounded-lg border border-emerald-100 bg-emerald-50/40 p-4">
+    <div className="h-full rounded-lg border border-wheat-100 bg-wheat-50/40 p-4">
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-slate-700">Tarlanızı kendi cümlelerinizle anlatın</span>
+        <span className="font-medium text-soil-700">Tarlanızı kendi cümlelerinizle anlatın</span>
         <textarea
           className={`${inputClass} min-h-20`}
           value={text}
@@ -40,14 +40,14 @@ export function FarmTextInput({ onParsed }: { onParsed: (parsed: ParsedFarm) => 
           type="button"
           disabled={loading || text.trim() === ''}
           onClick={() => void submit()}
-          className="rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+          className="rounded-md bg-wheat-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-wheat-900 disabled:opacity-50"
         >
           {loading ? 'Okunuyor…' : 'Metinden formu doldur'}
         </button>
-        <button type="button" onClick={() => setText(EXAMPLE)} className="text-sm text-emerald-800 underline">
+        <button type="button" onClick={() => setText(EXAMPLE)} className="text-sm text-wheat-800 underline">
           Örnek metni kullan
         </button>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-soil-500">
           Yapay zekâ yalnızca bilgileri forma aktarır; hesaplar onaylamanızdan sonra motorla yapılır.
         </span>
       </div>

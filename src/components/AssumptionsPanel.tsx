@@ -35,16 +35,16 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
 
   return (
     <details className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
-      <summary className="cursor-pointer font-semibold text-slate-800">
+      <summary className="cursor-pointer font-semibold text-soil-800">
         Varsayımlar <AssumptionBadge />
-        <span className="ml-2 text-sm font-normal text-slate-500">
+        <span className="ml-2 text-sm font-normal text-soil-500">
           (FAO-56'dan yaklaşık değerler – düzenleyebilirsiniz, sonuç anında güncellenir)
         </span>
       </summary>
 
       <div className="mt-4 space-y-5">
         <section>
-          <h4 className="mb-2 text-sm font-semibold text-slate-700">
+          <h4 className="mb-2 text-sm font-semibold text-soil-700">
             Ürün katsayıları: {crop.name} <AssumptionBadge />
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
@@ -70,7 +70,7 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
         </section>
 
         <section>
-          <h4 className="mb-2 text-sm font-semibold text-slate-700">
+          <h4 className="mb-2 text-sm font-semibold text-soil-700">
             Toprak: {soil.name} <AssumptionBadge />
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -80,7 +80,7 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
         </section>
 
         <section>
-          <h4 className="mb-2 text-sm font-semibold text-slate-700">
+          <h4 className="mb-2 text-sm font-semibold text-soil-700">
             Sulama ve yağış <AssumptionBadge />
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
@@ -121,14 +121,14 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
               onChange={(forecastInitialDepletionMm) => onChange({ ...assumptions, forecastInitialDepletionMm })}
             />
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-soil-500">
             Geçmiş sezon hesabında "yağış bekleme", o günlerde gerçekten yağan yağışa bakar (yağışın önceden
             bilindiği varsayılır). Sezon başında toprağın tarla kapasitesinde olduğu varsayılır.
           </p>
         </section>
 
         <section>
-          <h4 className="mb-2 text-sm font-semibold text-slate-700">
+          <h4 className="mb-2 text-sm font-semibold text-soil-700">
             Enerji ve etki <AssumptionBadge />
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -183,7 +183,7 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
               onChange={(dieselKgCo2PerL) => setFactors({ dieselKgCo2PerL })}
             />
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-soil-500">
             Panellerin 30° eğimle güneye baktığı varsayılır (hava verisi bu açıyla alınır). Güneş + şebeke
             sisteminde tasarruf edilen elektrik şebekeye verilebileceği için şebeke elektriği gibi değerlendirilir.
           </p>

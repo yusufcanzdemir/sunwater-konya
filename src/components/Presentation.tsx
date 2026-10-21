@@ -1,3 +1,4 @@
+import { BarChart3, MapPin, Sun, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export const CONTEXT_TEXT =
@@ -13,16 +14,16 @@ export function ContextBand() {
 
 export type Step = 1 | 2 | 3;
 
-const STEPS: { step: Step; title: string; hint: string }[] = [
-  { step: 1, title: 'Tarlanı anlat', hint: 'Konum, ürün, kuyu, alışkanlık' },
-  { step: 2, title: 'Planın', hint: 'Bu hafta ne zaman, kaç saat' },
-  { step: 3, title: 'Etkin', hint: 'Geçen sezonla geriye dönük test' },
+const STEPS: { step: Step; title: string; hint: string; icon: LucideIcon }[] = [
+  { step: 1, title: 'Tarlanı göster', hint: 'Haritada çiz veya yazarak anlat', icon: MapPin },
+  { step: 2, title: 'Planın', hint: 'Güneş–pompa grafiği, haftalık plan', icon: Sun },
+  { step: 3, title: 'Etkin', hint: 'Sezon oynatıcı, etki kartları', icon: BarChart3 },
 ];
 
 export function StepNav({ current, enabled, onSelect }: { current: Step; enabled: boolean; onSelect: (s: Step) => void }) {
   return (
     <nav aria-label="Adımlar" className="grid grid-cols-3 gap-2">
-      {STEPS.map(({ step, title, hint }) => {
+      {STEPS.map(({ step, title, hint, icon: Icon }) => {
         const active = step === current;
         const disabled = step !== 1 && !enabled;
         return (
@@ -32,16 +33,19 @@ export function StepNav({ current, enabled, onSelect }: { current: Step; enabled
             disabled={disabled}
             aria-current={active ? 'step' : undefined}
             onClick={() => onSelect(step)}
-            className={`rounded-lg border px-3 py-2 text-left transition ${
+            className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
               active
-                ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
-                : 'border-slate-200 bg-white text-slate-800 hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-200'
+                ? 'border-wheat-700 bg-wheat-700 text-white shadow-sm'
+                : 'border-soil-200 bg-white text-soil-800 hover:border-wheat-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-soil-200'
             }`}
           >
-            <span className="block text-sm font-semibold">
-              {step}) {title}
+            <Icon size={24} className="hidden shrink-0 sm:block" />
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold sm:text-base">
+                {step}) {title}
+              </span>
+              <span className={`hidden text-xs sm:block ${active ? 'text-wheat-50' : 'text-soil-500'}`}>{hint}</span>
             </span>
-            <span className={`hidden text-xs sm:block ${active ? 'text-emerald-50' : 'text-slate-500'}`}>{hint}</span>
           </button>
         );
       })}
@@ -51,7 +55,7 @@ export function StepNav({ current, enabled, onSelect }: { current: Step; enabled
 
 function List({ items }: { items: ReactNode[] }) {
   return (
-    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-soil-700">
       {items.map((item, i) => (
         <li key={i}>{item}</li>
       ))}
@@ -62,8 +66,8 @@ function List({ items }: { items: ReactNode[] }) {
 export function TodayAndVision() {
   return (
     <section className="grid gap-4 md:grid-cols-2">
-      <div className="rounded-xl border border-emerald-200 bg-white p-5">
-        <h2 className="font-semibold text-emerald-900">Bugün çalışan</h2>
+      <div className="rounded-xl border border-wheat-200 bg-white p-5">
+        <h2 className="font-semibold text-soil-900">Bugün çalışan</h2>
         <List
           items={[
             'Doğal dilden tarla bilgisi',
@@ -75,8 +79,8 @@ export function TodayAndVision() {
           ]}
         />
       </div>
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-5">
-        <h2 className="font-semibold text-slate-800">Vizyon</h2>
+      <div className="rounded-xl border border-dashed border-soil-300 bg-white p-5">
+        <h2 className="font-semibold text-soil-800">Vizyon</h2>
         <List
           items={[
             'Sentinel-2 NDVI ile tarla bazında kalibrasyon',

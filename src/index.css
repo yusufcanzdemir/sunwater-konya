@@ -1,1 +1,52 @@
 @import "tailwindcss";
+
+/* Earthy palette: cream ground, soil-brown text, ripe-wheat accent;
+   one vivid blue reserved for water, yellow for sun. */
+@theme {
+  --color-cream: #fbf6ea;
+
+  --color-soil-50: #faf6f0;
+  --color-soil-100: #f2eadf;
+  --color-soil-200: #e5d8c5;
+  --color-soil-300: #d2bea2;
+  --color-soil-400: #b0946f;
+  --color-soil-500: #8c6f4d;
+  --color-soil-600: #6f5539;
+  --color-soil-700: #5a432c;
+  --color-soil-800: #46331f;
+  --color-soil-900: #33241a;
+  --color-soil-950: #22170f;
+
+  --color-wheat-50: #fdf8ea;
+  --color-wheat-100: #f9eccb;
+  --color-wheat-200: #f2d995;
+  --color-wheat-300: #e9c25d;
+  --color-wheat-400: #dfad35;
+  --color-wheat-500: #c9941c;
+  --color-wheat-600: #a87612;
+  --color-wheat-700: #865a11;
+  --color-wheat-800: #6e4914;
+  --color-wheat-900: #5c3d15;
+
+  --color-water-50: #eef6ff;
+  --color-water-100: #d9ebff;
+  --color-water-200: #b3d7ff;
+  --color-water-300: #7dbaff;
+  --color-water-400: #4797fb;
+  --color-water-500: #1d77f2;
+  --color-water-600: #155fd1;
+  --color-water-700: #144ca6;
+
+  --color-sun-100: #fff6cc;
+  --color-sun-200: #ffeb99;
+  --color-sun-300: #ffdd55;
+  --color-sun-400: #fcc419;
+  --color-sun-500: #f2a900;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-soil-900);
+}
+
+/* Leaflet + Geoman styles are imported by the map component. */

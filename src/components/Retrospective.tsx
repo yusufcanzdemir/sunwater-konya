@@ -1,57 +1,18 @@
-import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { scaleRange, type Range } from '../engine/impact';
 import type { SeasonAnalysis } from '../engine/plan';
 import type { EnergySource } from '../state/farm';
+import { ImpactCards } from './ImpactCards';
+import { SeasonPlayer } from './SeasonPlayer';
 import { AssumptionBadge, fmt } from './ui';
 
 export const DISCLAIMER =
   'Bu sonuçlar FAO-56 yöntemi, gerçek hava verisi ve varsayımlara dayalı TAHMİNDİR. Gerçek tasarruf, pilot tarlalarda kuyu sayacı ölçümüyle doğrulanacaktır.';
 
 export function Disclaimer() {
-  return <p className="rounded-md border border-slate-300 bg-slate-100 p-3 text-sm font-medium text-slate-700">{DISCLAIMER}</p>;
+  return <p className="rounded-md border border-soil-300 bg-soil-100 p-3 text-sm font-medium text-soil-700">{DISCLAIMER}</p>;
 }
 
 const range = (r: Range, digits = 0) => `${fmt(r.low, digits)} – ${fmt(r.high, digits)}`;
-const shortDate = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`;
-
-function ImpactCard({ label, value, unit, note }: { label: string; value: string; unit: string; note?: string }) {
-  return (
-    <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
-      <div className="text-sm text-slate-600">{label}</div>
-      <div className="mt-1 text-xl font-semibold text-emerald-900">
-        {value} <span className="text-sm font-normal text-slate-600">{unit}</span>
-      </div>
-      {note && <div className="mt-1 text-xs text-slate-500">{note}</div>}
-    </div>
-  );
-}
-
-function CumulativeChart({ analysis }: { analysis: SeasonAnalysis }) {
-  const data = analysis.modelCumulative.map((m, i) => {
-    const b = analysis.baseline.cumulative[i].volumeM3;
-    return { date: m.date, model: m.volumeM3, baseline: b, gap: [Math.min(m.volumeM3, b), Math.max(m.volumeM3, b)] };
-  });
-  return (
-    <div>
-      <h4 className="mb-1 text-sm font-semibold text-slate-700">Sezon boyunca kuyudan çekilen toplam su (m³)</h4>
-      <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-          <XAxis dataKey="date" tickFormatter={shortDate} minTickGap={24} fontSize={12} />
-          <YAxis fontSize={12} tickFormatter={(v: number) => fmt(v)} width={70} />
-          <Tooltip
-            labelFormatter={(l) => shortDate(String(l))}
-            formatter={(v, name) => (name === 'Fark' ? null : `${fmt(Number(v))} m³`)}
-          />
-          <Legend />
-          <Area dataKey="gap" name="Fark" fill="#10b981" fillOpacity={0.15} stroke="none" legendType="none" />
-          <Line dataKey="baseline" name="Mevcut alışkanlık" stroke="#64748b" strokeWidth={2} dot={false} />
-          <Line dataKey="model" name="Bu plan" stroke="#059669" strokeWidth={2.5} dot={false} />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
 
 interface Props {
   analysis: SeasonAnalysis;
@@ -73,9 +34,9 @@ export function Retrospective({ analysis, energySource, seasonLabel, maxRotation
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{seasonLabel}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-soil-500">{seasonLabel}</p>
         {savings ? (
-          <h3 className="mt-1 text-xl font-bold text-emerald-900">
+          <h3 className="mt-1 text-xl font-bold text-soil-900">
             Geçen sezonun gerçek hava verisiyle: bu plan {fmt(savings.waterM3.mid)} m³ (≈%{fmt(savings.waterPercent)}) daha
             az su çekerdi.
           </h3>
@@ -85,11 +46,11 @@ export function Retrospective({ analysis, energySource, seasonLabel, maxRotation
             {fmt(modelM3)} m³) altında kalıyor – verim riski. Bu durumda tasarruf iddia edilmez.
           </h3>
         ) : (
-          <h3 className="mt-1 text-xl font-bold text-slate-800">
+          <h3 className="mt-1 text-xl font-bold text-soil-800">
             Geçen sezonun gerçek hava verisiyle: mevcut sulamanız ile plan aynı miktarda su çekiyor.
           </h3>
         )}
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-soil-600">
           Mevcut alışkanlık: {fmt(baseline.volumeM3)} m³
           {baseline.kind === 'habit' ? (
             <> ({baseline.irrigationCount} sulama)</>
@@ -103,39 +64,19 @@ export function Retrospective({ analysis, energySource, seasonLabel, maxRotation
         </p>
       </div>
 
-      <CumulativeChart analysis={analysis} />
+      <SeasonPlayer analysis={analysis} />
 
       {savings && (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <ImpactCard label="Su tasarrufu" value={range(savings.waterM3)} unit="m³" note={`≈ ${fmt(savings.waterM3.mid)} m³`} />
-            <ImpactCard
-              label="Pompa enerjisi tasarrufu"
-              value={range(savings.energyKwh)}
-              unit="kWh"
-              note={savings.dieselL ? `≈ ${range(savings.dieselL)} L dizel` : undefined}
-            />
-            <ImpactCard
-              label="CO₂ azaltımı"
-              value={range(savings.co2Kg)}
-              unit="kg"
-              note={energySource === 'solar_grid' ? 'Tasarruf edilen elektrik şebekeye verilirse (şebeke eşdeğeri)' : undefined}
-            />
-            <ImpactCard
-              label="Para tasarrufu"
-              value={savings.costTl ? range(savings.costTl) : '—'}
-              unit={savings.costTl ? 'TL' : ''}
-              note={savings.costTl ? undefined : energySource === 'diesel' ? 'Dizel fiyatını girin' : 'Elektrik fiyatını girin'}
-            />
-          </div>
-          <p className="text-xs text-slate-500">
+          <ImpactCards savings={savings} energySource={energySource} />
+          <p className="text-xs text-soil-500">
             Aralıklar ±%{fmt(((savings.waterM3.high - savings.waterM3.mid) / savings.waterM3.mid) * 100)} belirsizliği
             gösterir <AssumptionBadge />
           </p>
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="border-b border-slate-200 text-slate-500">
+              <thead className="border-b border-soil-200 text-soil-500">
                 <tr>
                   <th className="py-2 pr-4 font-medium">Ölçek</th>
                   <th className="py-2 pr-4 font-medium">Su (m³)</th>
@@ -146,7 +87,7 @@ export function Retrospective({ analysis, energySource, seasonLabel, maxRotation
               </thead>
               <tbody>
                 {[1, 100, 1000].map((n) => (
-                  <tr key={n} className="border-b border-slate-100">
+                  <tr key={n} className="border-b border-soil-100">
                     <td className="py-2 pr-4">{n === 1 ? 'Bu tarla' : `${fmt(n)} benzer tarla`}</td>
                     <td className="py-2 pr-4">{range(scaleRange(savings.waterM3, n))}</td>
                     <td className="py-2 pr-4">{range(scaleRange(savings.energyKwh, n))}</td>
@@ -156,12 +97,12 @@ export function Retrospective({ analysis, energySource, seasonLabel, maxRotation
                 ))}
               </tbody>
             </table>
-            <p className="mt-1 text-xs text-slate-500">Ölçek tablosu bu tarlanın değerinin tarla sayısıyla çarpımıdır.</p>
+            <p className="mt-1 text-xs text-soil-500">Ölçek tablosu bu tarlanın değerinin tarla sayısıyla çarpımıdır.</p>
           </div>
         </>
       )}
 
-      <div className="rounded-lg border border-slate-200 p-4 text-sm text-slate-700">
+      <div className="rounded-lg border border-soil-200 p-4 text-sm text-soil-700">
         <h4 className="mb-2 font-semibold">
           Güneşe göre dönüşümlü pompa planı (bu sezon) <AssumptionBadge />
         </h4>

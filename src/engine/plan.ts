@@ -5,7 +5,7 @@ import { assumedBaseline, habitBaseline, type Baseline, type CumulativePoint, ty
 import type { CropParams } from './crops';
 import { computeImpact, type EnergySource, type ImpactFactors, type ImpactResult } from './impact';
 import { pumpPowerKw } from './pump';
-import { hourlyPvOutput, type HourlyIrradiance } from './pv';
+import { hourlyPvOutput, type HourlyIrradiance, type HourlyPv } from './pv';
 import { scheduleIrrigations, slotDate, type ScheduleResult } from './schedule';
 import type { SoilParams } from './soil';
 import { runWaterBalance, type DailyWeather, type EffectiveRainRule, type WaterBalanceResult } from './waterBalance';
@@ -39,6 +39,8 @@ export interface SeasonAnalysis {
   balance: WaterBalanceResult;
   pumpKw: number;
   schedule: ScheduleResult;
+  /** Hourly PV output over the season days (kW), as used by the schedule. */
+  pv: HourlyPv[];
   modelCumulative: CumulativePoint[];
   baseline: Baseline;
   impact: ImpactResult;
@@ -99,5 +101,5 @@ export function analyzeSeason(
     factors: settings.impactFactors,
   });
 
-  return { balance, pumpKw, schedule, modelCumulative, baseline, impact };
+  return { balance, pumpKw, schedule, pv, modelCumulative, baseline, impact };
 }
