@@ -65,6 +65,13 @@ export const DEFAULT_MAX_ROTATION_DAYS = 14;
 
 const EPS = 1e-9;
 
+const MS_PER_HOUR = 3_600_000;
+// Local time labels are handled as naive timestamps (no timezone conversion).
+const toMs = (time: string) => Date.parse(`${time}:00Z`);
+const fromMs = (ms: number) => new Date(ms).toISOString().slice(0, 16);
+/** Day a slot starts on: the 00:00 label covers 23:00–24:00 of the previous day. */
+export const slotDate = (time: string) => fromMs(toMs(time) - MS_PER_HOUR).slice(0, 10);
+
 /**
  * Each round runs from its irrigation day up to the day before the next round (also capped by
  * `maxRotationDays` and the last day with PV data). Within that window the pump hours go to the
@@ -78,7 +85,7 @@ export function scheduleIrrigations({
   flowM3h,
   maxRotationDays = DEFAULT_MAX_ROTATION_DAYS,
 }: ScheduleInput): ScheduleResult {
-  const lastPvDate = pv.reduce((max, h) => (h.time.slice(0, 10) > max ? h.time.slice(0, 10) : max), '');
+  const lastPvDate = pv.reduce((max, h) => (slotDate(h.time) > max ? slotDate(h.time) : max), '');
   const used = new Map<string, number>();
   const sorted = [...events].sort((a, b) => a.date.localeCompare(b.date));
 
@@ -95,7 +102,7 @@ export function scheduleIrrigations({
 
     const candidates = pv
       .filter((h) => {
-        const date = h.time.slice(0, 10);
+        const date = slotDate(h.time);
         return date >= event.date && date <= windowEnd && (used.get(h.time) ?? 0) < 1 - EPS;
       })
       .sort((a, b) => b.pvKw - a.pvKw || a.time.localeCompare(b.time));
@@ -152,11 +159,6 @@ export interface TimeRange {
   hours: number;
 }
 
-const MS_PER_HOUR = 3_600_000;
-// Local time labels are handled as naive timestamps (no timezone conversion).
-const toMs = (time: string) => Date.parse(`${time}:00Z`);
-const fromMs = (ms: number) => new Date(ms).toISOString().slice(0, 16);
-
 /**
  * Merges scheduled slots into contiguous pumping windows. Each slot covers the hour
  * before its label; a partial slot is placed against its neighbour in the window.
@@ -194,14 +196,27 @@ export interface DailyPumping {
   hours: number;
 }
 
-/** Splits a round into per-day pumping windows for display. */
+/**
+ * Splits a round into per-day pumping windows for display. A slot belongs to the day it
+ * starts on, so the 00:00 label (23:00–24:00 of the previous day) goes to the previous day.
+ */
 export function dailyPumping(hours: ScheduledHour[]): DailyPumping[] {
   const byDate = new Map<string, ScheduledHour[]>();
   for (const h of hours) {
-    const date = h.time.slice(0, 10);
+    const date = slotDate(h.time);
     byDate.set(date, [...(byDate.get(date) ?? []), h]);
   }
   return [...byDate.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, list]) => ({ date, windows: pumpingWindows(list), hours: list.reduce((s, h) => s + h.fraction, 0) }));
+}
+
+/** "10:00–15:30" for a window on `date`; a window ending at the following midnight ends at "24:00". */
+export function formatWindow(w: TimeRange, date: string): string {
+  const clock = (time: string, isEnd: boolean) => {
+    if (time.slice(0, 10) === date) return time.slice(11, 16);
+    if (isEnd && time.slice(11, 16) === '00:00' && time.slice(0, 10) === addDays(date, 1)) return '24:00';
+    return `${time.slice(8, 10)}.${time.slice(5, 7)} ${time.slice(11, 16)}`;
+  };
+  return `${clock(w.start, false)}–${clock(w.end, true)}`;
 }

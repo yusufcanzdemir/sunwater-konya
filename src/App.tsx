@@ -1,6 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { buildExplainPayload } from './ai/explain';
+import { parsedFarmToForm, type ParsedFarm } from './ai/parseFarm';
 import { AssumptionsPanel } from './components/AssumptionsPanel';
+import { ExplanationPanel } from './components/ExplanationPanel';
 import { FarmFormView } from './components/FarmFormView';
+import { FarmTextInput } from './components/FarmTextInput';
 import { Retrospective } from './components/Retrospective';
 import { SummaryCards } from './components/SummaryCards';
 import { WaterBalanceChart } from './components/WaterBalanceChart';
@@ -71,6 +75,8 @@ export default function App() {
   const [run, setRun] = useState<Run | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [highlighted, setHighlighted] = useState<Set<keyof FarmForm>>(new Set());
+  const [followUp, setFollowUp] = useState<string | null>(null);
 
   const updateForm = (patch: Partial<FarmForm>) => {
     setForm((f) => ({ ...f, ...patch }));
@@ -78,6 +84,23 @@ export default function App() {
       setSelectedGeo(null);
       setGeoCandidates([]);
     }
+    // A field the user touches no longer needs attention.
+    setHighlighted((h) => {
+      const next = new Set(h);
+      (Object.keys(patch) as (keyof FarmForm)[]).forEach((k) => next.delete(k));
+      return next;
+    });
+  };
+
+  const applyParsed = (parsed: ParsedFarm) => {
+    const { patch, missing } = parsedFarmToForm(parsed);
+    updateForm(patch);
+    // Not part of the text schema – only flag them if still empty.
+    const alsoNeeded = (['soil', 'pumpEfficiency'] as const).filter((k) => form[k].trim() === '' && patch[k] == null);
+    setHighlighted(new Set([...missing, ...alsoNeeded]));
+    setFollowUp(parsed.follow_up_question || null);
+    setErrors({});
+    setRun(null);
   };
 
   async function calculate(geoOverride?: GeoResult) {
@@ -133,6 +156,11 @@ export default function App() {
     );
   }, [run, assumptions]);
 
+  const explainPayload = useMemo(
+    () => (run ? buildExplainPayload(week, retro, run.input.energySource === 'solar_grid') : null),
+    [run, week, retro],
+  );
+
   // The panel follows the calculated field, or the form before the first calculation.
   const panelCrop = run?.input.crop ?? (form.crop || null);
   const panelSoil = run?.input.soil ?? (form.soil || null);
@@ -168,7 +196,19 @@ export default function App() {
             </button>
           </div>
 
-          <FarmFormView form={form} errors={errors} onChange={updateForm} />
+          <FarmTextInput onParsed={applyParsed} />
+
+          {highlighted.size > 0 && (
+            <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              <p>
+                Metinden alınan bilgiler forma yazıldı. Sarı çerçeveli alanlar metinde yoktu; lütfen doldurun veya
+                kontrol edin, sonra "Planı hesapla"ya basın.
+              </p>
+              {followUp && <p className="mt-1 font-medium">{followUp}</p>}
+            </div>
+          )}
+
+          <FarmFormView form={form} errors={errors} highlighted={highlighted} onChange={updateForm} />
 
           {geoCandidates.length > 1 && selectedGeo && (
             <div className="mt-4 text-sm">
@@ -261,6 +301,12 @@ export default function App() {
                 />
               )
             )}
+          </Section>
+        )}
+
+        {run && explainPayload && (
+          <Section title="Sade Türkçe açıklama">
+            <ExplanationPanel key={JSON.stringify(explainPayload)} payload={explainPayload} />
           </Section>
         )}
 

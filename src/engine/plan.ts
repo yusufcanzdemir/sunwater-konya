@@ -6,7 +6,7 @@ import type { CropParams } from './crops';
 import { computeImpact, type EnergySource, type ImpactFactors, type ImpactResult } from './impact';
 import { pumpPowerKw } from './pump';
 import { hourlyPvOutput, type HourlyIrradiance } from './pv';
-import { scheduleIrrigations, type ScheduleResult } from './schedule';
+import { scheduleIrrigations, slotDate, type ScheduleResult } from './schedule';
 import type { SoilParams } from './soil';
 import { runWaterBalance, type DailyWeather, type EffectiveRainRule, type WaterBalanceResult } from './waterBalance';
 
@@ -66,7 +66,7 @@ export function analyzeSeason(
   const kwp = farm.energySource === 'solar_grid' ? farm.pvKwp : 0;
   const seasonDates = new Set(balance.days.map((d) => d.date));
   const pv = hourlyPvOutput(weather.hourly, kwp, settings.performanceRatio).filter((h) =>
-    seasonDates.has(h.time.slice(0, 10)),
+    seasonDates.has(slotDate(h.time)),
   );
 
   const schedule = scheduleIrrigations({

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { HourlyPv } from './pv';
-import { pumpingWindows, scheduleIrrigations } from './schedule';
+import { dailyPumping, formatWindow, pumpingWindows, scheduleIrrigations } from './schedule';
 
 /** Bell-shaped PV day peaking at 13:00 (label), zero at night. */
 function pvDay(date: string, peakKw = 40): HourlyPv[] {
@@ -68,10 +68,25 @@ describe('scheduleIrrigations', () => {
     });
     const [first, second] = r.irrigations;
     expect(first.windowEnd).toBe('2025-07-02');
-    expect(first.hours.every((h) => h.time < '2025-07-03')).toBe(true);
+    // the 07-03T00:00 label is the 23:00–24:00 slot of 07-02, so it still belongs to the first round
+    expect(first.hours.every((h) => h.time <= '2025-07-03T00:00')).toBe(true);
     expect(first.unscheduledHours).toBeCloseTo(2);
     expect(second.hours[0].time).toBe('2025-07-03T13:00');
     expect(r.totals.unscheduledHours).toBeCloseTo(2);
+  });
+
+  it('a round day owns the slots that start on it (00:00 label belongs to the day before)', () => {
+    const r = scheduleIrrigations({
+      events: [{ date: '2025-07-02', volumeM3: 24 * 60 }],
+      pv,
+      pumpKw: 30,
+      flowM3h: 60,
+      maxRotationDays: 1,
+    });
+    const times = r.irrigations[0].hours.map((h) => h.time);
+    expect(times).not.toContain('2025-07-02T00:00');
+    expect(times).toContain('2025-07-03T00:00');
+    expect(r.irrigations[0].unscheduledHours).toBeCloseTo(0);
   });
 
   it('rotation: the round length is capped', () => {
@@ -94,6 +109,28 @@ describe('scheduleIrrigations', () => {
 
     const one = scheduleIrrigations({ events: [{ date: '2025-07-01', volumeM3: 60 }], pv: day, pumpKw: 30, flowM3h: 60 });
     expect(one.totals.surplusPvKwh).toBeCloseTo(totalPv - 30);
+  });
+});
+
+describe('dailyPumping / formatWindow', () => {
+  const fullDay = (date: string, next: string) =>
+    [...Array.from({ length: 23 }, (_, h) => `${date}T${String(h + 1).padStart(2, '0')}:00`), `${next}T00:00`].map(
+      (time) => ({ time, fraction: 1, pvKw: 0, pumpKwh: 0, solarKwh: 0, gridKwh: 0 }),
+    );
+
+  it('puts the 00:00 label on the previous day and writes a full day as 00:00–24:00', () => {
+    const days = dailyPumping(fullDay('2026-10-25', '2026-10-26'));
+    expect(days).toHaveLength(1);
+    expect(days[0].date).toBe('2026-10-25');
+    expect(days[0].hours).toBe(24);
+    expect(formatWindow(days[0].windows[0], days[0].date)).toBe('00:00–24:00');
+  });
+
+  it('formats partial windows and windows crossing midnight', () => {
+    expect(formatWindow({ start: '2026-07-01T10:00', end: '2026-07-01T15:30', hours: 5.5 }, '2026-07-01')).toBe('10:00–15:30');
+    expect(formatWindow({ start: '2026-07-01T22:00', end: '2026-07-02T02:00', hours: 4 }, '2026-07-01')).toBe(
+      '22:00–02.07 02:00',
+    );
   });
 });
 

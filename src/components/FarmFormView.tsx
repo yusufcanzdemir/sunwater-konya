@@ -14,12 +14,14 @@ import { Field, inputClass } from './ui';
 interface Props {
   form: FarmForm;
   errors: FormErrors;
+  /** Fields the farmer's text did not mention. */
+  highlighted?: Set<keyof FarmForm>;
   onChange: (patch: Partial<FarmForm>) => void;
 }
 
-export function FarmFormView({ form, errors, onChange }: Props) {
+export function FarmFormView({ form, errors, highlighted, onChange }: Props) {
   const text = (key: keyof FarmForm, label: string, unit?: string, placeholder?: string) => (
-    <Field label={unit ? `${label} (${unit})` : label} error={errors[key]}>
+    <Field label={unit ? `${label} (${unit})` : label} error={errors[key]} highlight={highlighted?.has(key)}>
       <input
         className={inputClass}
         inputMode="decimal"
@@ -42,7 +44,7 @@ export function FarmFormView({ form, errors, onChange }: Props) {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <Field label="Konum (Konya ilçeleri önerilir)" error={errors.locationText}>
+      <Field label="Konum (Konya ilçeleri önerilir)" error={errors.locationText} highlight={highlighted?.has('locationText')}>
         <input
           className={inputClass}
           list="konya-districts"
@@ -57,7 +59,7 @@ export function FarmFormView({ form, errors, onChange }: Props) {
         </datalist>
       </Field>
 
-      <Field label="Ürün" error={errors.crop}>
+      <Field label="Ürün" error={errors.crop} highlight={highlighted?.has('crop')}>
         <select className={inputClass} value={form.crop} onChange={(e) => changeCrop(e.target.value as CropId | '')}>
           <option value="">Seçin…</option>
           {CROP_IDS.map((id) => (
@@ -68,7 +70,7 @@ export function FarmFormView({ form, errors, onChange }: Props) {
         </select>
       </Field>
 
-      <Field label="Ekim (veya sulama dönemi başlangıç) tarihi" error={errors.plantingDate}>
+      <Field label="Ekim (veya sulama dönemi başlangıç) tarihi" error={errors.plantingDate} highlight={highlighted?.has('plantingDate')}>
         <input
           type="date"
           className={inputClass}
@@ -79,7 +81,7 @@ export function FarmFormView({ form, errors, onChange }: Props) {
 
       {text('areaDecare', 'Alan', 'dekar')}
 
-      <Field label="Sulama yöntemi" error={errors.irrigationMethod}>
+      <Field label="Sulama yöntemi" error={errors.irrigationMethod} highlight={highlighted?.has('irrigationMethod')}>
         <select
           className={inputClass}
           value={form.irrigationMethod}
@@ -94,7 +96,7 @@ export function FarmFormView({ form, errors, onChange }: Props) {
         </select>
       </Field>
 
-      <Field label="Toprak tipi" error={errors.soil}>
+      <Field label="Toprak tipi" error={errors.soil} highlight={highlighted?.has('soil')}>
         <select className={inputClass} value={form.soil} onChange={(e) => onChange({ soil: e.target.value as SoilId | '' })}>
           <option value="">Seçin…</option>
           {SOIL_IDS.map((id) => (
@@ -109,7 +111,7 @@ export function FarmFormView({ form, errors, onChange }: Props) {
       {text('pumpFlowM3h', 'Pompa debisi', 'm³/saat')}
       {text('pumpEfficiency', 'Pompa-motor verimi', '0–1', '0,50')}
 
-      <Field label="Enerji kaynağı" error={errors.energySource}>
+      <Field label="Enerji kaynağı" error={errors.energySource} highlight={highlighted?.has('energySource')}>
         <select
           className={inputClass}
           value={form.energySource}

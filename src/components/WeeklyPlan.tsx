@@ -1,5 +1,5 @@
 import type { SeasonAnalysis } from '../engine/plan';
-import { dailyPumping } from '../engine/schedule';
+import { dailyPumping, formatWindow } from '../engine/schedule';
 import type { EnergySource } from '../state/farm';
 import { AssumptionBadge, fmt } from './ui';
 
@@ -8,8 +8,6 @@ const dayLabel = (iso: string) => {
   const weekday = DAY_NAMES[new Date(`${iso}T12:00:00Z`).getUTCDay()];
   return `${iso.slice(8, 10)}.${iso.slice(5, 7)} ${weekday}`;
 };
-const clock = (time: string, sameDate: string) =>
-  time.slice(0, 10) === sameDate ? time.slice(11, 16) : `${time.slice(8, 10)}.${time.slice(5, 7)} ${time.slice(11, 16)}`;
 
 interface Props {
   analysis: SeasonAnalysis;
@@ -64,7 +62,7 @@ export function WeeklyPlan({ analysis, energySource, initialDepletionMm, forecas
                     <tr key={d.date} className="border-t border-slate-100">
                       <td className="py-1.5 pr-4 whitespace-nowrap text-slate-700">{dayLabel(d.date)}</td>
                       <td className="py-1.5 pr-4 text-slate-900">
-                        {d.windows.map((w) => `${clock(w.start, d.date)}–${clock(w.end, d.date)}`).join(', ')}
+                        {d.windows.map((w) => formatWindow(w, d.date)).join(', ')}
                       </td>
                       <td className="py-1.5 text-right whitespace-nowrap text-slate-600">{fmt(d.hours, 1)} saat</td>
                     </tr>
