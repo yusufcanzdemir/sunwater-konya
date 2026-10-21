@@ -1,20 +1,20 @@
 // Runs the whole chain for one weather series:
 // water balance → pump schedule on PV hours → baseline → impact.
 
-import { assumedBaseline, habitBaseline, type Baseline, type CumulativePoint, type Habit } from './baseline';
-import type { CropParams } from './crops';
-import { computeImpact, type EnergySource, type ImpactFactors, type ImpactResult } from './impact';
-import { pumpPowerKw } from './pump';
-import { hourlyPvOutput, type HourlyIrradiance, type HourlyPv } from './pv';
-import { scheduleIrrigations, slotDate, type ScheduleResult } from './schedule';
-import type { SoilParams } from './soil';
+import { assumedBaseline, habitBaseline, type Baseline, type CumulativePoint, type Habit } from './baseline.js';
+import type { CropParams } from './crops.js';
+import { computeImpact, type EnergySource, type ImpactFactors, type ImpactResult } from './impact.js';
+import { pumpPowerKw } from './pump.js';
+import { hourlyPvOutput, type HourlyIrradiance, type HourlyPv } from './pv.js';
+import { scheduleIrrigations, slotDate, type ScheduleResult } from './schedule.js';
+import type { SoilParams } from './soil.js';
 import {
   runWaterBalance,
   type DailyWeather,
   type EffectiveRainRule,
   type FieldRecord,
   type WaterBalanceResult,
-} from './waterBalance';
+} from './waterBalance.js';
 
 export interface FarmParams {
   crop: CropParams;

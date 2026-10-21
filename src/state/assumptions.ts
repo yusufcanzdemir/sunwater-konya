@@ -1,18 +1,18 @@
 // Editable engine assumptions, initialised from the engine defaults.
 
-import { DEFAULT_OVER_IRRIGATION_FACTOR } from '../engine/baseline';
-import { CROPS, type CropId, type CropParams } from '../engine/crops';
-import { DEFAULT_IMPACT_FACTORS, type ImpactFactors } from '../engine/impact';
-import type { ModelSettings } from '../engine/plan';
-import { DEFAULT_PERFORMANCE_RATIO } from '../engine/pv';
-import { DEFAULT_MAX_ROTATION_DAYS } from '../engine/schedule';
-import { SOILS, type SoilId, type SoilParams } from '../engine/soil';
+import { DEFAULT_OVER_IRRIGATION_FACTOR } from '../engine/baseline.js';
+import { CROPS, type CropId, type CropParams } from '../engine/crops.js';
+import { DEFAULT_IMPACT_FACTORS, type ImpactFactors } from '../engine/impact.js';
+import type { ModelSettings } from '../engine/plan.js';
+import { DEFAULT_PERFORMANCE_RATIO } from '../engine/pv.js';
+import { DEFAULT_MAX_ROTATION_DAYS } from '../engine/schedule.js';
+import { SOILS, type SoilId, type SoilParams } from '../engine/soil.js';
 import {
   DEFAULT_RAIN_RULE,
   IRRIGATION_EFFICIENCY,
   type EffectiveRainRule,
   type IrrigationMethod,
-} from '../engine/waterBalance';
+} from '../engine/waterBalance.js';
 
 export interface Assumptions {
   crops: Record<CropId, CropParams>;

@@ -1,6 +1,6 @@
 // Water, energy, CO₂ and cost impact of the model plan versus the baseline.
 
-import { pumpEnergyKwh } from './pump';
+import { pumpEnergyKwh } from './pump.js';
 
 export type EnergySource = 'solar_grid' | 'grid' | 'diesel';
 

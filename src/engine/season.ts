@@ -1,7 +1,7 @@
 // Which calendar window to fetch weather for.
 
-import { seasonLength, type CropParams } from './crops';
-import { addDays, addYears, daysBetween } from './dates';
+import { seasonLength, type CropParams } from './crops.js';
+import { addDays, addYears, daysBetween } from './dates.js';
 
 export interface DateWindow {
   start: string;

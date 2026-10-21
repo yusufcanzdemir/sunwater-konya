@@ -1,8 +1,8 @@
 // Daily root-zone water balance – FAO-56 chapter 8, simplified.
 
-import { kcOnDay, seasonLength, type CropParams } from './crops';
-import { daysBetween } from './dates';
-import { readilyAvailableWater, totalAvailableWater, type SoilParams } from './soil';
+import { kcOnDay, seasonLength, type CropParams } from './crops.js';
+import { daysBetween } from './dates.js';
+import { readilyAvailableWater, totalAvailableWater, type SoilParams } from './soil.js';
 
 export type IrrigationMethod = 'flood' | 'sprinkler' | 'drip';
 

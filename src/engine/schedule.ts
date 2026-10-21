@@ -1,9 +1,9 @@
 // Hourly pump schedule with rotational irrigation: the field is watered parcel by parcel,
 // so one irrigation round is spread over the days until the next round, using the sunniest hours.
 
-import { addDays, daysBetween } from './dates';
-import { pumpHours } from './pump';
-import type { HourlyPv } from './pv';
+import { addDays, daysBetween } from './dates.js';
+import { pumpHours } from './pump.js';
+import type { HourlyPv } from './pv.js';
 
 export interface IrrigationEvent {
   date: string;

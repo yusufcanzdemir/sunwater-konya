@@ -1,7 +1,7 @@
 // Short "how is my field now" answers for chat replies.
 
-import { daysBetween } from './dates';
-import type { WaterBalanceResult } from './waterBalance';
+import { daysBetween } from './dates.js';
+import type { WaterBalanceResult } from './waterBalance.js';
 
 export interface FieldStatus {
   /** End-of-day root-zone depletion on `date` (mm). */

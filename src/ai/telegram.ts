@@ -1,12 +1,12 @@
 // Telegram alert content: the engine-only payload, a 5-line template and plan-change detection.
 // Pure – shared by the serverless functions and tests.
 
-import { addDays } from '../engine/dates';
-import { computeImpact, type EnergySource } from '../engine/impact';
-import type { SeasonAnalysis } from '../engine/plan';
-import { dailyPumping, formatWindow } from '../engine/schedule';
-import { windowSummary } from '../engine/window';
-import { dayName } from './explain';
+import { addDays } from '../engine/dates.js';
+import { computeImpact, type EnergySource } from '../engine/impact.js';
+import type { SeasonAnalysis } from '../engine/plan.js';
+import { dailyPumping, formatWindow } from '../engine/schedule.js';
+import { windowSummary } from '../engine/window.js';
+import { dayName } from './explain.js';
 
 export interface TelegramPayload {
   tarla: string;

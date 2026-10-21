@@ -2,9 +2,9 @@
 // runs as Vercel functions and behind the Vite dev middleware. GEMINI_API_KEY never leaves the server.
 
 import { GoogleGenAI, Type, type Schema } from '@google/genai';
-import { checkExplanation, templateExplanation, type ExplainPayload } from '../../src/ai/explain';
-import { MAX_FARM_TEXT_LENGTH, sanitizeParsedFarm } from '../../src/ai/parseFarm';
-import { templateTelegram, type TelegramPayload } from '../../src/ai/telegram';
+import { checkExplanation, templateExplanation, type ExplainPayload } from '../../src/ai/explain.js';
+import { MAX_FARM_TEXT_LENGTH, sanitizeParsedFarm } from '../../src/ai/parseFarm.js';
+import { templateTelegram, type TelegramPayload } from '../../src/ai/telegram.js';
 
 const DEFAULT_MODEL = 'gemini-3.8-flash';
 const MAX_PAYLOAD_BYTES = 20_000;

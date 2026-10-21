@@ -1,19 +1,19 @@
 // Telegram bot: linking chats to fields, alerts, and the "Suladım / Yağmur yağdı" feedback loop.
 // Every number comes from the engine; Gemini only rewords the alert (and is checked).
 
-import { dayName } from '../../src/ai/explain';
-import { buildTelegramPayload, planChangeNote, planSignature, type TelegramPayload } from '../../src/ai/telegram';
-import { fetchArchive, fetchForecast } from '../../src/data/openMeteo';
-import { addDays } from '../../src/engine/dates';
-import { analyzeSeason, type SeasonAnalysis } from '../../src/engine/plan';
-import { dailyPumping, formatWindow } from '../../src/engine/schedule';
-import { archiveSeasonWindow } from '../../src/engine/season';
-import { fieldStatus } from '../../src/engine/status';
-import type { FieldRecord } from '../../src/engine/waterBalance';
-import { defaultAssumptions, modelSettings, type Assumptions } from '../../src/state/assumptions';
-import { demoForm, toFarmParams, validateFarmForm, type FarmInput } from '../../src/state/farm';
-import { explain } from './handlers';
-import { getStore } from './store';
+import { dayName } from '../../src/ai/explain.js';
+import { buildTelegramPayload, planChangeNote, planSignature, type TelegramPayload } from '../../src/ai/telegram.js';
+import { fetchArchive, fetchForecast } from '../../src/data/openMeteo.js';
+import { addDays } from '../../src/engine/dates.js';
+import { analyzeSeason, type SeasonAnalysis } from '../../src/engine/plan.js';
+import { dailyPumping, formatWindow } from '../../src/engine/schedule.js';
+import { archiveSeasonWindow } from '../../src/engine/season.js';
+import { fieldStatus } from '../../src/engine/status.js';
+import type { FieldRecord } from '../../src/engine/waterBalance.js';
+import { defaultAssumptions, modelSettings, type Assumptions } from '../../src/state/assumptions.js';
+import { demoForm, toFarmParams, validateFarmForm, type FarmInput } from '../../src/state/farm.js';
+import { explain } from './handlers.js';
+import { getStore } from './store.js';
 
 export interface StoredFarm {
   id: string;

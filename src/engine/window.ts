@@ -1,8 +1,8 @@
 // Totals of a season analysis over a date window (e.g. "this week").
 
-import { daysBetween } from './dates';
-import type { SeasonAnalysis } from './plan';
-import { slotDate } from './schedule';
+import { daysBetween } from './dates.js';
+import type { SeasonAnalysis } from './plan.js';
+import { slotDate } from './schedule.js';
 
 export interface WindowSummary {
   days: number;

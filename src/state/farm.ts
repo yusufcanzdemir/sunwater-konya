@@ -1,12 +1,12 @@
 // Farm form: raw string values as typed, demo defaults, and validation into typed input.
 
-import { CROP_IDS, CROPS, type CropId } from '../engine/crops';
-import { isIsoDate } from '../engine/dates';
-import type { EnergySource } from '../engine/impact';
-import type { FarmParams } from '../engine/plan';
-import { SOIL_IDS, type SoilId } from '../engine/soil';
-import { IRRIGATION_METHODS, type IrrigationMethod } from '../engine/waterBalance';
-import type { Assumptions } from './assumptions';
+import { CROP_IDS, CROPS, type CropId } from '../engine/crops.js';
+import { isIsoDate } from '../engine/dates.js';
+import type { EnergySource } from '../engine/impact.js';
+import type { FarmParams } from '../engine/plan.js';
+import { SOIL_IDS, type SoilId } from '../engine/soil.js';
+import { IRRIGATION_METHODS, type IrrigationMethod } from '../engine/waterBalance.js';
+import type { Assumptions } from './assumptions.js';
 
 export type { EnergySource };
 

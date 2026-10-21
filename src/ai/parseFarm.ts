@@ -1,11 +1,11 @@
 // Shape of /api/parse-farm output, its sanitising, and mapping into the form.
 // Pure: shared by the serverless function and the browser.
 
-import { CROP_IDS, type CropId } from '../engine/crops';
-import { isIsoDate } from '../engine/dates';
-import type { EnergySource } from '../engine/impact';
-import { IRRIGATION_METHODS, type IrrigationMethod } from '../engine/waterBalance';
-import type { FarmForm } from '../state/farm';
+import { CROP_IDS, type CropId } from '../engine/crops.js';
+import { isIsoDate } from '../engine/dates.js';
+import type { EnergySource } from '../engine/impact.js';
+import { IRRIGATION_METHODS, type IrrigationMethod } from '../engine/waterBalance.js';
+import type { FarmForm } from '../state/farm.js';
 
 export interface ParsedFarm {
   location_text: string | null;

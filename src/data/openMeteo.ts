@@ -1,8 +1,8 @@
 // Open-Meteo clients (no API key). URL building and response parsing are pure so they
 // can be tested without the network; the fetch wrappers only do I/O.
 
-import type { HourlyIrradiance } from '../engine/pv';
-import type { DailyWeather } from '../engine/waterBalance';
+import type { HourlyIrradiance } from '../engine/pv.js';
+import type { DailyWeather } from '../engine/waterBalance.js';
 
 export type { HourlyIrradiance };
 

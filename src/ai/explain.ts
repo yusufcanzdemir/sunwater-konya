@@ -1,8 +1,8 @@
 // Input for /api/explain-plan, the number check on the model's answer, and the template fallback.
 // Every number here comes from the engine; the model may only repeat them.
 
-import type { SeasonAnalysis } from '../engine/plan';
-import { dailyPumping, formatWindow } from '../engine/schedule';
+import type { SeasonAnalysis } from '../engine/plan.js';
+import { dailyPumping, formatWindow } from '../engine/schedule.js';
 
 export interface ExplainRoundDay {
   gun: string;

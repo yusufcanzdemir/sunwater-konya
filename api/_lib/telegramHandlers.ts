@@ -1,8 +1,8 @@
 // HTTP layer for the Telegram endpoints (Request → Response, like handlers.ts).
 
-import { sanitizeFarmInput } from '../../src/state/farm';
-import { defaultAssumptions, type Assumptions } from '../../src/state/assumptions';
-import { getStore } from './store';
+import { sanitizeFarmInput } from '../../src/state/farm.js';
+import { defaultAssumptions, type Assumptions } from '../../src/state/assumptions.js';
+import { getStore } from './store.js';
 import {
   TelegramError,
   botUsername,
@@ -14,7 +14,7 @@ import {
   sendAlert,
   type StoredFarm,
   type TgUpdate,
-} from './telegram';
+} from './telegram.js';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8' } });
