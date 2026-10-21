@@ -4,6 +4,7 @@
 import { GoogleGenAI, Type, type Schema } from '@google/genai';
 import { checkExplanation, templateExplanation, type ExplainPayload } from '../../src/ai/explain';
 import { MAX_FARM_TEXT_LENGTH, sanitizeParsedFarm } from '../../src/ai/parseFarm';
+import { templateTelegram, type TelegramPayload } from '../../src/ai/telegram';
 
 const DEFAULT_MODEL = 'gemini-3.8-flash';
 const MAX_PAYLOAD_BYTES = 20_000;
@@ -11,8 +12,12 @@ const MAX_PAYLOAD_BYTES = 20_000;
 const PARSE_SYSTEM_INSTRUCTION =
   "Türk çiftçisinin tarlasını anlatan metinden yalnızca açıkça söylenen bilgileri çıkar. Söylenmeyeni uydurma, missing_fields listesine yaz. 'Dönüm' = dekar. 'Gün boyu' ≈ 24 saat, 'yarım gün' ≈ 12 saat.";
 
-const EXPLAIN_SYSTEM_INSTRUCTION =
-  "Konya'daki bir çiftçiye sulama planını sade Türkçeyle, en fazla 6 cümlede anlat. YALNIZCA verilen JSON'daki sayıları kullan, yeni sayı üretme. Teknik terim kullanma (ET0, Kc yazma). Önce bu haftaki eylemi söyle, sonra tasarrufu TL ve su olarak söyle, en sonda yeraltı suyunu ve obruk riskini korumaya katkısını bir cümleyle belirt.";
+const EXPLAIN_RULES =
+  "YALNIZCA verilen JSON'daki sayıları kullan, yeni sayı üretme. Teknik terim kullanma (ET0, Kc yazma). Önce bu haftaki eylemi söyle, sonra tasarrufu TL ve su olarak söyle, en sonda yeraltı suyunu ve obruk riskini korumaya katkısını bir cümleyle belirt.";
+
+const EXPLAIN_SYSTEM_INSTRUCTION = `Konya'daki bir çiftçiye sulama planını sade Türkçeyle, en fazla 6 cümlede anlat. ${EXPLAIN_RULES}`;
+
+const TELEGRAM_SYSTEM_INSTRUCTION = `Konya'daki bir çiftçiye sulama planını sade Türkçeyle, Telegram mesajı olarak en fazla 5 kısa satırda anlat; her satır tek bir emoji ile başlasın, ilk satır tarlanın adı olsun. ${EXPLAIN_RULES}`;
 
 const nullableString = (description?: string): Schema => ({ type: Type.STRING, nullable: true, description });
 const nullableNumber = (description?: string): Schema => ({ type: Type.NUMBER, nullable: true, description });
@@ -139,40 +144,72 @@ export async function parseFarm(request: Request): Promise<Response> {
   }
 }
 
-export async function explainPlan(request: Request): Promise<Response> {
-  if (request.method !== 'POST') return error('Yalnızca POST.', 405);
-  let payload: ExplainPayload;
-  try {
-    payload = (await readJson(request)) as ExplainPayload;
-    if (!payload || typeof payload !== 'object' || !payload.bu_hafta) throw new Error('shape');
-  } catch {
-    return error('Geçersiz istek.', 400);
-  }
+export type ExplainFormat = 'web' | 'telegram';
 
-  const template = () => json({ text: templateExplanation(payload), source: 'template' });
+export interface Explanation {
+  text: string;
+  source: 'gemini' | 'template';
+}
+
+const MAX_TELEGRAM_LINES = 5;
+
+/**
+ * Gemini text for an engine payload, checked so it only repeats the payload's numbers;
+ * one retry, then the deterministic template.
+ */
+export async function explain(payload: ExplainPayload | TelegramPayload, format: ExplainFormat): Promise<Explanation> {
+  const template = (): Explanation => ({
+    text: format === 'telegram' ? templateTelegram(payload as TelegramPayload) : templateExplanation(payload as ExplainPayload),
+    source: 'template',
+  });
   const ai = client();
   if (!ai) return template();
 
   // Kept outside the spec's system instruction: the retrospective is a what-if, not a measured result.
-  const input = `${JSON.stringify(payload)}\n\nNot: "gecmis_sezon" bir tahmindir; bu plan geçen sezon uygulanmadı. Tasarrufu koşullu anlat ("sağlardı", "kazandırırdı"), "sağlandı" deme. Sayıları yazıyla değil, JSON'daki gibi rakamla yaz (ör. 60.878).`;
+  const what =
+    format === 'telegram'
+      ? '"gecmis_sezon_tasarruf" ve "hafta_tasarruf" tahmindir.'
+      : '"gecmis_sezon" bir tahmindir; bu plan geçen sezon uygulanmadı.';
+  const input = `${JSON.stringify(payload)}\n\nNot: ${what} Tasarrufu koşullu anlat ("sağlardı", "kazandırırdı"), "sağlandı" deme. Sayıları yazıyla değil, JSON'daki gibi rakamla yaz (ör. 60.878).`;
+  const systemInstruction = format === 'telegram' ? TELEGRAM_SYSTEM_INSTRUCTION : EXPLAIN_SYSTEM_INSTRUCTION;
   const deadline = Date.now() + EXPLAIN_DEADLINE_MS;
   let note = '';
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const response = await generate(ai, {
         contents: note ? `${input}\n\n${note}` : input,
-        config: { systemInstruction: EXPLAIN_SYSTEM_INSTRUCTION, temperature: 0.2 },
+        config: { systemInstruction, temperature: 0.2 },
       }, deadline);
       const text = (response.text ?? '').trim();
       const check = checkExplanation(text, payload);
-      if (check.ok) return json({ text, source: 'gemini' });
-      note = `Önceki yanıtın JSON'da olmayan sayılar veya teknik terimler içeriyordu${
-        check.unknown.length ? ` (${check.unknown.join(', ')})` : ''
-      }. Yalnızca JSON'daki sayıları kullanarak yeniden yaz.`;
+      const tooLong = format === 'telegram' && text.split('\n').filter((l) => l.trim()).length > MAX_TELEGRAM_LINES;
+      if (check.ok && !tooLong) return { text, source: 'gemini' };
+      note = tooLong
+        ? `Önceki yanıt ${MAX_TELEGRAM_LINES} satırdan uzundu. En fazla ${MAX_TELEGRAM_LINES} kısa satır yaz.`
+        : `Önceki yanıtın JSON'da olmayan sayılar veya teknik terimler içeriyordu${
+            check.unknown.length ? ` (${check.unknown.join(', ')})` : ''
+          }. Yalnızca JSON'daki sayıları kullanarak yeniden yaz.`;
     } catch (e) {
-      console.error('explain-plan failed', e);
+      console.error('explain failed', e);
       break;
     }
   }
   return template();
+}
+
+export async function explainPlan(request: Request): Promise<Response> {
+  if (request.method !== 'POST') return error('Yalnızca POST.', 405);
+  let body: Record<string, unknown>;
+  try {
+    body = (await readJson(request)) as Record<string, unknown>;
+    if (!body || typeof body !== 'object') throw new Error('shape');
+  } catch {
+    return error('Geçersiz istek.', 400);
+  }
+  // Body is the engine payload itself, plus an optional "format".
+  const { format: rawFormat, ...payload } = body;
+  const format: ExplainFormat = rawFormat === 'telegram' ? 'telegram' : 'web';
+  const valid = format === 'telegram' ? typeof payload.tarla === 'string' : payload.bu_hafta != null;
+  if (!valid) return error('Geçersiz istek.', 400);
+  return json(await explain(payload as unknown as ExplainPayload | TelegramPayload, format));
 }

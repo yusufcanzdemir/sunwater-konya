@@ -12,6 +12,7 @@ import { ContextBand, StepNav, TodayAndVision, type Step } from './components/Pr
 import { DISCLAIMER, Retrospective } from './components/Retrospective';
 import { SolarPumpDay } from './components/SolarPumpDay';
 import { SummaryCards } from './components/SummaryCards';
+import { TelegramPanel } from './components/TelegramPanel';
 import { fmt } from './components/ui';
 import { WaterBalanceChart } from './components/WaterBalanceChart';
 import { WeeklyPlan } from './components/WeeklyPlan';
@@ -434,6 +435,9 @@ export default function App() {
                   />
                 )
               )}
+            </Section>
+            <Section title="Telefonuna gelsin: Telegram uyarıları">
+              <TelegramPanel input={run.input} geo={run.geo} assumptions={assumptions} />
             </Section>
             <StepButtons prev={[1, 'Tarla bilgileri']} next={[3, 'Etkin: geriye dönük test']} onSelect={goTo} />
           </>

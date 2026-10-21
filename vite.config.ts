@@ -1,13 +1,33 @@
 /// <reference types="vitest/config" />
 import type { IncomingMessage } from 'node:http';
-import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 const API_ROUTES: Record<string, string> = {
   '/api/parse-farm': '/api/parse-farm.ts',
   '/api/explain-plan': '/api/explain-plan.ts',
+  '/api/telegram-link': '/api/telegram-link.ts',
+  '/api/send-alert': '/api/send-alert.ts',
+  '/api/telegram-webhook': '/api/telegram-webhook.ts',
 };
+
+/** Server-only secrets copied from .env files (no VITE_ prefix, never bundled into the client). */
+const SERVER_ENV = [
+  'GEMINI_API_KEY',
+  'GEMINI_MODEL',
+  'TELEGRAM_BOT_TOKEN',
+  'TELEGRAM_DEMO_CHAT_ID',
+  'TELEGRAM_WEBHOOK_SECRET',
+  'TELEGRAM_POLLING',
+  'CRON_SECRET',
+  'KV_REST_API_URL',
+  'KV_REST_API_TOKEN',
+  'UPSTASH_REDIS_REST_URL',
+  'UPSTASH_REDIS_REST_TOKEN',
+];
+
+type Handler = (r: Request) => Promise<Response>;
 
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -18,26 +38,71 @@ function readBody(req: IncomingMessage): Promise<string> {
   });
 }
 
+/**
+ * Local Telegram without a public URL: long-polls getUpdates and hands each update to the
+ * webhook handler. Skipped when the bot has a webhook (i.e. a deployed bot is live).
+ */
+async function pollTelegram(server: ViteDevServer) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const log = server.config.logger;
+  const api = (method: string, body: object = {}) =>
+    fetch(`https://api.telegram.org/bot${token}/${method}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then((r) => r.json() as Promise<{ ok: boolean; result: unknown }>);
+
+  const info = (await api('getWebhookInfo')) as { result?: { url?: string } };
+  if (info.result?.url) {
+    log.info(`[telegram] webhook set (${info.result.url}); local polling skipped.`);
+    return;
+  }
+  log.info('[telegram] polling for updates (local dev).');
+  let offset = 0;
+  let stopped = false;
+  server.httpServer?.on('close', () => (stopped = true));
+  while (!stopped) {
+    try {
+      const res = (await api('getUpdates', { offset, timeout: 25 })) as { result?: { update_id: number }[] };
+      for (const update of res.result ?? []) {
+        offset = update.update_id + 1;
+        const mod = (await server.ssrLoadModule('/api/_lib/telegram.ts')) as { handleUpdate: (u: unknown) => Promise<void> };
+        mod.handleUpdate(update).catch((e: unknown) => log.error(`[telegram] ${String(e)}`));
+      }
+    } catch (e) {
+      log.warn(`[telegram] polling error: ${String(e)}`);
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  }
+}
+
 /** Serves the Vercel functions in /api during `vite dev`, so no Vercel CLI is needed locally. */
 function devApi(): Plugin {
   return {
     name: 'dev-api',
     configureServer(server) {
+      if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_POLLING !== '0' && !process.env.VITEST) {
+        void pollTelegram(server);
+      }
       server.middlewares.use(async (req, res, next) => {
         const route = API_ROUTES[(req.url ?? '').split('?')[0]];
         if (!route) return next();
         try {
-          const mod = (await server.ssrLoadModule(route)) as { POST?: (r: Request) => Promise<Response> };
-          if (req.method !== 'POST' || !mod.POST) {
+          const mod = (await server.ssrLoadModule(route)) as Partial<Record<'GET' | 'POST', Handler>>;
+          const method = req.method === 'GET' ? 'GET' : req.method === 'POST' ? 'POST' : null;
+          const handler = method && mod[method];
+          if (!handler) {
             res.statusCode = 405;
             return res.end();
           }
+          const headers = new Headers();
+          for (const [key, value] of Object.entries(req.headers)) if (typeof value === 'string') headers.set(key, value);
           const request = new Request(`http://localhost${req.url}`, {
-            method: 'POST',
-            headers: { 'content-type': req.headers['content-type'] ?? 'application/json' },
-            body: await readBody(req),
+            method,
+            headers,
+            body: method === 'POST' ? await readBody(req) : undefined,
           });
-          const response = await mod.POST(request);
+          const response = await handler(request);
           res.statusCode = response.status;
           response.headers.forEach((value, key) => res.setHeader(key, value));
           res.end(await response.text());
@@ -52,9 +117,8 @@ function devApi(): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  // Server-only secrets (no VITE_ prefix, never bundled into the client).
   const env = loadEnv(mode, process.cwd(), '');
-  for (const key of ['GEMINI_API_KEY', 'GEMINI_MODEL']) {
+  for (const key of SERVER_ENV) {
     if (env[key] && !process.env[key]) process.env[key] = env[key];
   }
 

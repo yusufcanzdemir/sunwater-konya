@@ -1,11 +1,11 @@
 // Farm form: raw string values as typed, demo defaults, and validation into typed input.
 
-import { CROPS, type CropId } from '../engine/crops';
+import { CROP_IDS, CROPS, type CropId } from '../engine/crops';
 import { isIsoDate } from '../engine/dates';
 import type { EnergySource } from '../engine/impact';
 import type { FarmParams } from '../engine/plan';
-import type { SoilId } from '../engine/soil';
-import type { IrrigationMethod } from '../engine/waterBalance';
+import { SOIL_IDS, type SoilId } from '../engine/soil';
+import { IRRIGATION_METHODS, type IrrigationMethod } from '../engine/waterBalance';
 import type { Assumptions } from './assumptions';
 
 export type { EnergySource };
@@ -99,6 +99,39 @@ export function demoForm(year: number): FarmForm {
     habitHours: '20',
     electricityPriceTlKwh: '',
     dieselPriceTlL: '',
+  };
+}
+
+/** Re-validates a FarmInput that arrives as JSON (e.g. on the server). */
+export function sanitizeFarmInput(raw: unknown): FarmInput | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const pos = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null);
+  const opt = (v: unknown) => (v == null ? null : pos(v));
+  const crop = CROP_IDS.find((id) => id === r.crop);
+  const soil = SOIL_IDS.find((id) => id === r.soil);
+  const method = IRRIGATION_METHODS.find((m) => m === r.irrigationMethod);
+  const energy = (Object.keys(ENERGY_SOURCE_NAMES) as EnergySource[]).find((e) => e === r.energySource);
+  const date = typeof r.plantingDate === 'string' && isIsoDate(r.plantingDate) ? r.plantingDate : null;
+  const location = typeof r.locationText === 'string' ? r.locationText.trim().slice(0, 100) : '';
+  const [area, head, flow, eff] = [r.areaDecare, r.wellHeadM, r.pumpFlowM3h, r.pumpEfficiency].map(pos);
+  if (!crop || !soil || !method || !energy || !date || !location || !area || !head || !flow || !eff || eff > 1) return null;
+  return {
+    locationText: location,
+    crop,
+    plantingDate: date,
+    areaDecare: area,
+    irrigationMethod: method,
+    soil,
+    wellHeadM: head,
+    pumpFlowM3h: flow,
+    pumpEfficiency: eff,
+    energySource: energy,
+    pvKwp: pos(r.pvKwp) ?? 0,
+    habitIntervalDays: opt(r.habitIntervalDays),
+    habitHours: opt(r.habitHours),
+    electricityPriceTlKwh: opt(r.electricityPriceTlKwh),
+    dieselPriceTlL: opt(r.dieselPriceTlL),
   };
 }
 

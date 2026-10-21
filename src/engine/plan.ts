@@ -8,7 +8,13 @@ import { pumpPowerKw } from './pump';
 import { hourlyPvOutput, type HourlyIrradiance, type HourlyPv } from './pv';
 import { scheduleIrrigations, slotDate, type ScheduleResult } from './schedule';
 import type { SoilParams } from './soil';
-import { runWaterBalance, type DailyWeather, type EffectiveRainRule, type WaterBalanceResult } from './waterBalance';
+import {
+  runWaterBalance,
+  type DailyWeather,
+  type EffectiveRainRule,
+  type FieldRecord,
+  type WaterBalanceResult,
+} from './waterBalance';
 
 export interface FarmParams {
   crop: CropParams;
@@ -51,6 +57,8 @@ export function analyzeSeason(
   plantingDate: string,
   farm: FarmParams,
   settings: ModelSettings,
+  /** Farmer records ("Suladım" / "Yağmur yağdı") that override the model on their days. */
+  records: FieldRecord[] = [],
 ): SeasonAnalysis {
   const balance = runWaterBalance({
     weather: weather.daily,
@@ -62,6 +70,7 @@ export function analyzeSeason(
     rainRule: settings.rainRule,
     lookaheadDays: settings.lookaheadDays,
     initialDepletionMm: settings.initialDepletionMm,
+    records,
   });
 
   const pumpKw = pumpPowerKw(farm.pumpFlowM3h, farm.wellHeadM, farm.pumpEfficiency);

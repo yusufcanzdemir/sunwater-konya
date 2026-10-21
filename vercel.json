@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/send-alert.ts": { "maxDuration": 60 },
+    "api/telegram-webhook.ts": { "maxDuration": 60 },
+    "api/explain-plan.ts": { "maxDuration": 60 }
+  },
+  "crons": [{ "path": "/api/send-alert", "schedule": "0 4 * * *" }]
+}

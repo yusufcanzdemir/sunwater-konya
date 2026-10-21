@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CROPS, type CropParams } from './crops';
 import { addDays } from './dates';
 import { SOILS } from './soil';
+import { fieldStatus } from './status';
 import { effectiveRain, runWaterBalance, type DailyWeather } from './waterBalance';
 
 const PLANTING = '2025-04-20';
@@ -28,6 +29,22 @@ describe('effectiveRain', () => {
     expect(effectiveRain(4.9)).toBe(0);
     expect(effectiveRain(5)).toBeCloseTo(4);
     expect(effectiveRain(20)).toBeCloseTo(16);
+  });
+});
+
+describe('fieldStatus', () => {
+  it('counts the days of water left before Dr reaches RAW', () => {
+    const result = runWaterBalance({
+      plantingDate: PLANTING,
+      crop: flatCrop,
+      soil: SOILS.clay_loam,
+      efficiency: 0.55,
+      areaDecare: 100,
+      weather: weather(160, 6),
+    });
+    // day 3: Dr = 24 mm; RAW 82.5 reached on day 13 → 10 days
+    expect(fieldStatus(result, addDays(PLANTING, 3))).toEqual({ depletionMm: 24, daysOfWaterLeft: 10, horizonDays: 156 });
+    expect(fieldStatus(result, '2000-01-01')).toBeNull();
   });
 });
 
@@ -81,6 +98,32 @@ describe('runWaterBalance', () => {
 
     const noLookahead = runWaterBalance({ ...base, weather: weather(160, 6, { 14: 20 }), lookaheadDays: 0 });
     expect(noLookahead.days[13].irrigated).toBe(true);
+  });
+
+  it('applies a recorded irrigation instead of the model decision', () => {
+    // 30 mm applied on day 5: depletion drops by 30, the model's day-13 irrigation moves 5 days later
+    const result = runWaterBalance({ ...base, weather: weather(160, 6), records: [{ date: addDays(PLANTING, 5), kind: 'irrigation', netMm: 30 }] });
+    const d5 = result.days[5];
+    expect(d5.irrigationRecorded).toBe(true);
+    expect(d5.irrigated).toBe(true);
+    expect(d5.netMm).toBe(30);
+    expect(d5.depletionMm).toBeCloseTo(6 * 6 - 30);
+    expect(result.days[13].irrigated).toBe(false);
+    expect(result.days.find((d) => d.irrigated && !d.irrigationRecorded)!.dayOfSeason).toBe(18);
+  });
+
+  it('a recorded rain replaces the weather rain for that day', () => {
+    // forecast said 0 mm on day 3, the farmer saw 15 mm → Peff 12 mm
+    const result = runWaterBalance({ ...base, weather: weather(160, 6), records: [{ date: addDays(PLANTING, 3), kind: 'rain', mm: 15 }] });
+    expect(result.days[3].rainRecorded).toBe(true);
+    expect(result.days[3].precipitation).toBe(15);
+    expect(result.days[3].peff).toBeCloseTo(12);
+    expect(result.days[3].depletionMm).toBeCloseTo(4 * 6 - 12);
+  });
+
+  it('a recorded rain counts in the look-ahead deferral too', () => {
+    const result = runWaterBalance({ ...base, weather: weather(160, 6), records: [{ date: addDays(PLANTING, 14), kind: 'rain', mm: 20 }] });
+    expect(result.days[13].deferred).toBe(true);
   });
 
   it('keeps depletion within 0 … TAW', () => {

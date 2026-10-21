@@ -65,9 +65,12 @@ export function buildForecastUrl(
   longitude: number,
   variable: IrradianceVariable = 'global_tilted_irradiance',
   forecastDays = 16,
+  /** Recent observed-model days to include, so the balance can start before today. */
+  pastDays = 0,
 ): string {
   const params = weatherParams(latitude, longitude, variable);
   params.set('forecast_days', String(forecastDays));
+  if (pastDays > 0) params.set('past_days', String(pastDays));
   return `${FORECAST_URL}?${params}`;
 }
 
@@ -163,8 +166,13 @@ async function fetchWeather(
   return parseWeatherResponse(await getJson(buildUrl('shortwave_radiation'), fetchFn), 'shortwave_radiation');
 }
 
-export function fetchForecast(latitude: number, longitude: number, fetchFn: FetchFn = fetch): Promise<WeatherSeries> {
-  return fetchWeather((v) => buildForecastUrl(latitude, longitude, v), fetchFn);
+export function fetchForecast(
+  latitude: number,
+  longitude: number,
+  fetchFn: FetchFn = fetch,
+  pastDays = 0,
+): Promise<WeatherSeries> {
+  return fetchWeather((v) => buildForecastUrl(latitude, longitude, v, 16, pastDays), fetchFn);
 }
 
 export function fetchArchive(

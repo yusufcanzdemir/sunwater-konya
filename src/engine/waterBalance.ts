@@ -53,7 +53,14 @@ export interface WaterBalanceInput {
   lookaheadDays?: number;
   /** Root-zone depletion at the first simulated day (mm). 0 = field capacity. */
   initialDepletionMm?: number;
+  /** Farmer's own records ("Suladım" / "Yağmur yağdı"); they override the model for that day. */
+  records?: FieldRecord[];
 }
+
+/** Observed irrigation (net mm reaching the root zone) or observed rain (mm) on a day. */
+export type FieldRecord =
+  | { date: string; kind: 'irrigation'; netMm: number }
+  | { date: string; kind: 'rain'; mm: number };
 
 export interface DailyBalance {
   date: string;
@@ -71,6 +78,9 @@ export interface DailyBalance {
   irrigated: boolean;
   /** Dr reached RAW but irrigation was postponed because rain is coming. */
   deferred: boolean;
+  /** Irrigation / rain of this day come from the farmer's records, not the model. */
+  irrigationRecorded: boolean;
+  rainRecorded: boolean;
   netMm: number;
   grossMm: number;
   volumeM3: number;
@@ -103,6 +113,9 @@ const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x
  *   Dr_t = clamp(Dr_{t-1} − Peff − I_net + ETc, 0, TAW)
  *   irrigate when Dr_t ≥ RAW with I_net = Dr_t, unless the effective rain of the
  *   next `lookaheadDays` days would bring Dr below RAW.
+ *
+ * Records: a rain record replaces that day's weather rain; an irrigation record replaces the
+ * model's decision for that day with the recorded amount.
  */
 export function runWaterBalance(input: WaterBalanceInput): WaterBalanceResult {
   const {
@@ -114,7 +127,16 @@ export function runWaterBalance(input: WaterBalanceInput): WaterBalanceResult {
     rainRule = DEFAULT_RAIN_RULE,
     lookaheadDays = 2,
     initialDepletionMm = 0,
+    records = [],
   } = input;
+
+  const recordedRain = new Map<string, number>();
+  const recordedIrrigation = new Map<string, number>();
+  for (const r of records) {
+    if (r.kind === 'rain') recordedRain.set(r.date, r.mm);
+    else recordedIrrigation.set(r.date, (recordedIrrigation.get(r.date) ?? 0) + r.netMm);
+  }
+  const rainOn = (w: DailyWeather) => recordedRain.get(w.date) ?? w.precipitation;
 
   const tawMm = totalAvailableWater(soil, crop.rootDepthM);
   const rawMm = readilyAvailableWater(tawMm, crop.p);
@@ -131,17 +153,22 @@ export function runWaterBalance(input: WaterBalanceInput): WaterBalanceResult {
   season.forEach((w, i) => {
     const kc = kcOnDay(crop, w.dayOfSeason);
     const etc = kc * w.et0;
-    const peff = effectiveRain(w.precipitation, rainRule);
+    const precipitation = rainOn(w);
+    const peff = effectiveRain(precipitation, rainRule);
     const before = clamp(depletion - peff + etc, 0, tawMm);
 
     let irrigated = false;
     let deferred = false;
     let netMm = 0;
 
-    if (before >= rawMm) {
+    const recorded = recordedIrrigation.get(w.date);
+    if (recorded != null) {
+      irrigated = recorded > 0;
+      netMm = recorded;
+    } else if (before >= rawMm) {
       const upcomingPeff = season
         .slice(i + 1, i + 1 + lookaheadDays)
-        .reduce((sum, next) => sum + effectiveRain(next.precipitation, rainRule), 0);
+        .reduce((sum, next) => sum + effectiveRain(rainOn(next), rainRule), 0);
       if (lookaheadDays > 0 && before - upcomingPeff < rawMm) {
         deferred = true;
       } else {
@@ -159,12 +186,14 @@ export function runWaterBalance(input: WaterBalanceInput): WaterBalanceResult {
       kc,
       et0: w.et0,
       etc,
-      precipitation: w.precipitation,
+      precipitation,
       peff,
       depletionBeforeIrrigationMm: before,
       depletionMm: depletion,
       irrigated,
       deferred,
+      irrigationRecorded: recorded != null,
+      rainRecorded: recordedRain.has(w.date),
       netMm,
       grossMm,
       // 1 mm over 1 decare (1000 m²) = 1 m³
