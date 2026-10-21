@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<title>Güneşli Sulama Asistanı – Görev 2 PDR</title>
+<style>
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-Regular.ttf") format("truetype"); font-weight: 400; }
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-SemiBold.ttf") format("truetype"); font-weight: 600; }
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-Bold.ttf") format("truetype"); font-weight: 700; }
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Noto Sans Doc", sans-serif; font-size: 9.5pt; line-height: 1.27; color: #1f1a14; }
+  .page { width: 210mm; height: 297mm; padding: 12mm 14mm 11mm; display: flex; flex-direction: column; overflow: hidden; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1.5pt solid #865a11; padding-bottom: 2mm; margin-bottom: 1.5mm; }
+  header .project { font-size: 12.5pt; font-weight: 700; color: #5c3d15; line-height: 1.2; }
+  header .task { font-size: 10pt; font-weight: 700; }
+  header .student { font-size: 8.5pt; color: #5a432c; text-align: right; }
+  h2 { font-size: 10pt; font-weight: 700; margin: 1.7mm 0 0.5mm; color: #33241a; }
+  h2 .n { color: #865a11; margin-right: 1.2mm; }
+  p { margin: 0 0 0.8mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; line-height: 1.22; margin: 0.4mm 0 0.8mm; }
+  th, td { text-align: left; vertical-align: top; padding: 0.55mm 1.4mm; border-bottom: 0.5pt solid #d9cdb8; }
+  th { background: #f4ecdc; font-weight: 700; }
+  td.num { white-space: nowrap; font-weight: 600; }
+  .flow { background: #fbf6ea; border: 0.5pt solid #e5d8c5; border-radius: 1.2mm; padding: 0.8mm 2mm; margin: 0.4mm 0 0.8mm; }
+  .flow b { color: #865a11; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+  .note { font-size: 9.5pt; color: #46331f; background: #fbf6ea; border-left: 2pt solid #c9941c; padding: 0.8mm 2mm; margin: 0.6mm 0 0.8mm; }
+  .score { font-weight: 700; text-align: center; color: #5c3d15; }
+  .grow { flex: 1; }
+  footer.refs { border-top: 0.5pt solid #d9cdb8; padding-top: 1mm; font-size: 7pt; line-height: 1.25; color: #5a432c; }
+  footer.refs b { color: #33241a; }
+</style>
+</head>
+<body>
+<section class="page">
+  <header>
+    <div>
+      <div class="project">Güneşli Sulama Asistanı</div>
+      <div class="task">Görev 2 – Project Design Review (PDR)</div>
+    </div>
+    <div class="student">Öğrenci: Yusuf – Selçuk Üniversitesi</div>
+  </header>
+
+  <div class="grow">
+    <h2><span class="n">1.</span>Çözüm</h2>
+    <p>Çiftçiye tarlasının gerçek su ihtiyacını FAO-56 yöntemi ve gerçek hava verisiyle hesaplayan, pompayı güneş üretiminin en yüksek olduğu saatlere planlayan ve uyarıları telefonuna gönderen bir karar destek sistemi. Aşırı sulamadan vazgeçilerek artan güneş elektriği, mevzuatın elverdiği koşullarda şebekeye verilebilecek bir değer olarak gösterilir.</p>
+
+    <h2><span class="n">2.</span>Nasıl çalışıyor ve teknolojinin rolü</h2>
+    <div class="flow">Çiftçinin anlatımı / haritada çizim <b>→</b> Gemini: yapılandırılmış tarla verisi <b>→</b> FAO-56 su dengesi (ET₀ × Kc, etkili yağış, toprak su dengesi, sulama verimi) <b>→</b> GES saatlik üretim tahmini ve pompa planı <b>→</b> sade Türkçe açıklama <b>→</b> Telegram / WhatsApp uyarısı ve "Suladım / Yağmur yağdı" geri bildirimi</div>
+    <p>Hesapları LLM değil, test edilmiş fizik/agronomi motoru yapar; LLM yalnızca dili çevirir ve yazdığı her sayı motor çıktısıyla karşılaştırılır. ET₀ (Open-Meteo, FAO-56 Penman–Monteith temelli) tek başına sulama ihtiyacı değildir; ürün katsayısı, etkili yağış, toprak su dengesi ve sulama verimiyle birlikte kullanılır.</p>
+
+    <div class="grid">
+      <div>
+        <h2><span class="n">3.</span>Alternatifler ve fark</h2>
+        <table>
+          <tr><td><b>Ticari akıllı sulama platformları</b></td><td>donanım ve abonelik gerektirir</td></tr>
+          <tr><td><b>FAO CROPWAT</b></td><td>uzman aracı</td></tr>
+          <tr><td><b>Güneş pompası kontrolcüleri</b></td><td>suyun gerekip gerekmediğine bakmaz</td></tr>
+          <tr><td><b>Göz kararı sulama</b></td><td>ihtiyaç bilinmeden yapılır</td></tr>
+        </table>
+        <p><b>Fark:</b> su ihtiyacı ve güneş üretimi birlikte planlanır; tasarruf, koşullu olarak şebekeye verilebilecek enerjiye bağlanır (2026 tarihli bir Hindistan çalışması bu tür teşviklerin bazı akifer koşullarında su kullanımını azaltabildiğini gösteriyor; sonuç koşullara bağlı). Donanımsız başlar, Türkçedir, mesajlaşma kanalından çalışır.</p>
+      </div>
+      <div>
+        <h2><span class="n">4.</span>Program süresince prototiplenecek kısım</h2>
+        <p>FAO-56 su dengesi motoru, güneşe göre saatlik pompa planı, gerçek hava verisiyle geriye dönük test, Gemini ile doğal dil girişi ve sade Türkçe açıklama, Telegram uyarısı ve geri bildirim.</p>
+        <p><b>Kapsam dışı:</b> pompa kontrol donanımı, uydu NDVI kalibrasyonu, ölçülmüş saha tasarrufu.</p>
+      </div>
+    </div>
+
+    <h2><span class="n">5.</span>Baseline'a göre etki hedefi <span style="font-weight:400">(örnek tarla senaryosu; varsayımlar gerçek tarlada ölçülmedi)</span></h2>
+    <div class="grid">
+      <table>
+        <tr><td>100 dekar şeker pancarı; net ihtiyaç 600 mm</td><td class="num">60.000 m³</td><td>varsayım</td></tr>
+        <tr><td>Salma verimi %55 → brüt çekim</td><td class="num">109.091 m³</td><td>varsayım</td></tr>
+        <tr><td>120 m, pompa-motor verimi %50</td><td class="num">0,654 kWh/m³</td><td>varsayım</td></tr>
+        <tr><td><b>Su çekiminde azalma %20</b></td><td class="num">21.818 m³</td><td><b>hedef</b></td></tr>
+        <tr><td><b>Enerji karşılığı</b></td><td class="num">14.273 kWh</td><td>hesap</td></tr>
+        <tr><td>CO₂, güneş şebekeye verilirse (× 0,6242 kg/kWh)</td><td class="num">≈ 8,9 ton</td><td>koşullu</td></tr>
+        <tr><td>CO₂, pompa dizelse (× 0,30 L/kWh × 2,68 kg/L)</td><td class="num">≈ 11,5 ton</td><td>varsayım</td></tr>
+      </table>
+      <div>
+        <p><b>Ölçek</b> (aynı varsayımlar, şebekeye verilen güneş): 100 tarla ~2,18 milyon m³ su, ~1,43 GWh, ~891 ton CO₂; 1.000 tarla ~21,8 milyon m³ su, ~14,3 GWh, ~8.909 ton CO₂.</p>
+        <div class="note">%20, doğrulanmış bir sonuç değil; pilotta kuyu sayacı ölçümüyle sınanacak hedeftir. Şebekeye verilen enerjinin CO₂'si, şebekeye gerçekten verilen net enerji ve geçerli mevzuata bağlı bir senaryo hesabıdır; 0,6242 tCO₂/MWh, ETKB'nin güneş ve rüzgâr projeleri için birleşik marj emisyon faktörüdür (şebekeye verilen güneş elektriğinin yerini aldığı üretim).</div>
+      </div>
+    </div>
+    <p>Etkinin birincil ölçütleri su (m³) ve enerji (kWh); CO₂ ikincil ve senaryoya bağlıdır. Obruk üzerindeki etki doğrudan ölçülmez; problem bağlamı olarak sunulur. <b>Ölçülebilir pilot hedefleri:</b> kuyu sayacıyla, verim kaybı olmadan ≥%20 su azalması; pompa saatlerinin ≥%80'i güneş saatlerinde.</p>
+
+    <h2><span class="n">6.</span>Dört kriter (1–5)</h2>
+    <table>
+      <tr><td style="width:17%"><b>Greener</b></td><td class="score" style="width:5%">4</td><td>Pompalama enerjisini ve dizel kullanımını azaltır, yeraltı suyunu korur; tarla başına etki orta ölçekte.</td></tr>
+      <tr><td><b>Circular</b></td><td class="score">3</td><td>Atık döngüsü yok; ancak sınırlı bir doğal kaynak olan yeraltı suyunu kullanımda tutar.</td></tr>
+      <tr><td><b>Financeable</b></td><td class="score">3</td><td>Çiftçiye enerji tasarrufu ve koşullu satış geliri; kooperatif ve GES kurulum firmalarıyla gelir yolları; ödeme isteği henüz doğrulanmadı.</td></tr>
+      <tr><td><b>Socially Impactful</b></td><td class="score">4</td><td>Çiftçi geçimi, kırsal güvenlik ve gıda güvenliği; teknik bilgisi olmayan çiftçiye Türkçe araç.</td></tr>
+    </table>
+  </div>
+
+  <footer class="refs">
+    <b>Kaynaklar:</b> Open-Meteo, ET₀ verisi · Allen, R. G. vd. (1998), FAO Irrigation and Drainage Paper 56 · EPDK, lisanssız üretim ve mahsuplaşma düzenlemeleri · ScienceDirect'te yayımlanmış 2026 tarihli Hindistan çalışması (güneş pompaları ve şebekeye satış teşvikleri) · T.C. Enerji ve Tabii Kaynaklar Bakanlığı, güneş ve rüzgâr projeleri için birleşik marj emisyon faktörü · IPCC (2006), Guidelines for National Greenhouse Gas Inventories.
+  </footer>
+</section>
+</body>
+</html>

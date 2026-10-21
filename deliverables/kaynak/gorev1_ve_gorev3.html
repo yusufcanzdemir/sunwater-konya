@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<title>Güneşli Sulama Asistanı – Görev 1 ve Görev 3</title>
+<style>
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-Regular.ttf") format("truetype"); font-weight: 400; }
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-SemiBold.ttf") format("truetype"); font-weight: 600; }
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-Bold.ttf") format("truetype"); font-weight: 700; }
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Noto Sans Doc", sans-serif; font-size: 10pt; line-height: 1.3; color: #1f1a14; }
+  .page {
+    width: 210mm; height: 297mm; padding: 15mm 15mm 13mm; position: relative;
+    display: flex; flex-direction: column; page-break-after: always; overflow: hidden;
+  }
+  .page:last-child { page-break-after: auto; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1.5pt solid #865a11; padding-bottom: 2.5mm; margin-bottom: 4mm; }
+  header .project { font-size: 13pt; font-weight: 700; color: #5c3d15; }
+  header .task { font-size: 10.5pt; font-weight: 700; }
+  header .student { font-size: 8.5pt; color: #5a432c; text-align: right; }
+  h2 { font-size: 10.5pt; font-weight: 700; margin: 2.4mm 0 0.7mm; color: #33241a; }
+  h2 .n { color: #865a11; margin-right: 1.5mm; }
+  p { margin: 0 0 1.5mm; }
+  ul { margin: 0 0 1.5mm; padding-left: 4.5mm; }
+  li { margin-bottom: 0.8mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; line-height: 1.24; margin: 0.6mm 0 1mm; }
+  .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8mm 4mm; font-size: 9.5pt; line-height: 1.26; margin-bottom: 1mm; }
+  th, td { text-align: left; vertical-align: top; padding: 0.7mm 1.6mm; border-bottom: 0.5pt solid #d9cdb8; }
+  th { background: #f4ecdc; font-weight: 700; }
+  .muted { color: #5a432c; }
+  .tag { display: inline-block; font-size: 7.5pt; font-weight: 700; padding: 0.2mm 1.4mm; border-radius: 1mm; background: #f9eccb; color: #6e4914; }
+  .ok { color: #1d6b2e; font-weight: 700; }
+  .part { color: #8a5a00; font-weight: 700; }
+  .no { color: #9b1c1c; font-weight: 700; }
+  .grow { flex: 1; }
+  footer.refs { border-top: 0.5pt solid #d9cdb8; padding-top: 1.5mm; font-size: 7.3pt; line-height: 1.3; color: #5a432c; }
+  footer.refs b { color: #33241a; }
+  .result { background: #f3f7fc; border-left: 2.5pt solid #1d77f2; padding: 2mm 3mm; margin: 1mm 0 1.5mm; }
+  .twocol { display: grid; grid-template-columns: 1fr 70mm; gap: 4mm; align-items: start; }
+  figure { margin: 0; }
+  figure img { width: 100%; border: 0.5pt solid #d9cdb8; border-radius: 1.5mm; }
+  figcaption { font-size: 7.5pt; color: #5a432c; margin-top: 0.8mm; line-height: 1.25; }
+  a { color: #155fd1; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- ============ SAYFA 1 – GÖREV 1 ============ -->
+<section class="page">
+  <header>
+    <div>
+      <div class="project">Güneşli Sulama Asistanı</div>
+      <div class="task">Görev 1 – Problem Definition</div>
+    </div>
+    <div class="student">Öğrenci: Yusuf – Selçuk Üniversitesi</div>
+  </header>
+
+  <div class="grow">
+    <h2><span class="n">1.</span>Problem ve kök neden</h2>
+    <p>Konya Kapalı Havzası'nda tarımsal sulama, bitkinin gerçek ihtiyacı bilinmeden ve giderek güneş enerjisiyle "bedava" hâle gelen pompalarla yapılıyor; bu da yeraltı suyunun aşırı çekilmesine yol açıyor. Kök neden, çiftçinin tarlasının günlük su ihtiyacını bilmemesi ve pompalama maliyeti düştükçe tasarruf motivasyonunun kaybolmasıdır.</p>
+
+    <h2><span class="n">2.</span>Etkilenenler ve en çok etkilenen grup</h2>
+    <p>Havzadaki çiftçiler, kırsal yerleşimler, bölgedeki altyapı ve enerji yatırımları ile gıda güvenliği etkileniyor. Bölge önemli bir enerji yatırım alanıdır: Karapınar GES, 2022 sonu itibarıyla 1.350 MWp / 1.000 MWe kapasiteyle işletmeye alındı. Konya, Türkiye'nin önemli buğday ve şeker pancarı üretim alanlarından biridir; bu yüzden sorun yalnızca yerel değil, ulusal gıda arzını da ilgilendirir.</p>
+    <p><b>En çok etkilenen grup:</b> kuyusu derinleştikçe pompalama maliyeti artan orta ölçekli çiftçiler. Artan pompalama maliyeti ile verim ve suya erişim kaybı riski en çok onlarda birleşiyor.</p>
+
+    <h2><span class="n">3.</span>Kanıt</h2>
+    <ul>
+      <li><b>Tarımın payı:</b> Türkiye'de kullanılan yıllık yaklaşık 57 milyar m³ suyun %77'si tarımda harcanıyor (DSİ, 2024).</li>
+      <li><b>Yeraltı suyu ve obruklar:</b> DSİ izleme kuyularında uzun süreli yeraltı suyu düşüşü raporlanmaktadır. Havzada obruk oluşumunun son yıllarda arttığı DSİ, AFAD, MTA ve Konya Teknik Üniversitesi Obruk Araştırma Merkezi çalışmalarında ele alınmaktadır. Bölgede çok sayıda ruhsatsız kuyu bulunduğu da belirtilmektedir.</li>
+      <li><b>Güneş pompası riski:</b> Güneş enerjili pompaların yeraltı suyu çekimini artırabileceği literatürde tartışılan bir risktir ve sonuç koşullara bağlıdır; Konya için kesin bir sonuç değil, araştırılması gereken bir risktir. 2026 tarihli bir Hindistan çalışması, şebekeye enerji satışı teşviklerinin bazı akifer koşullarında su kullanımını azaltabildiğini gösteriyor.</li>
+    </ul>
+
+    <h2><span class="n">4.</span>Neden şimdi ve teknolojinin rolü</h2>
+    <p>Havzada güneş enerjili sulamaya geçiş hızlanıyor. Pompalama ucuzlarken suyu korumaya yönelik bir mekanizma kurulmazsa aşırı çekim riski büyüyebilir; bu yüzden müdahale, geçiş sürerken yapılmalı. 9–20 Kasım 2026'da Antalya'da düzenlenecek COP31, enerji dönüşümü ile su güvenliğini aynı masaya getiriyor.</p>
+    <p>Teknoloji bu çözümü artık ekonomik kılıyor: Open-Meteo, FAO-56 Penman–Monteith temelli referans evapotranspirasyon (ET₀) verisini ücretsiz sağlıyor. ET₀ tek başına sulama ihtiyacı değildir; ürün katsayısı, etkili yağış, toprak su dengesi ve sulama verimiyle birlikte kullanılınca tarla bazında ihtiyaç hesaplanabilir. Büyük dil modelleri ise bu sonucu çiftçinin anlayacağı dilde anlatmayı ve çiftçinin kendi cümlelerinden tarla bilgisini almayı mümkün kılıyor.</p>
+
+    <h2><span class="n">5.</span>Kişisel önem</h2>
+    <p>Konya'da, Selçuk Üniversitesi'nde okuyorum. Bu sorunu ilk olarak obruklar ve yeraltı suyu üzerine çıkan haberlerde fark ettim; yaşadığım şehrin çevresinde böyle bir riskin büyüdüğünü görmek konuyu benim için somutlaştırdı. Çözümün, sahadaki çiftçinin gerçekten kullanabileceği kadar basit olmasını bu yüzden önemsiyorum.</p>
+
+    <h2><span class="n">6.</span>COP31 / Siemens / SDG eşleşmesi</h2>
+    <table>
+      <tr><th style="width:27%">Çerçeve</th><th>Eşleşme</th></tr>
+      <tr><td><b>COP31</b></td><td>2035'e kadar elektrifikasyonu %35'e çıkarma: dizel pompaların güneş destekli elektrikli sulamaya dönüşümünü su kaynağına zarar vermeden sürdürülebilir kılmak.</td></tr>
+      <tr><td><b>Siemens Impact Area</b></td><td>Karbonsuzlaştırma ve Enerji (ana); Kaynak Verimliliği ve Döngüsellik – su (destekleyici).</td></tr>
+      <tr><td><b>SDG</b></td><td>SDG 6, özellikle 6.4 su kullanım verimliliği (ana); SDG 7 ve SDG 13 (destekleyici).</td></tr>
+    </table>
+  </div>
+
+  <footer class="refs">
+    <b>Kaynaklar:</b> DSİ açıklaması, 24 Haziran 2024 (tarımın su kullanımındaki payı) · UNFCCC, COP31 (Antalya, 9–20 Kasım 2026) · T.C. Enerji ve Tabii Kaynaklar Bakanlığı, Faaliyet Raporu (Karapınar GES) · Open-Meteo, ET₀ verisi · Allen, R. G. vd. (1998), FAO Irrigation and Drainage Paper 56 · ScienceDirect'te yayımlanmış 2026 tarihli Hindistan çalışması (güneş enerjili pompalar ve şebekeye satış teşvikleri).
+  </footer>
+</section>
+
+<!-- ============ SAYFA 2 – GÖREV 3 ============ -->
+<section class="page">
+  <header>
+    <div>
+      <div class="project">Güneşli Sulama Asistanı</div>
+      <div class="task">Görev 3 – Build &amp; Show</div>
+    </div>
+    <div class="student">Öğrenci: Yusuf – Selçuk Üniversitesi</div>
+  </header>
+
+  <div class="grow">
+    <h2><span class="n">1.</span>Prototip bağlantısı</h2>
+    <p><a href="https://sunwater-konya.vercel.app/"><b>https://sunwater-konya.vercel.app/</b></a> – kurulum gerektirmez; "Demo tarla yükle" → "Planı hesapla" ile açılır.</p>
+
+    <div class="twocol">
+      <div>
+        <h2><span class="n">2.</span>Şu anda gerçekten çalışan temel fonksiyon</h2>
+        <p>Geçen sezonun gerçek hava verisiyle, haritada çizilen veya yazıyla anlatılan tarla için günlük su ihtiyacını FAO-56 yöntemiyle hesaplayan, pompayı güneş üretiminin en yüksek olduğu saatlere planlayan ve mevcut alışkanlığa göre su ve enerji farkını gösteren motor.</p>
+        <div class="result">
+          Karapınar'da 100 dekar şeker pancarı, salma sulama, 20 Nisan – 16 Ekim 2026: plan <b>155.122 m³</b>, mevcut alışkanlık (her gün 20 saat) <b>216.000 m³</b> → yaklaşık <b>60.878 m³ (%28) daha az su</b> ve <b>39.814 kWh daha az pompa enerjisi</b>.<br />
+          <span class="muted" style="font-size:8.5pt">Prototip geriye dönük simülasyonu – geçen sezonun gerçek hava verisi (Open-Meteo), varsayımlı tarla ve alışkanlık parametreleri. Ölçülmüş bir tasarruf değildir; oran, varsayılan alışkanlığa bağlıdır.</span>
+        </div>
+      </div>
+      <figure>
+        <img src="../assets/sezon-oynatici.png" alt="Sezon oynatıcı ekran görüntüsü" />
+        <figcaption>Sezon oynatıcı, 29 Temmuz: toprak su deposu, "alışkanlıkla" ve "asistanla" kuyudan çekilen su, kümülatif grafik.</figcaption>
+      </figure>
+    </div>
+
+    <h2><span class="n">3.</span>Araçlar ve seçme nedenleri</h2>
+    <div class="tools">
+      <div><b>Claude Code</b> – özel fizik/agronomi mantığı ve test edilebilir motor gerektiği için; 101 otomatik test (Vitest).</div>
+      <div><b>React + TypeScript</b> (Vite, Tailwind, Recharts, Framer Motion) – motor tarayıcıda çalışan saf fonksiyonlar; grafikler ve sezon oynatıcı.</div>
+      <div><b>Open-Meteo</b> – ücretsiz, anahtarsız; FAO-56 ET₀, yağış, eğik yüzey güneş ışınımı, 16 günlük tahmin ve geçmiş veri.</div>
+      <div><b>Gemini API</b> – yapılandırılmış çıktı (responseSchema) ile doğal dil anlama ve Türkçe açıklama; yoğunlukta yedek model.</div>
+      <div><b>Leaflet + Geoman, Esri uydu, Turf</b> – uydu görüntüsünde tarla çizme, alan (dekar) ve konum.</div>
+      <div><b>Telegram Bot API</b> – onay gerektirmeden hızlı kurulum; üründe WhatsApp.</div>
+      <div><b>Vercel</b> – paylaşılabilir link; anahtarlar yalnızca sunucu fonksiyonlarında; günlük zamanlanmış bildirim.</div>
+    </div>
+
+    <h2><span class="n">4.</span>Çalışan ve mock / placeholder bölümler</h2>
+    <table>
+      <tr><th style="width:44%">Bölüm</th><th style="width:13%">Durum</th><th>Not</th></tr>
+      <tr><td>Harita, FAO-56 su dengesi, güneşe göre plan, geriye dönük test ve sezon oynatıcı, etki kartları</td><td class="ok">Çalışıyor</td><td>Yayındaki linkte, gerçek Open-Meteo verisiyle.</td></tr>
+      <tr><td>Gemini ile metinden tarla bilgisi ve sade Türkçe açıklama</td><td class="part">Kısmen</td><td>Yerelde gerçek API ile çalışıyor; yayındaki sunucu fonksiyonu düzeltiliyor (o sırada açıklama hazır şablona döner).</td></tr>
+      <tr><td>Telegram uyarısı ve "Suladım / Yağmur yağdı" geri bildirimi</td><td class="part">Kısmen</td><td>Yerelde çalıştı; kalıcı depolama ve sabah bildirimi yayında henüz çalışmadı; sesli mesaj yok.</td></tr>
+      <tr><td>Tarla ve alışkanlık değerleri, ürün/toprak katsayıları, yağmur düğmesi (5/15/30 mm), hane karşılığı, CO₂ kartı</td><td class="part">Varsayım</td><td>Arayüzde "varsayım" etiketli ve düzenlenebilir; gerçek tarlada ölçülmedi.</td></tr>
+      <tr><td>NDVI kalibrasyonu, pompa kontrolü, kuyu sayacı, WhatsApp, kooperatif paneli</td><td class="no">Yok</td><td>Vizyon; prototipte yer almaz.</td></tr>
+    </table>
+
+    <h2><span class="n">5.</span>Yapay zekânın kullanıcı için işlevi</h2>
+    <p>(a) Çiftçinin serbest metnini ("100 dönüm pancarım var, nisan sonu ektim…") yapılandırılmış tarla verisine çevirir; söylenmeyeni uydurmaz, eksik bilgiyi sorar ve kullanıcı onaylamadan hesap yapılmaz. (b) Motorun sonucunu teknik terim olmadan, yalnızca hesaplanmış sayılarla sade Türkçeye çevirir; yanıttaki her sayı motor çıktısıyla karşılaştırılır, tutmazsa hazır şablon kullanılır. Hesaplamaları yapay zekâ yapmaz; bu, etki iddiasını savunulabilir kılar.</p>
+  </div>
+
+  <footer class="refs">
+    <b>Kaynaklar:</b> Open-Meteo, ET₀ ve geçmiş hava verisi · Allen, R. G. vd. (1998), FAO Irrigation and Drainage Paper 56.
+  </footer>
+</section>
+
+</body>
+</html>
