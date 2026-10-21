@@ -2,10 +2,13 @@
 
 import { CROPS, type CropId } from '../engine/crops';
 import { isIsoDate } from '../engine/dates';
+import type { EnergySource } from '../engine/impact';
+import type { FarmParams } from '../engine/plan';
 import type { SoilId } from '../engine/soil';
 import type { IrrigationMethod } from '../engine/waterBalance';
+import type { Assumptions } from './assumptions';
 
-export type EnergySource = 'solar_grid' | 'grid' | 'diesel';
+export type { EnergySource };
 
 export const ENERGY_SOURCE_NAMES: Record<EnergySource, string> = {
   solar_grid: 'Güneş + şebeke',
@@ -92,10 +95,31 @@ export function demoForm(year: number): FarmForm {
     pumpEfficiency: '0,50',
     energySource: 'solar_grid',
     pvKwp: '50',
-    habitIntervalDays: '7',
-    habitHours: '24',
+    habitIntervalDays: '1',
+    habitHours: '20',
     electricityPriceTlKwh: '',
     dieselPriceTlL: '',
+  };
+}
+
+/** Engine parameters for a validated field under the current assumptions. */
+export function toFarmParams(input: FarmInput, a: Assumptions): FarmParams {
+  return {
+    crop: a.crops[input.crop],
+    soil: a.soils[input.soil],
+    irrigationEfficiency: a.efficiency[input.irrigationMethod],
+    areaDecare: input.areaDecare,
+    wellHeadM: input.wellHeadM,
+    pumpFlowM3h: input.pumpFlowM3h,
+    pumpEfficiency: input.pumpEfficiency,
+    energySource: input.energySource,
+    pvKwp: input.pvKwp,
+    habit:
+      input.habitIntervalDays != null && input.habitHours != null
+        ? { intervalDays: input.habitIntervalDays, hours: input.habitHours }
+        : null,
+    electricityPriceTlKwh: input.electricityPriceTlKwh,
+    dieselPriceTlL: input.dieselPriceTlL,
   };
 }
 

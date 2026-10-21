@@ -1,7 +1,10 @@
 // Open-Meteo clients (no API key). URL building and response parsing are pure so they
 // can be tested without the network; the fetch wrappers only do I/O.
 
+import type { HourlyIrradiance } from '../engine/pv';
 import type { DailyWeather } from '../engine/waterBalance';
+
+export type { HourlyIrradiance };
 
 const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
@@ -13,13 +16,6 @@ export const PANEL_TILT_DEG = 30;
 export const PANEL_AZIMUTH_DEG = 0;
 
 export type IrradianceVariable = 'global_tilted_irradiance' | 'shortwave_radiation';
-
-export interface HourlyIrradiance {
-  /** Local time, e.g. 2025-05-01T13:00 */
-  time: string;
-  /** W/m² */
-  irradiance: number;
-}
 
 export interface WeatherSeries {
   latitude: number;

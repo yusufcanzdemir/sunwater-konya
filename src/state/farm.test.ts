@@ -17,8 +17,8 @@ describe('farm form', () => {
       plantingDate: '2026-04-20',
       areaDecare: 100,
       pumpEfficiency: 0.5,
-      habitIntervalDays: 7,
-      habitHours: 24,
+      habitIntervalDays: 1,
+      habitHours: 20,
       electricityPriceTlKwh: null,
     });
   });

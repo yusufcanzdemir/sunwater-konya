@@ -50,7 +50,7 @@ En güçlü kanıt: **geçen sezonun gerçek hava verisiyle geriye dönük simü
 | Pompa-motor verimi                           | 0,50                                      |
 | Enerji kaynağı                               | güneş+şebeke / şebeke / dizel             |
 | GES gücü (kWp)                               | 50                                        |
-| Mevcut alışkanlık: kaç günde bir, kaç saat   | 7 günde bir, 24 saat                      |
+| Mevcut alışkanlık: kaç günde bir, kaç saat   | her gün, 20 saat                          |
 | Elektrik birim fiyatı (TL/kWh), dizel (TL/L) | kullanıcı girer                           |
 
 "Demo tarla yükle" butonu formu bu varsayılanlarla doldurur.
@@ -107,7 +107,7 @@ Kc eğrisi: ini döneminde sabit Kc_ini → dev döneminde doğrusal artış →
 
 - Sulama günü için gereken pompa saatlerini, `P_pv(t)` en yüksek saatlerden başlayarak açgözlü yerleştir.
 - Her saat için: güneşten karşılanan kWh = `min(P_pump, P_pv)`, kalan = şebeke/dizel.
-- Bir gün yetmezse ertesi güne taşı (en fazla 2 gün), arayüzde uyar.
+- Dönüşümlü sulama: tarla parsel parsel sulanır. Bir sulama turu, sulama gününden bir sonraki sulama gününün öncesine kadar (en fazla 14 gün, varsayım) yayılır; bu penceredeki tüm günlerin en yüksek `P_pv` saatleri önce doldurulur. Tur pencereye sığmazsa (pompa kapasitesi sınırda) arayüzde uyar.
 - Sulama olmayan saatlerdeki ve pompa sonrası artan `P_pv` = "şebekeye verilebilir fazla enerji".
 
 ### Baseline (mevcut alışkanlık)

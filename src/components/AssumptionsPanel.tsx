@@ -1,4 +1,5 @@
 import type { CropId, CropParams, CropStages } from '../engine/crops';
+import type { ImpactFactors } from '../engine/impact';
 import type { SoilId, SoilParams } from '../engine/soil';
 import { IRRIGATION_METHOD_NAMES, type IrrigationMethod } from '../engine/waterBalance';
 import type { Assumptions } from '../state/assumptions';
@@ -29,6 +30,8 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
   const setStage = (key: keyof CropStages, days: number) => setCrop({ stages: { ...crop.stages, [key]: days } });
   const setSoil = (patch: Partial<SoilParams>) =>
     onChange({ ...assumptions, soils: { ...assumptions.soils, [soilId]: { ...soil, ...patch } } });
+  const setFactors = (patch: Partial<ImpactFactors>) =>
+    onChange({ ...assumptions, impactFactors: { ...assumptions.impactFactors, ...patch } });
 
   return (
     <details className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
@@ -121,6 +124,68 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
           <p className="mt-2 text-xs text-slate-500">
             Geçmiş sezon hesabında "yağış bekleme", o günlerde gerçekten yağan yağışa bakar (yağışın önceden
             bilindiği varsayılır). Sezon başında toprağın tarla kapasitesinde olduğu varsayılır.
+          </p>
+        </section>
+
+        <section>
+          <h4 className="mb-2 text-sm font-semibold text-slate-700">
+            Enerji ve etki <AssumptionBadge />
+          </h4>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <NumberField
+              label="GES performans oranı (PR)"
+              value={assumptions.performanceRatio}
+              min={0.1}
+              max={1}
+              onChange={(performanceRatio) => onChange({ ...assumptions, performanceRatio })}
+            />
+            <NumberField
+              label="Dönüşümlü sulamada bir tur (en fazla gün)"
+              value={assumptions.maxRotationDays}
+              min={1}
+              max={30}
+              integer
+              onChange={(maxRotationDays) => onChange({ ...assumptions, maxRotationDays })}
+            />
+            <NumberField
+              label="Alışkanlık yoksa fazla sulama katsayısı"
+              value={assumptions.overIrrigationFactor}
+              min={1}
+              max={3}
+              onChange={(overIrrigationFactor) => onChange({ ...assumptions, overIrrigationFactor })}
+            />
+            <NumberField
+              label="Belirsizlik aralığı (±, oran)"
+              value={assumptions.impactFactors.uncertainty}
+              min={0}
+              max={0.9}
+              onChange={(uncertainty) => setFactors({ uncertainty })}
+            />
+            <NumberField
+              label="Şebeke CO₂ (kg/kWh)"
+              value={assumptions.impactFactors.gridKgCo2PerKwh}
+              min={0}
+              max={2}
+              onChange={(gridKgCo2PerKwh) => setFactors({ gridKgCo2PerKwh })}
+            />
+            <NumberField
+              label="Dizel tüketimi (L/kWh)"
+              value={assumptions.impactFactors.dieselLPerKwh}
+              min={0}
+              max={2}
+              onChange={(dieselLPerKwh) => setFactors({ dieselLPerKwh })}
+            />
+            <NumberField
+              label="Dizel CO₂ (kg/L)"
+              value={assumptions.impactFactors.dieselKgCo2PerL}
+              min={0}
+              max={5}
+              onChange={(dieselKgCo2PerL) => setFactors({ dieselKgCo2PerL })}
+            />
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            Panellerin 30° eğimle güneye baktığı varsayılır (hava verisi bu açıyla alınır). Güneş + şebeke
+            sisteminde tasarruf edilen elektrik şebekeye verilebileceği için şebeke elektriği gibi değerlendirilir.
           </p>
         </section>
 
