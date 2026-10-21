@@ -14,17 +14,23 @@ interface Props {
   energySource: EnergySource;
   initialDepletionMm: number;
   forecastDays: number;
+  onShowRetrospective: () => void;
 }
 
-export function WeeklyPlan({ analysis, energySource, initialDepletionMm, forecastDays }: Props) {
+export function WeeklyPlan({ analysis, energySource, initialDepletionMm, forecastDays, onShowRetrospective }: Props) {
   const { balance, schedule } = analysis;
 
   if (balance.days.length === 0) {
     return (
-      <p className="rounded-md bg-sky-50 p-4 text-sky-900">
-        Sulama sezonu dışındasınız: önümüzdeki {forecastDays} gün bu ürünün sulama dönemine denk gelmiyor. Planın neler
-        kazandıracağını görmek için yukarıdaki geriye dönük teste bakın.
-      </p>
+      <div className="rounded-md bg-sky-50 p-4 text-sky-900">
+        <p>
+          Sulama sezonu dışındasınız: önümüzdeki {forecastDays} gün bu ürünün sulama dönemine denk gelmiyor. Planın
+          neler kazandıracağını geçen sezonun gerçek verisiyle görebilirsiniz.
+        </p>
+        <button type="button" onClick={onShowRetrospective} className="mt-2 font-medium underline">
+          Geriye dönük teste git →
+        </button>
+      </div>
     );
   }
 

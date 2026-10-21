@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildArchiveUrl, buildForecastUrl, fetchArchive, parseWeatherResponse, pickBestGeoResult } from './openMeteo';
+import { buildArchiveUrl, buildForecastUrl, fetchArchive, geocode, parseWeatherResponse, pickBestGeoResult } from './openMeteo';
 
 const sample = {
   latitude: 37.7,
@@ -68,6 +68,16 @@ describe('fetchArchive', () => {
     expect(fetchFn).toHaveBeenCalledTimes(2);
     expect(s.irradianceVariable).toBe('shortwave_radiation');
     expect(s.hourly[0].irradiance).toBe(800);
+  });
+});
+
+describe('error messages', () => {
+  it('turns network failures into Turkish messages per service', async () => {
+    const offline = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    await expect(geocode('Karapınar', offline)).rejects.toThrow('Konum servisine ulaşılamadı');
+    await expect(fetchArchive(37.7, 33.55, '2025-05-01', '2025-05-03', offline)).rejects.toThrow(
+      'Hava verisi servisine ulaşılamadı',
+    );
   });
 });
 

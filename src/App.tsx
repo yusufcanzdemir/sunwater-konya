@@ -5,14 +5,17 @@ import { AssumptionsPanel } from './components/AssumptionsPanel';
 import { ExplanationPanel } from './components/ExplanationPanel';
 import { FarmFormView } from './components/FarmFormView';
 import { FarmTextInput } from './components/FarmTextInput';
-import { Retrospective } from './components/Retrospective';
+import { ContextBand, StepNav, TodayAndVision, type Step } from './components/Presentation';
+import { DISCLAIMER, Retrospective } from './components/Retrospective';
 import { SummaryCards } from './components/SummaryCards';
+import { fmt } from './components/ui';
 import { WaterBalanceChart } from './components/WaterBalanceChart';
 import { WeeklyPlan } from './components/WeeklyPlan';
 import { fetchArchive, fetchForecast, geocode, pickBestGeoResult, type GeoResult, type WeatherSeries } from './data/openMeteo';
 import { seasonLength } from './engine/crops';
 import { analyzeSeason } from './engine/plan';
-import { archiveSeasonWindow } from './engine/season';
+import { archiveSeasonWindow, intersectWindows, seasonWindow } from './engine/season';
+import { IRRIGATION_METHOD_NAMES } from './engine/waterBalance';
 import { defaultAssumptions, modelSettings, type Assumptions } from './state/assumptions';
 import {
   EMPTY_FORM,
@@ -35,6 +38,8 @@ type Loaded<T> = { ok: true; value: T } | { ok: false; error: string };
 
 interface Run {
   input: FarmInput;
+  /** Form as it was when calculated, to notice later edits. */
+  formSnapshot: string;
   geo: GeoResult;
   archive: Loaded<ArchiveRun>;
   forecast: Loaded<WeatherSeries>;
@@ -66,6 +71,41 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: Reac
   );
 }
 
+/** A data source failed: say so in Turkish and offer the way back to manual input. */
+function LoadError({ message, onBack }: { message: string; onBack: () => void }) {
+  return (
+    <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+      <p>{message}</p>
+      <button type="button" onClick={onBack} className="mt-1 font-medium underline">
+        Tarla bilgilerine dön ve tekrar dene
+      </button>
+    </div>
+  );
+}
+
+function StepButtons({ prev, next, onSelect }: { prev?: [Step, string]; next?: [Step, string]; onSelect: (s: Step) => void }) {
+  return (
+    <div className="flex justify-between gap-3">
+      {prev ? (
+        <button type="button" onClick={() => onSelect(prev[0])} className="text-sm font-medium text-emerald-800 hover:underline">
+          ← {prev[1]}
+        </button>
+      ) : (
+        <span />
+      )}
+      {next && (
+        <button
+          type="button"
+          onClick={() => onSelect(next[0])}
+          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+        >
+          {next[1]} →
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [form, setForm] = useState<FarmForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -77,6 +117,12 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [highlighted, setHighlighted] = useState<Set<keyof FarmForm>>(new Set());
   const [followUp, setFollowUp] = useState<string | null>(null);
+  const [step, setStep] = useState<Step>(1);
+
+  const goTo = (s: Step) => {
+    setStep(s);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const updateForm = (patch: Partial<FarmForm>) => {
     setForm((f) => ({ ...f, ...patch }));
@@ -132,9 +178,22 @@ export default function App() {
         ),
         load(fetchForecast(geo.latitude, geo.longitude)),
       ]);
-      setRun({ input, geo, archive, forecast, seasonLengthAtFetch: seasonLength(crop) });
+      if (!archive.ok && !forecast.ok) throw new Error(archive.error);
+
+      setRun({ input, formSnapshot: JSON.stringify(form), geo, archive, forecast, seasonLengthAtFetch: seasonLength(crop) });
+
+      // Out of season the forecast has nothing to plan, so the retrospective is the main screen.
+      const inSeason =
+        forecast.ok &&
+        forecast.value.daily.length > 0 &&
+        intersectWindows(seasonWindow(input.plantingDate, crop), {
+          start: forecast.value.daily[0].date,
+          end: forecast.value.daily.at(-1)!.date,
+        }) != null;
+      goTo(inSeason || !archive.ok ? 2 : 3);
     } catch (e) {
       setError(errorMessage(e));
+      setStep(1);
     } finally {
       setLoading(false);
     }
@@ -167,7 +226,31 @@ export default function App() {
   const panelMethod = run?.input.irrigationMethod ?? (form.irrigationMethod || null);
 
   const seasonLengthChanged = run != null && seasonLength(assumptions.crops[run.input.crop]) !== run.seasonLengthAtFetch;
+  const formChanged = run != null && JSON.stringify(form) !== run.formSnapshot;
   const place = run ? [run.geo.name, run.geo.admin1].filter(Boolean).join(', ') : '';
+  const fieldSummary = run
+    ? `${place} · ${assumptions.crops[run.input.crop].name} · ${fmt(run.input.areaDecare)} dekar · ${
+        IRRIGATION_METHOD_NAMES[run.input.irrigationMethod]
+      }`
+    : '';
+
+  const staleNotice = (formChanged || seasonLengthChanged) && (
+    <div className="flex flex-wrap items-center gap-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+      <span>
+        {formChanged
+          ? 'Tarla bilgilerini değiştirdiniz; sonuçlar eski bilgilere göre.'
+          : 'Dönem süreleri değişti; tüm sezonun verisini almak için yeniden hesaplayın.'}
+      </span>
+      <button
+        type="button"
+        disabled={loading}
+        onClick={() => void calculate()}
+        className="rounded-md bg-amber-600 px-3 py-1 font-medium text-white hover:bg-amber-700 disabled:opacity-60"
+      >
+        {loading ? 'Hesaplanıyor…' : 'Yeniden hesapla'}
+      </button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -179,147 +262,164 @@ export default function App() {
           </p>
         </div>
       </header>
+      <ContextBand />
 
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">1) Tarlanı anlat</h2>
-            <button
-              type="button"
-              onClick={() => {
-                updateForm(demoForm(new Date().getFullYear()));
-                setErrors({});
-              }}
-              className="rounded-md border border-emerald-600 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
-            >
-              Demo tarla yükle
-            </button>
-          </div>
+        <StepNav current={step} enabled={run != null} onSelect={goTo} />
 
-          <FarmTextInput onParsed={applyParsed} />
+        {step !== 1 && run && (
+          <p className="text-sm text-slate-600">
+            <span className="font-medium text-slate-800">Tarla:</span> {fieldSummary}
+          </p>
+        )}
+        {step !== 1 && staleNotice}
 
-          {highlighted.size > 0 && (
-            <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-              <p>
-                Metinden alınan bilgiler forma yazıldı. Sarı çerçeveli alanlar metinde yoktu; lütfen doldurun veya
-                kontrol edin, sonra "Planı hesapla"ya basın.
-              </p>
-              {followUp && <p className="mt-1 font-medium">{followUp}</p>}
+        {step === 1 && (
+          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">1) Tarlanı anlat</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  updateForm(demoForm(new Date().getFullYear()));
+                  setErrors({});
+                  setFollowUp(null);
+                }}
+                className="rounded-md border border-emerald-600 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+              >
+                Demo tarla yükle
+              </button>
             </div>
-          )}
 
-          <FarmFormView form={form} errors={errors} highlighted={highlighted} onChange={updateForm} />
+            <FarmTextInput onParsed={applyParsed} />
 
-          {geoCandidates.length > 1 && selectedGeo && (
-            <div className="mt-4 text-sm">
-              <label className="flex flex-wrap items-center gap-2">
-                <span className="text-slate-600">Bulunan konum:</span>
-                <select
-                  className="rounded-md border border-slate-300 px-2 py-1"
-                  value={selectedGeo.id}
-                  onChange={(e) => {
-                    const geo = geoCandidates.find((g) => g.id === Number(e.target.value)) ?? null;
-                    setSelectedGeo(geo);
-                    if (geo) void calculate(geo);
-                  }}
-                >
-                  {geoCandidates.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {[g.name, g.admin2, g.admin1].filter(Boolean).join(', ')}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          )}
-
-          <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => void calculate()}
-              className="ml-auto rounded-md bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
-            >
-              {loading ? 'Hava verisi alınıyor…' : 'Planı hesapla'}
-            </button>
-          </div>
-
-          {Object.keys(errors).length > 0 && (
-            <p className="mt-3 text-sm text-red-600">Lütfen işaretli alanları düzeltin.</p>
-          )}
-          {error && (
-            <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
-              {error} Formu elle düzenleyip tekrar deneyebilirsiniz.
-            </p>
-          )}
-          {seasonLengthChanged && (
-            <p className="mt-3 text-sm text-amber-800">
-              Dönem süreleri değişti; tüm sezonun verisini almak için yeniden hesaplayın.
-            </p>
-          )}
-        </section>
-
-        {run && (
-          <Section
-            title="2) Geriye dönük test"
-            subtitle={
-              run.archive.ok && (
-                <>
-                  {place} · {assumptions.crops[run.input.crop].name} · Open-Meteo arşiv verisi ·{' '}
-                  {trDate(run.archive.value.plantingDate)} ekimli sezon
-                  {run.archive.value.shiftedYears !== 0 && ' (bu yılın sezonu henüz tamamlanmadığı için en son tamamlanan sezon)'}
-                </>
-              )
-            }
-          >
-            {!run.archive.ok ? (
-              <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{run.archive.error}</p>
-            ) : retro && retro.balance.days.length > 0 ? (
-              <Retrospective
-                analysis={retro}
-                energySource={run.input.energySource}
-                seasonLabel={`${trDate(retro.balance.days[0].date)} – ${trDate(retro.balance.days.at(-1)!.date)}`}
-                maxRotationDays={assumptions.maxRotationDays}
-              />
-            ) : (
-              <p className="text-sm text-slate-600">Seçilen dönem için hava verisi bulunamadı.</p>
+            {highlighted.size > 0 && (
+              <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                <p>
+                  Metinden alınan bilgiler forma yazıldı. Sarı çerçeveli alanlar metinde yoktu; lütfen doldurun veya
+                  kontrol edin, sonra "Planı hesapla"ya basın.
+                </p>
+                {followUp && <p className="mt-1 font-medium">{followUp}</p>}
+              </div>
             )}
-          </Section>
+
+            <FarmFormView form={form} errors={errors} highlighted={highlighted} onChange={updateForm} />
+
+            {geoCandidates.length > 1 && selectedGeo && (
+              <div className="mt-4 text-sm">
+                <label className="flex flex-wrap items-center gap-2">
+                  <span className="text-slate-600">Bulunan konum:</span>
+                  <select
+                    className="rounded-md border border-slate-300 px-2 py-1"
+                    value={selectedGeo.id}
+                    onChange={(e) => {
+                      const geo = geoCandidates.find((g) => g.id === Number(e.target.value)) ?? null;
+                      setSelectedGeo(geo);
+                      if (geo) void calculate(geo);
+                    }}
+                  >
+                    {geoCandidates.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {[g.name, g.admin2, g.admin1].filter(Boolean).join(', ')}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4">
+              {run && !formChanged && (
+                <button type="button" onClick={() => goTo(2)} className="text-sm font-medium text-emerald-800 hover:underline">
+                  Sonuçlara git →
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => void calculate()}
+                className="rounded-md bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {loading ? 'Hava verisi alınıyor…' : 'Planı hesapla'}
+              </button>
+            </div>
+
+            {Object.keys(errors).length > 0 && <p className="mt-3 text-sm text-red-600">Lütfen işaretli alanları düzeltin.</p>}
+            {error && (
+              <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
+                {error} Formu elle düzenleyip tekrar deneyebilirsiniz.
+              </p>
+            )}
+          </section>
         )}
 
-        {run && (
-          <Section title="3) Bu haftanın planı" subtitle={`${place} · Open-Meteo ${FORECAST_DAYS} günlük tahmin`}>
-            {!run.forecast.ok ? (
-              <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{run.forecast.error}</p>
-            ) : (
-              week && (
-                <WeeklyPlan
-                  analysis={week}
+        {step === 2 && run && (
+          <>
+            {explainPayload && (
+              <Section title="Planın, sade Türkçeyle">
+                <ExplanationPanel key={JSON.stringify(explainPayload)} payload={explainPayload} />
+              </Section>
+            )}
+            <Section title="2) Bu haftanın planı" subtitle={`Open-Meteo ${FORECAST_DAYS} günlük tahmin`}>
+              {!run.forecast.ok ? (
+                <LoadError message={run.forecast.error} onBack={() => goTo(1)} />
+              ) : (
+                week && (
+                  <WeeklyPlan
+                    analysis={week}
+                    energySource={run.input.energySource}
+                    initialDepletionMm={assumptions.forecastInitialDepletionMm}
+                    forecastDays={FORECAST_DAYS}
+                    onShowRetrospective={() => goTo(3)}
+                  />
+                )
+              )}
+            </Section>
+            <StepButtons prev={[1, 'Tarla bilgileri']} next={[3, 'Etkin: geriye dönük test']} onSelect={goTo} />
+          </>
+        )}
+
+        {step === 3 && run && (
+          <>
+            <Section
+              title="3) Etkin – geriye dönük test"
+              subtitle={
+                run.archive.ok && (
+                  <>
+                    Open-Meteo arşiv verisi · {trDate(run.archive.value.plantingDate)} ekimli sezon
+                    {run.archive.value.shiftedYears !== 0 &&
+                      ' (bu yılın sezonu henüz tamamlanmadığı için en son tamamlanan sezon)'}
+                  </>
+                )
+              }
+            >
+              {!run.archive.ok ? (
+                <LoadError message={run.archive.error} onBack={() => goTo(1)} />
+              ) : retro && retro.balance.days.length > 0 ? (
+                <Retrospective
+                  analysis={retro}
                   energySource={run.input.energySource}
-                  initialDepletionMm={assumptions.forecastInitialDepletionMm}
-                  forecastDays={FORECAST_DAYS}
+                  seasonLabel={`${trDate(retro.balance.days[0].date)} – ${trDate(retro.balance.days.at(-1)!.date)}`}
+                  maxRotationDays={assumptions.maxRotationDays}
                 />
-              )
-            )}
-          </Section>
-        )}
+              ) : (
+                <p className="text-sm text-slate-600">Seçilen dönem için hava verisi bulunamadı.</p>
+              )}
+            </Section>
 
-        {run && explainPayload && (
-          <Section title="Sade Türkçe açıklama">
-            <ExplanationPanel key={JSON.stringify(explainPayload)} payload={explainPayload} />
-          </Section>
-        )}
-
-        {retro && retro.balance.days.length > 0 && (
-          <Section title="Günlük su dengesi (geriye dönük sezon)">
-            {run?.archive.ok && run.archive.value.weather.missingDates.length > 0 && (
-              <p className="text-sm text-amber-800">
-                {run.archive.value.weather.missingDates.length} gün için hava verisi eksik olduğundan hesaba katılmadı.
-              </p>
+            {retro && retro.balance.days.length > 0 && (
+              <Section title="Günlük su dengesi (geriye dönük sezon)">
+                {run.archive.ok && run.archive.value.weather.missingDates.length > 0 && (
+                  <p className="text-sm text-amber-800">
+                    {run.archive.value.weather.missingDates.length} gün için hava verisi eksik olduğundan hesaba katılmadı.
+                  </p>
+                )}
+                <SummaryCards result={retro.balance} />
+                <WaterBalanceChart result={retro.balance} />
+              </Section>
             )}
-            <SummaryCards result={retro.balance} />
-            <WaterBalanceChart result={retro.balance} />
-          </Section>
+            <StepButtons prev={[2, 'Planın']} onSelect={goTo} />
+          </>
         )}
 
         {panelCrop && panelSoil && panelMethod && (
@@ -332,7 +432,16 @@ export default function App() {
             onReset={() => setAssumptions(defaultAssumptions())}
           />
         )}
+
+        <TodayAndVision />
       </main>
+
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto max-w-6xl space-y-1 px-4 py-4 text-xs text-slate-500">
+          <p>{DISCLAIMER}</p>
+          <p>Hava verisi: Open-Meteo (tahmin ve arşiv). Hesaplar tarayıcıda, açık formüllerle yapılır; yapay zekâ sayı üretmez.</p>
+        </div>
+      </footer>
     </div>
   );
 }

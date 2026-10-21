@@ -128,7 +128,7 @@ export function FarmFormView({ form, errors, highlighted, onChange }: Props) {
 
       {text('pvKwp', 'GES gücü', 'kWp')}
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 items-end gap-2">
         {text('habitIntervalDays', 'Mevcut: kaç günde bir', 'gün')}
         {text('habitHours', 'Kaç saat', 'saat')}
       </div>

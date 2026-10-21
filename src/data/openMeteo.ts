@@ -178,7 +178,12 @@ export function fetchArchive(
 }
 
 export async function geocode(name: string, fetchFn: FetchFn = fetch): Promise<GeoResult[]> {
-  const body = (await getJson(buildGeocodingUrl(name), fetchFn)) as { results?: GeoResult[] };
+  let body: { results?: GeoResult[] };
+  try {
+    body = (await getJson(buildGeocodingUrl(name), fetchFn)) as { results?: GeoResult[] };
+  } catch {
+    throw new OpenMeteoError('Konum servisine ulaşılamadı. İnternet bağlantınızı kontrol edin veya biraz sonra tekrar deneyin.');
+  }
   return (body.results ?? []).map(({ id, name, latitude, longitude, admin1, admin2 }) => ({
     id,
     name,
