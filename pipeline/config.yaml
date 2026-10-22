@@ -5,6 +5,7 @@ earth_engine:
   # Google Cloud project registered for non-commercial Earth Engine use.
   # The EE_PROJECT environment variable overrides this value.
   project: climathon-512416
+  asset_folder: sunwater   # -> projects/<project>/assets/sunwater
 
 paths:
   outputs: outputs # relative to pipeline/, git-ignored
@@ -32,6 +33,44 @@ aoi:
   # replaced by segmentation results in stage 3.
   mean_field_ha_assumption: [3, 10]
   preview_month: 7                   # month of the main season used for RGB previews
+
+composites:
+  cloud_score_band: cs_cdf
+  clear_threshold: 0.6        # pixel kept if cs_cdf >= threshold
+  # Periods are dekads (days 1-10, 11-20, 21-end of month) inside the season.
+  index_scale: 10000          # indices stored as int16 = round(index * scale), clamped to [-1, 1]
+  export_scale_m: 10
+  export_crs: EPSG:32636      # UTM 36N
+  segmentation_season: main
+  segmentation_months: [4, 5, 6, 7, 8, 9]
+  segmentation_rgb_month: 7
+  gap_stats_scale_m: 20
+
+segmentation:
+  # Method A: SNIC on the monthly NDVI stack (composites.segmentation_months).
+  # Each trial is exported and scored against the hand-drawn reference at KK2.
+  trials:
+    - {size: 20, compactness: 0.1}
+    - {size: 30, compactness: 0.1}
+    - {size: 45, compactness: 0.1}
+  connectivity: 8
+  neighborhood_factor: 2        # neighborhoodSize = factor * size
+  min_area_ha: 0.5
+  min_crop_fraction: 0.5        # share of WorldCover cropland pixels in the segment
+  # Heuristic confidence = clamp(1 - dist / confidence_dist_max, 0, 1), where dist is the
+  # segment's mean RMS distance of pixel NDVI profiles from the segment mean profile.
+  confidence_dist_max: 0.3
+  overlap_share: 0.5            # segment counts toward a reference field if >= this share lies inside
+  selected_trial: null          # trial id chosen at KK2, e.g. snic_s30_c0p1
+
+reference:
+  # Random cropland points whose fields are hand-drawn as segmentation reference (stage 3).
+  n_points: 70          # 50 target + spares for points that are not on a field
+  target_fields: 50
+  seed: 42
+  points_file: reference/reference_points.geojson   # relative to pipeline/, committed
+  fields_file: reference/reference_fields.geojson   # written by the web /reference tool
+  overlay_max_px: 2700  # ~10 m/pixel over the pilot area
 
 # Point inside the pilot area used for small access probes in step 00.
 probe_point: [33.45, 37.80]

@@ -1,5 +1,7 @@
 /// <reference types="vitest/config" />
+import { readFile, writeFile } from 'node:fs/promises';
 import type { IncomingMessage } from 'node:http';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -116,6 +118,69 @@ function devApi(): Plugin {
   };
 }
 
+// Mirrors pipeline/config.yaml (reference.points_file, reference.fields_file) and step 03a outputs.
+const PIPELINE_DIR = fileURLToPath(new URL('./pipeline/', import.meta.url));
+const REFERENCE_POINTS = `${PIPELINE_DIR}reference/reference_points.geojson`;
+const REFERENCE_FIELDS = `${PIPELINE_DIR}reference/reference_fields.geojson`;
+const REFERENCE_OVERLAYS = `${PIPELINE_DIR}outputs/03_reference/`;
+
+async function readJsonOr<T>(file: string, fallback: T): Promise<T> {
+  try {
+    return JSON.parse(await readFile(file, 'utf-8')) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Dev-only backend for the /reference drawing tool: reads the pipeline's random points and
+ * overlays, and writes hand-drawn reference fields straight into pipeline/reference/.
+ */
+function devReference(): Plugin {
+  return {
+    name: 'dev-reference',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const url = (req.url ?? '').split('?')[0];
+        if (!url.startsWith('/dev-api/reference')) return next();
+        const json = (status: number, body: unknown) => {
+          res.statusCode = status;
+          res.setHeader('content-type', 'application/json');
+          res.end(JSON.stringify(body));
+        };
+        try {
+          if (req.method === 'GET' && url === '/dev-api/reference') {
+            const points = await readJsonOr(REFERENCE_POINTS, null);
+            if (!points) return json(404, { error: 'Önce pipeline/03a_reference_points.py çalıştırılmalı.' });
+            return json(200, {
+              points,
+              fields: await readJsonOr(REFERENCE_FIELDS, null),
+              overlays: await readJsonOr(`${REFERENCE_OVERLAYS}overlays.json`, []),
+            });
+          }
+          const overlay = url.match(/^\/dev-api\/reference\/overlay\/([\w-]+\.png)$/);
+          if (req.method === 'GET' && overlay) {
+            res.setHeader('content-type', 'image/png');
+            return res.end(await readFile(`${REFERENCE_OVERLAYS}${overlay[1]}`));
+          }
+          if (req.method === 'POST' && url === '/dev-api/reference/fields') {
+            const body = JSON.parse(await readBody(req)) as { type?: string; features?: unknown[] };
+            if (body.type !== 'FeatureCollection' || !Array.isArray(body.features)) {
+              return json(400, { error: 'FeatureCollection bekleniyordu.' });
+            }
+            await writeFile(REFERENCE_FIELDS, JSON.stringify(body, null, 2) + '\n', 'utf-8');
+            return json(200, { saved: body.features.length });
+          }
+          return json(404, { error: 'Bulunamadı.' });
+        } catch (e) {
+          server.config.logger.error(`[reference] ${String(e)}`);
+          return json(500, { error: 'Sunucu hatası.' });
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   for (const key of SERVER_ENV) {
@@ -123,7 +188,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), tailwindcss(), devApi()],
+    plugins: [react(), tailwindcss(), devApi(), devReference()],
     test: {
       include: ['src/**/*.test.ts', 'api/**/*.test.ts'],
     },

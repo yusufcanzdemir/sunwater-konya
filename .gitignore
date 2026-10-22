@@ -4,3 +4,9 @@ dist
 .env
 .env.local
 *.log
+
+# Python pipeline
+pipeline/outputs/
+pipeline/.venv/
+__pycache__/
+.pytest_cache/

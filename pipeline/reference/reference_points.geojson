@@ -1,0 +1,1060 @@
+{
+  "type": "FeatureCollection",
+  "properties": {
+    "description": "Random WorldCover cropland points in the pilot area; draw the field each point falls in (2025 season boundaries).",
+    "seed": 42,
+    "target_fields": 50
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.337977300871756,
+          37.80220513629275
+        ]
+      },
+      "properties": {
+        "point_id": "R001",
+        "order": 1
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.32081947894508,
+          37.83616145403247
+        ]
+      },
+      "properties": {
+        "point_id": "R002",
+        "order": 2
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.53902026145772,
+          37.79609659236074
+        ]
+      },
+      "properties": {
+        "point_id": "R003",
+        "order": 3
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.56534089928243,
+          37.85727186320928
+        ]
+      },
+      "properties": {
+        "point_id": "R004",
+        "order": 4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.30285317326269,
+          37.70922950438638
+        ]
+      },
+      "properties": {
+        "point_id": "R005",
+        "order": 5
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.49635028546203,
+          37.87335170679502
+        ]
+      },
+      "properties": {
+        "point_id": "R006",
+        "order": 6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.555100105043465,
+          37.797354233758504
+        ]
+      },
+      "properties": {
+        "point_id": "R007",
+        "order": 7
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.535786326434874,
+          37.82394436616844
+        ]
+      },
+      "properties": {
+        "point_id": "R008",
+        "order": 8
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.51135215070684,
+          37.80436109297464
+        ]
+      },
+      "properties": {
+        "point_id": "R009",
+        "order": 9
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.34696045371297,
+          37.89086885483535
+        ]
+      },
+      "properties": {
+        "point_id": "R010",
+        "order": 10
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.40804589303309,
+          37.86185327115829
+        ]
+      },
+      "properties": {
+        "point_id": "R011",
+        "order": 11
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.423586747448354,
+          37.8664346791073
+        ]
+      },
+      "properties": {
+        "point_id": "R012",
+        "order": 12
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.49419432878014,
+          37.71551771137522
+        ]
+      },
+      "properties": {
+        "point_id": "R013",
+        "order": 13
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.56776635054953,
+          37.88026873448274
+        ]
+      },
+      "properties": {
+        "point_id": "R014",
+        "order": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.32809583274644,
+          37.83948522058371
+        ]
+      },
+      "properties": {
+        "point_id": "R015",
+        "order": 15
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.54566779456019,
+          37.834095328878995
+        ]
+      },
+      "properties": {
+        "point_id": "R016",
+        "order": 16
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.48691797497878,
+          37.85287011831709
+        ]
+      },
+      "properties": {
+        "point_id": "R017",
+        "order": 17
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.38900160900977,
+          37.749474029114936
+        ]
+      },
+      "properties": {
+        "point_id": "R018",
+        "order": 18
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.35324866070181,
+          37.85260062373185
+        ]
+      },
+      "properties": {
+        "point_id": "R019",
+        "order": 19
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.50721990039989,
+          37.716056700545685
+        ]
+      },
+      "properties": {
+        "point_id": "R020",
+        "order": 20
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.536415147133766,
+          37.855295569584214
+        ]
+      },
+      "properties": {
+        "point_id": "R021",
+        "order": 21
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.436342824482864,
+          37.733304354000786
+        ]
+      },
+      "properties": {
+        "point_id": "R022",
+        "order": 22
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.44981755374465,
+          37.70554641172149
+        ]
+      },
+      "properties": {
+        "point_id": "R023",
+        "order": 23
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.42259860063584,
+          37.870387266357426
+        ]
+      },
+      "properties": {
+        "point_id": "R024",
+        "order": 24
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.48682814345037,
+          37.8393953890553
+        ]
+      },
+      "properties": {
+        "point_id": "R025",
+        "order": 25
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.40130852840218,
+          37.82933425787316
+        ]
+      },
+      "properties": {
+        "point_id": "R026",
+        "order": 26
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.37795233101508,
+          37.79977968502563
+        ]
+      },
+      "properties": {
+        "point_id": "R027",
+        "order": 27
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.44739210247752,
+          37.88314334339192
+        ]
+      },
+      "properties": {
+        "point_id": "R028",
+        "order": 28
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.31776520697909,
+          37.89374346374453
+        ]
+      },
+      "properties": {
+        "point_id": "R029",
+        "order": 29
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.37462856446385,
+          37.857182031680864
+        ]
+      },
+      "properties": {
+        "point_id": "R030",
+        "order": 30
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.384060874947096,
+          37.87263305456772
+        ]
+      },
+      "properties": {
+        "point_id": "R031",
+        "order": 31
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.43625299295445,
+          37.73959256098962
+        ]
+      },
+      "properties": {
+        "point_id": "R032",
+        "order": 32
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.36663355843518,
+          37.83229869831075
+        ]
+      },
+      "properties": {
+        "point_id": "R033",
+        "order": 33
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.36052501450317,
+          37.72207541294929
+        ]
+      },
+      "properties": {
+        "point_id": "R034",
+        "order": 34
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.39996105547601,
+          37.82987324704363
+        ]
+      },
+      "properties": {
+        "point_id": "R035",
+        "order": 35
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.34237904576395,
+          37.80391193533258
+        ]
+      },
+      "properties": {
+        "point_id": "R036",
+        "order": 36
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.36492675939536,
+          37.79843221209945
+        ]
+      },
+      "properties": {
+        "point_id": "R037",
+        "order": 37
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.335551849604656,
+          37.70572607477831
+        ]
+      },
+      "properties": {
+        "point_id": "R038",
+        "order": 38
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.53569649490649,
+          37.763757242132435
+        ]
+      },
+      "properties": {
+        "point_id": "R039",
+        "order": 39
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.52383873315611,
+          37.75953516029708
+        ]
+      },
+      "properties": {
+        "point_id": "R040",
+        "order": 40
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.37489805904909,
+          37.772830226502045
+        ]
+      },
+      "properties": {
+        "point_id": "R041",
+        "order": 41
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.561567975089105,
+          37.86526686923794
+        ]
+      },
+      "properties": {
+        "point_id": "R042",
+        "order": 42
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.49069089917208,
+          37.718931309454874
+        ]
+      },
+      "properties": {
+        "point_id": "R043",
+        "order": 43
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.392145712504174,
+          37.7326755333019
+        ]
+      },
+      "properties": {
+        "point_id": "R044",
+        "order": 44
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.41586123600493,
+          37.7116549556535
+        ]
+      },
+      "properties": {
+        "point_id": "R045",
+        "order": 45
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.44182254771599,
+          37.76151145392214
+        ]
+      },
+      "properties": {
+        "point_id": "R046",
+        "order": 46
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.420622307010774,
+          37.727285641597184
+        ]
+      },
+      "properties": {
+        "point_id": "R047",
+        "order": 47
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.32486189772362,
+          37.82996307857204
+        ]
+      },
+      "properties": {
+        "point_id": "R048",
+        "order": 48
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.33456370279211,
+          37.83849707377118
+        ]
+      },
+      "properties": {
+        "point_id": "R049",
+        "order": 49
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.37983879311173,
+          37.88547896313063
+        ]
+      },
+      "properties": {
+        "point_id": "R050",
+        "order": 50
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.518448841451374,
+          37.81064929996347
+        ]
+      },
+      "properties": {
+        "point_id": "R051",
+        "order": 51
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.324412740081556,
+          37.773548878729336
+        ]
+      },
+      "properties": {
+        "point_id": "R052",
+        "order": 52
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.51782002075251,
+          37.75693004597313
+        ]
+      },
+      "properties": {
+        "point_id": "R053",
+        "order": 53
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.31345329361531,
+          37.733753511642846
+        ]
+      },
+      "properties": {
+        "point_id": "R054",
+        "order": 54
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.51701153699679,
+          37.74354514823975
+        ]
+      },
+      "properties": {
+        "point_id": "R055",
+        "order": 55
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.439307264920444,
+          37.762319937677844
+        ]
+      },
+      "properties": {
+        "point_id": "R056",
+        "order": 56
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.5508780232081,
+          37.87685513640308
+        ]
+      },
+      "properties": {
+        "point_id": "R057",
+        "order": 57
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.499224894371224,
+          37.83661061167453
+        ]
+      },
+      "properties": {
+        "point_id": "R058",
+        "order": 58
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.385138853288055,
+          37.75154015426841
+        ]
+      },
+      "properties": {
+        "point_id": "R059",
+        "order": 59
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.40481195801027,
+          37.82475284992415
+        ]
+      },
+      "properties": {
+        "point_id": "R060",
+        "order": 60
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.43319872098843,
+          37.70150399294295
+        ]
+      },
+      "properties": {
+        "point_id": "R061",
+        "order": 61
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.37112513485579,
+          37.79726440223009
+        ]
+      },
+      "properties": {
+        "point_id": "R062",
+        "order": 62
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.35863855240652,
+          37.835622464862
+        ]
+      },
+      "properties": {
+        "point_id": "R063",
+        "order": 63
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.56201713273117,
+          37.86113461893099
+        ]
+      },
+      "properties": {
+        "point_id": "R064",
+        "order": 64
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.45089553208558,
+          37.79986951655404
+        ]
+      },
+      "properties": {
+        "point_id": "R065",
+        "order": 65
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.35953686769065,
+          37.71363124927856
+        ]
+      },
+      "properties": {
+        "point_id": "R066",
+        "order": 66
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.3614233297873,
+          37.8755076634769
+        ]
+      },
+      "properties": {
+        "point_id": "R067",
+        "order": 67
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.394930489884956,
+          37.73689761513726
+        ]
+      },
+      "properties": {
+        "point_id": "R068",
+        "order": 68
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.511172487650015,
+          37.86571602688
+        ]
+      },
+      "properties": {
+        "point_id": "R069",
+        "order": 69
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "geodesic": false,
+        "type": "Point",
+        "coordinates": [
+          33.41864601338571,
+          37.714439733034276
+        ]
+      },
+      "properties": {
+        "point_id": "R070",
+        "order": 70
+      }
+    }
+  ]
+}
