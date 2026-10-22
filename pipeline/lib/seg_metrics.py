@@ -2,6 +2,8 @@
 
 from statistics import mean, median
 
+import numpy as np
+
 from shapely import STRtree
 from shapely.geometry.base import BaseGeometry
 
@@ -28,10 +30,7 @@ def match_reference(ref: BaseGeometry, segments: list[BaseGeometry], tree: STRtr
     return {"iou": best_iou, "best_outside": best_outside, "n_segments": n_segments}
 
 
-def evaluate(refs: list[BaseGeometry], segments: list[BaseGeometry],
-             overlap_share: float) -> dict:
-    tree = STRtree(segments)
-    rows = [match_reference(r, segments, tree, overlap_share) for r in refs]
+def summarize(rows: list[dict]) -> dict:
     if not rows:
         return {"n_reference": 0}
     ious = [r["iou"] for r in rows]
@@ -45,6 +44,40 @@ def evaluate(refs: list[BaseGeometry], segments: list[BaseGeometry],
         "segments_per_field_mean": mean(r["n_segments"] for r in rows),
         "under_segmented_share": sum(r["best_outside"] > 0.3 for r in rows) / len(rows),
     }
+
+
+def evaluate(refs: list[BaseGeometry], segments: list[BaseGeometry],
+             overlap_share: float) -> dict:
+    tree = STRtree(segments)
+    return summarize([match_reference(r, segments, tree, overlap_share) for r in refs])
+
+
+def match_reference_raster(ref_mask: np.ndarray, seg_labels: np.ndarray,
+                           seg_area: np.ndarray, overlap_share: float) -> dict:
+    """Raster version of match_reference: same definitions, counted in pixels."""
+    ids, inter = np.unique(seg_labels[ref_mask], return_counts=True)
+    keep = ids > 0
+    ids, inter = ids[keep], inter[keep].astype(float)
+    if not len(ids):
+        return {"iou": 0.0, "best_outside": 1.0, "n_segments": 0}
+    sa = seg_area[ids]
+    iou = inter / (ref_mask.sum() + sa - inter)
+    best = int(np.argmax(iou))
+    return {
+        "iou": float(iou[best]),
+        "best_outside": float(1 - inter[best] / sa[best]),
+        "n_segments": int((inter / sa >= overlap_share).sum()),
+    }
+
+
+def evaluate_raster(ref_labels: np.ndarray, ref_ids: list[int], seg_labels: np.ndarray,
+                    overlap_share: float) -> dict:
+    """Score a label raster against reference fields rasterized on the same grid."""
+    seg_area = np.bincount(seg_labels.ravel()).astype(float)
+    return summarize([
+        match_reference_raster(ref_labels == r, seg_labels, seg_area, overlap_share)
+        for r in ref_ids
+    ])
 
 
 def confidence(dist: float, dist_max: float) -> float:

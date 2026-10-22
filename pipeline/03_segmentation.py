@@ -19,13 +19,12 @@ import sys
 import geopandas as gpd
 
 from lib.aoi import bbox_polygon
-from lib.config import PIPELINE_DIR, load_config, step_output_dir
+from lib.config import load_config, step_output_dir
 from lib.ee_utils import (
     active_task_descriptions, asset_exists, asset_root, init_ee, wait_for_tasks,
 )
-from lib.seg_metrics import confidence, evaluate
-
-METRIC_CRS = "EPSG:32636"
+from lib.fields import METRIC_CRS, load_reference, split_reference, to_fields
+from lib.seg_metrics import evaluate
 
 
 def trial_id(trial: dict) -> str:
@@ -100,39 +99,7 @@ def load_segments(ee, asset_id: str, cache, force: bool) -> gpd.GeoDataFrame:
     return gdf
 
 
-def to_fields(segments: gpd.GeoDataFrame, scfg: dict, tid: str) -> gpd.GeoDataFrame:
-    metric = segments.to_crs(METRIC_CRS)
-    fields = metric.assign(area_ha=metric.area / 1e4, crop_fraction=metric["crop"])
-    fields = fields[
-        (fields["area_ha"] >= scfg["min_area_ha"])
-        & (fields["crop_fraction"] >= scfg["min_crop_fraction"])
-    ].copy()
-    fields["seg_confidence"] = [
-        round(confidence(d, scfg["confidence_dist_max"]), 3) for d in fields["dist"]
-    ]
-    # Stable ids: north to south, then west to east
-    c = fields.centroid
-    fields = fields.assign(_y=-c.y.round(0), _x=c.x.round(0)).sort_values(["_y", "_x"])
-    fields["field_id"] = [f"F{i + 1:05d}" for i in range(len(fields))]
-    fields["method"] = tid
-    fields["area_ha"] = fields["area_ha"].round(3)
-    fields["crop_fraction"] = fields["crop_fraction"].round(3)
-    return fields[
-        ["field_id", "area_ha", "seg_confidence", "crop_fraction", "method", "geometry"]
-    ].to_crs("EPSG:4326")
 
-
-def load_reference(cfg: dict) -> tuple[gpd.GeoDataFrame | None, dict]:
-    path = PIPELINE_DIR / cfg["reference"]["fields_file"]
-    if not path.exists():
-        return None, {"drawn": 0}
-    ref = gpd.read_file(path)
-    drawn = ref[(ref["status"] == "drawn") & ref.geometry.notna()]
-    skipped = ref[ref["status"] == "skipped"]
-    # The reason column only exists once at least one point has been skipped
-    reasons = skipped["reason"].value_counts().to_dict() if "reason" in skipped else {}
-    stats = {"drawn": len(drawn), "skipped": reasons}
-    return drawn.set_crs("EPSG:4326", allow_override=True), stats
 
 
 def render_report_md(report: dict) -> str:
@@ -186,6 +153,9 @@ def main() -> int:
     out_dir = step_output_dir(cfg, "03_segmentation")
     ref, ref_stats = load_reference(cfg)
     ref_metric = list(ref.to_crs(METRIC_CRS).geometry) if ref is not None else []
+    # Held-out half, comparable with tuned methods (03b); SNIC trials are not tuned on it
+    test_metric = (list(split_reference(ref)[1].to_crs(METRIC_CRS).geometry)
+                   if ref is not None else [])
     report = {"reference": ref_stats, "trials": {}}
     all_fields = {}
     for tid, asset_id in assets.items():
@@ -203,6 +173,7 @@ def main() -> int:
             # Score against all segments, not only kept fields, so filtering can't hide errors
             seg_metric = list(segments.to_crs(METRIC_CRS).geometry)
             entry["quality"] = evaluate(ref_metric, seg_metric, scfg["overlap_share"])
+            entry["quality_test"] = evaluate(test_metric, seg_metric, scfg["overlap_share"])
         report["trials"][tid] = entry
 
     (out_dir / "segmentation_report.json").write_text(
@@ -214,10 +185,14 @@ def main() -> int:
 
     selected = scfg.get("selected_trial")
     if selected:
-        if selected not in all_fields:
-            print(f"selected_trial {selected!r} is not one of {list(all_fields)}", file=sys.stderr)
+        # Methods from 03b/03c leave their fields as fields_<id>.parquet
+        extra = out_dir / f"fields_{selected}.parquet"
+        if selected not in all_fields and not extra.exists():
+            print(f"selected_trial {selected!r}: no fields found (run its step first)",
+                  file=sys.stderr)
             return 1
-        all_fields[selected].to_file(out_dir / "fields.geojson", driver="GeoJSON")
+        fields = all_fields[selected] if selected in all_fields else gpd.read_parquet(extra)
+        fields.to_file(out_dir / "fields.geojson", driver="GeoJSON")
         print(f"wrote fields.geojson from {selected}", file=sys.stderr)
     return 0
 

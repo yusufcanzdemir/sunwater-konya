@@ -9,8 +9,18 @@ dependencies = [
     "geopandas>=1.2.0",
     "pyarrow>=26.0.0",
     "pyyaml>=6.0",
+    "rasterio>=1.4.4",
     "requests>=2.32",
+    "scikit-image>=0.26.0",
     "shapely>=2.2.0",
+]
+
+[project.optional-dependencies]
+sam = [
+    "opencv-python-headless>=5.0.0.93",
+    "segment-anything>=1.0",
+    "torch>=2.11.0",
+    "torchvision>=0.26.0",
 ]
 
 [dependency-groups]
@@ -22,3 +32,12 @@ package = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128" }]
+torchvision = [{ index = "pytorch-cu128" }]

@@ -23,6 +23,9 @@ Temel ölçü: **mavi su tüketimi (blue ET)** = gerçek evapotranspirasyon − 
 | D7 | Mesaj kanalı | Prototipte Telegram, üründe WhatsApp | Kesin |
 | D8 | GRACE kaynağı (KK0) | Earth Engine `NASA/GRACE/MASS_GRIDS_V04/MASCON`, 2002-04 – 2024-09; serinin bitişi grafikte gösterilir, PO.DAAC indirmesi yok | Kesin |
 | D9 | Zemin çökmesi (KK0) | EGMS Türkiye'yi kapsamıyor; harita katmanı yok, yalnızca yayımlanmış InSAR çalışmalarına atıf (kural 7) | Kesin |
+| D10 | Segmentasyon yöntemi (KK2) | Yöntem B: SAM ViT-H (`segment-anything`, segment-geospatial yerine doğrudan), 2025 NDVI Mayıs/Temmuz/Ağustos yanlış renk girdisi, 512 px karolar. Test yarısında IoU ort. 0,68 / medyan 0,75 (SNIC en iyi: 0,60 / 0,65). 3.448 tarla | Kesin |
+| D11 | SNIC + birleştirme (KK2) | Denendi (03b), SNIC size=30'u geçmedi (test IoU 0,57); plana eklenmedi. Küçük parça temizliği şimdilik yok, etiketlemede sık görülürse yeniden değerlendirilir | Kesin |
+| D12 | Referans tarlalar | 70 rastgele tarım noktası, 66 elle çizilmiş tarla (`pipeline/reference/`); tek numaralı noktalar ayar, çift numaralılar test için | Kesin |
 
 Yeni bir karar alındığında bu tabloya satır eklenir.
 
@@ -288,3 +291,4 @@ github maine asla push yapmıyoruz belli bir süre hep branchlerde çalışıyor
 | 2026-10-22 | 0 – Kurulum ve erişim | Tamamlandı (KK0) | EE projesi climathon-512416; zorunlu 13 kaynak erişilebilir; GRACE 2024-09 bitişli (D8); EGMS Türkiye kapsamı yok (D9) |
 | 2026-10-22 | 1 – Çalışma alanı | Tamamlandı (KK1) | Havza HydroSHEDS L5 58.374 km²; pilot D [33.30,37.70,33.60,37.90] 586 km², tarım 314 km² (%54); D4–D6 kesin |
 | 2026-10-22 | 2 – Görüntü kompozitleri | Tamamlandı | Dekadal NDVI/EVI/NDMI (24 dekad) 2025+2024 ve seg_stack_2025 EE asset; tarım piksellerinde boşluk 2025 %0, 2024 %1,5 (yalnızca Mart) |
+| 2026-10-22 | 3 – Tarla segmentasyonu | Tamamlandı (KK2) | 66 referans tarla (/reference aracı); SNIC 3 deneme, SNIC+birleştirme, SAM; SAM seçildi (D10), fields.geojson 3.448 tarla |

@@ -61,7 +61,28 @@ segmentation:
   # segment's mean RMS distance of pixel NDVI profiles from the segment mean profile.
   confidence_dist_max: 0.3
   overlap_share: 0.5            # segment counts toward a reference field if >= this share lies inside
-  selected_trial: null          # trial id chosen at KK2, e.g. snic_s30_c0p1
+  selected_trial: sam_ndvi_false_color   # chosen at KK2 (PLAN.md D10)
+  # Reference split for any tuned method: odd point numbers tune, even numbers test.
+  # Points are in random order, so the split is random but reproducible.
+  # Option 2 at KK2 (trial, not yet in PLAN.md): small SNIC superpixels merged when their
+  # NDVI profiles are similar and no field boundary (edge) separates them.
+  merge:
+    base_trial: {size: 20, compactness: 0.1}
+    profile_dist_grid: [0.03, 0.05, 0.07, 0.10, 0.14]
+    edge_quantile_grid: [0.2, 0.35, 0.5, 0.65, 0.8]   # of initial border edge strengths
+  # Method B: Segment Anything (Meta, ViT-H) on tiles of the 10 m pilot image (extra "sam").
+  sam:
+    checkpoint: outputs/models/sam_vit_h_4b8939.pth   # https://dl.fbaipublicfiles.com/segment_anything/
+    model_type: vit_h
+    tile_px: 512                # SAM upsamples each tile to 1024 internally (2x)
+    overlap_px: 128
+    inputs: [ndvi_false_color, rgb]                   # chosen on the tuning half
+    generator:
+      points_per_side: 32
+      points_per_batch: 64
+      pred_iou_thresh: 0.86
+      stability_score_thresh: 0.92
+      min_mask_region_area: 10
 
 reference:
   # Random cropland points whose fields are hand-drawn as segmentation reference (stage 3).
