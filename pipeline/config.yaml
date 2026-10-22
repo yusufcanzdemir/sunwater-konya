@@ -1,0 +1,134 @@
+# Single source of parameters for the pipeline (PLAN.md rule 3).
+# Values marked "default – KKn" are provisional until the matching decision gate.
+
+earth_engine:
+  # Google Cloud project registered for non-commercial Earth Engine use.
+  # The EE_PROJECT environment variable overrides this value.
+  project: climathon-512416
+
+paths:
+  outputs: outputs # relative to pipeline/, git-ignored
+
+seasons:
+  main: 2025 # fixed at KK1 (D5)
+  comparison: 2024 # fixed at KK1 (D5)
+  start_mmdd: "03-01"
+  end_mmdd: "10-31"
+
+# Pilot area, [west, south, east, north] in WGS84. Fixed at KK1 (D4):
+# irrigated plain north/north-west of Karapınar (~26 x 22 km, ~586 km², 54% cropland).
+pilot_bbox: [33.30, 37.70, 33.60, 37.90]
+
+aoi:
+  # Level 5 is the coarsest level where the Konya Closed Basin (with Tuz Gölü and
+  # Beyşehir sub-basins) is one endorheic polygon; level 6 splits it.
+  basin_dataset: WWF/HydroSHEDS/v1/Basins/hybas_5
+  basin_seed_point: [32.49, 37.87]   # Konya city centre
+  worldcover_id: ESA/WorldCover/v200
+  cropland_class: 40
+  cropland_scale_pilot_m: 10
+  cropland_scale_basin_m: 30
+  # ASSUMPTION, only for the rough field-count estimate shown at KK1;
+  # replaced by segmentation results in stage 3.
+  mean_field_ha_assumption: [3, 10]
+  preview_month: 7                   # month of the main season used for RGB previews
+
+# Point inside the pilot area used for small access probes in step 00.
+probe_point: [33.45, 37.80]
+
+# Data sources (PLAN.md section 3). probe = date window that must contain data
+# for the source to count as usable for the planned seasons.
+sources:
+  earth_engine:
+    - key: s2_sr
+      name: Sentinel-2 L2A
+      id: COPERNICUS/S2_SR_HARMONIZED
+      kind: image_collection
+      probe: ["2025-07-01", "2025-07-31"]
+      required: true
+    - key: s2_cloud_score_plus
+      name: Sentinel-2 Cloud Score+
+      id: GOOGLE/CLOUD_SCORE_PLUS/V1/S2_HARMONIZED
+      kind: image_collection
+      probe: ["2025-07-01", "2025-07-31"]
+      required: true
+    - key: landsat8
+      name: Landsat 8 C2 L2
+      id: LANDSAT/LC08/C02/T1_L2
+      kind: image_collection
+      probe: ["2025-06-01", "2025-08-31"]
+      required: true
+    - key: landsat9
+      name: Landsat 9 C2 L2
+      id: LANDSAT/LC09/C02/T1_L2
+      kind: image_collection
+      probe: ["2025-06-01", "2025-08-31"]
+      required: true
+    - key: s1_grd
+      name: Sentinel-1 GRD
+      id: COPERNICUS/S1_GRD
+      kind: image_collection
+      probe: ["2025-07-01", "2025-07-31"]
+      required: false
+    - key: worldcover
+      name: ESA WorldCover v200
+      id: ESA/WorldCover/v200
+      kind: image_collection
+      probe: ["2021-01-01", "2021-12-31"]
+      required: true
+    - key: worldcereal
+      name: ESA WorldCereal 2021
+      id: ESA/WorldCereal/2021/MODELS/v100
+      kind: image_collection
+      probe: ["2020-09-01", "2021-12-31"]
+      required: false
+    - key: hydrosheds_l6
+      name: HydroSHEDS basins level 6
+      id: WWF/HydroSHEDS/v1/Basins/hybas_6
+      kind: feature_collection
+      required: true
+    - key: era5_land_daily
+      name: ERA5-Land daily
+      id: ECMWF/ERA5_LAND/DAILY_AGGR
+      kind: image_collection
+      probe: ["2025-07-01", "2025-07-31"]
+      required: true
+    - key: modis_et
+      name: MODIS MOD16A2GF ET
+      id: MODIS/061/MOD16A2GF
+      kind: image_collection
+      probe: ["2024-06-01", "2024-08-31"]
+      required: true
+    - key: grace_mascon
+      name: GRACE/GRACE-FO mascon
+      id: NASA/GRACE/MASS_GRIDS_V04/MASCON
+      kind: image_collection
+      probe: ["2024-01-01", "2024-12-31"]
+      required: true
+    - key: gldas_noah
+      name: GLDAS 2.1 Noah 3-hourly
+      id: NASA/GLDAS/V021/NOAH/G025/T3H
+      kind: image_collection
+      probe: ["2025-01-01", "2025-01-02"]
+      required: true
+
+  http:
+    - key: open_meteo
+      name: Open-Meteo Historical (FAO-56 ET0, precipitation)
+      kind: open_meteo
+      url: https://archive-api.open-meteo.com/v1/archive
+      probe: ["2025-07-01", "2025-07-07"]
+      required: true
+    - key: esri_world_imagery
+      name: Esri World Imagery tiles
+      kind: xyz_tile
+      url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}
+      zoom: 15
+      required: true
+
+  manual:
+    - key: egms
+      name: European Ground Motion Service
+      url: https://egms.land.copernicus.eu/
+      note: Checked in EGMS Explorer on 2026-10-22, no Türkiye coverage (PLAN.md D9).
+      required: false
