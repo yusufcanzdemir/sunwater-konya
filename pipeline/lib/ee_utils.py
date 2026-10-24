@@ -86,8 +86,8 @@ def outline(ee, geometry, color: str, width: int = 2):
 
 
 def download_thumbnail(image, region, path: Path, dimensions: int = 1024,
-                       crs: str | None = None) -> None:
-    params = {"region": region, "dimensions": dimensions, "format": "png"}
+                       crs: str | None = None, fmt: str = "png") -> None:
+    params = {"region": region, "dimensions": dimensions, "format": fmt}
     if crs:
         params["crs"] = crs
     url = image.getThumbURL(params)

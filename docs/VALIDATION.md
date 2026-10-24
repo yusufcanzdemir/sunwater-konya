@@ -46,3 +46,60 @@ within the noise of 33 fields, so the pre-registered choice was kept.
 
 Sources: `pipeline/outputs/03_segmentation/segmentation_report.json`, `merge_report.json`,
 `sam_report.json`.
+
+## 2. Crop classification (stages 4–6, PLAN.md D13–D14)
+
+### Method
+No ground-truth crop data was available, and manual labelling of 300–500 fields proved too
+slow and uncertain for the team (9 fields were labelled blind before the method changed). The
+classes are therefore derived without training labels:
+
+1. Gaussian mixture (20 components, diagonal covariance) on the 24-dekad NDVI and NDMI curves
+   of all fields in both seasons (2024 uses the 2025 field polygons).
+2. Each component's mean curve is named by explicit phenology rules
+   (`pipeline/lib/phenology.py`, thresholds in `config.yaml` → `classify.rules`). The
+   thresholds are rules of thumb, not calibrated against ground truth.
+3. The same rules are applied to every field's own curve. Fields in components whose mean
+   matches no rule take their own-curve class; a field is flagged **uncertain** when its
+   own-curve class differs from its final class. GMM posteriors are not used as a confidence
+   measure, because in 48 dimensions they are almost always 0 or 1.
+
+While inspecting the component means, three rule errors were found and fixed (each now has a
+test): cereals harvested in June were missed as cereal + second crop; post-harvest weed
+regrowth was read as alfalfa cuts; the averaged curve of alfalfa fields was read as a cereal.
+
+### Results (3,448 fields)
+
+| Class | 2025 fields | 2025 ha | 2024 fields | 2024 ha |
+|---|---|---|---|---|
+| Maize | 915 | 8,263 | 775 | 7,583 |
+| Irrigated winter cereal | 739 | 7,329 | 963 | 8,535 |
+| Sugar beet | 670 | 5,833 | 493 | 4,239 |
+| Alfalfa | 344 | 2,119 | 283 | 1,824 |
+| Cereal + second crop | 300 | 1,746 | 377 | 2,414 |
+| Fallow / bare | 181 | 1,298 | 128 | 922 |
+| Sunflower | 143 | 1,459 | 206 | 1,905 |
+| Rainfed winter cereal | 120 | 617 | 179 | 1,027 |
+| Other | 36 | 170 | 44 | 386 |
+
+Uncertain: 12.7% of fields in 2025, 12.5% in 2024. Disagreements concentrate on the expected
+hard pairs: sugar beet vs. maize, sunflower vs. maize, rainfed cereal vs. fallow.
+
+### Checks — classification accuracy is NOT measured
+- **Blind labels (independent but tiny):** 5 of 8 labels made before the proposals existed
+  agree with the final class (95% CI 31–86%). Disagreements: irrigated vs. rainfed cereal,
+  sugar beet vs. other, other vs. sugar beet.
+- **Plausibility check (not independent):** in 50 random 2025 fields the checker saw the curve
+  and images, then the proposal, and answered agree / disagree / unsure: 47 agree, 3 unsure,
+  0 disagree. The checker reported accepting some proposals they were unsure about, and seeing
+  the proposal can anchor the judgement. The result is reported only as "no obvious errors
+  found", not as an agreement rate.
+- Consequence for the product: crop classes are shown as "estimated from the satellite curve,
+  accuracy not measured"; uncertain fields are marked. Measured water use (stage 8) is computed
+  per pixel from NDVI and does not depend on the class; the class affects the reference demand
+  and budget (stage 11).
+- Improving this requires ground truth (e.g. farmer-reported crops or ÇKS records for a few
+  dozen fields).
+
+Sources: `pipeline/outputs/06_classify/classify_report.json`, `cluster_profiles.png`,
+`pipeline/04_labels/labels.csv`, `pipeline/04_labels/checks.csv`.

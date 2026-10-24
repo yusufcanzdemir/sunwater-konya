@@ -5,7 +5,9 @@ import numpy as np
 from rasterio import features
 from shapely.geometry import shape
 
-from lib.config import PIPELINE_DIR
+import sys
+
+from lib.config import PIPELINE_DIR, step_output_dir
 from lib.seg_metrics import confidence
 
 METRIC_CRS = "EPSG:32636"
@@ -73,3 +75,17 @@ def vectorize_labels(labels: np.ndarray, transform, crs, stats: dict) -> gpd.Geo
         rows.append({"cluster": lab, "crop": float(stats["crop"][lab]),
                      "dist": float(stats["dist"][lab]), "geometry": geom})
     return gpd.GeoDataFrame(rows, crs=crs).to_crs("EPSG:4326")
+
+
+def load_fields(cfg: dict) -> gpd.GeoDataFrame:
+    seg_dir = step_output_dir(cfg, "03_segmentation")
+    corrected = seg_dir / "fields_corrected.geojson"
+    path = corrected if corrected.exists() else seg_dir / "fields.geojson"
+    print(f"fields from {path.name}", file=sys.stderr)
+    return gpd.read_file(path)
+
+
+def simplified(fields: gpd.GeoDataFrame, tolerance_m: float) -> gpd.GeoDataFrame:
+    metric = fields.to_crs(METRIC_CRS)
+    metric["geometry"] = metric.simplify(tolerance_m, preserve_topology=True)
+    return metric.to_crs("EPSG:4326")

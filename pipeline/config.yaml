@@ -84,6 +84,67 @@ segmentation:
       stability_score_thresh: 0.92
       min_mask_region_area: 10
 
+labels:
+  # Stage 4 (KK3, PLAN.md D13). Keys are stored in labels.csv; names are shown in the UI.
+  classes:
+    sugar_beet: Şeker pancarı
+    maize: Mısır
+    sunflower: Ayçiçeği
+    alfalfa: Yonca
+    irrigated_winter_cereal: Sulu kışlık tahıl
+    rainfed_winter_cereal: Kuru kışlık tahıl
+    cereal_second_crop: Tahıl + ikinci ürün
+    fallow: Nadas / boş
+    other: Diğer
+  min_per_class: 40
+  target_total: [300, 500]
+  season: main
+  seed: 7
+  rgb_months: [5, 6, 7, 9]          # monthly RGB previews shown next to each field
+  chunk_size: 400                   # fields per reduceRegions request
+  simplify_m: 5                     # geometry simplification for EE requests and the web map
+  labels_file: 04_labels/labels.csv # relative to pipeline/, committed; written by /label
+  order_file: 04_labels/label_order.json
+
+features:
+  # Stage 5: per-field features for crop classification, for both seasons.
+  # 2024 uses the 2025 field polygons (no separate 2024 segmentation).
+  inner_buffer_m: 10          # drop the outer pixel ring to avoid mixing with neighbours
+  min_buffered_ha: 0.2        # smaller after buffering -> use the unbuffered polygon
+  green_threshold: 0.4        # NDVI above this counts as "green" for season length
+  harmonics: 2                # harmonic regression order (per index)
+  sentinel1: true             # monthly VV/VH means (dB), optional per PLAN.md
+  s1_months: [4, 5, 6, 7, 8, 9]
+  chunk_size: 300
+
+classify:
+  # Stage 6 (PLAN.md D14): unsupervised clusters of field profiles, named by explicit rules.
+  n_clusters: 20
+  seed: 11
+  uncertain_below: 0.7          # class probability below this -> flagged uncertain
+  check_sample: 50              # random 2025 fields for the user's plausibility check
+  check_file: 04_labels/checks.csv
+  # Phenology rules applied to cluster mean NDVI/NDMI curves (lib/phenology.py).
+  # RULES OF THUMB from the labelling guide, not calibrated against ground truth.
+  rules:
+    fallow_max_ndvi: 0.30         # never greener than this -> fallow
+    alfalfa_april_ndvi: 0.45      # already green in April ...
+    alfalfa_summer_ndvi: 0.50     # ... still green on average in June-September ...
+    alfalfa_dip_prominence: 0.12  # ... and at least alfalfa_min_dips cutting dips
+    alfalfa_min_dips: 2
+    spring_green_may_ndvi: 0.35   # May mean above -> winter crop family
+    cereal_drop: 0.25             # June-July minimum this far below the spring peak ...
+    cereal_harvest_max_ndvi: 0.40 # ... and down to (near) bare soil
+    second_crop_rise: 0.25        # Aug-Oct maximum this far above the June-July minimum ...
+    second_crop_min_ndvi: 0.50    # ... and at least this green
+    irrigated_cereal_peak: 0.70   # spring peak above -> irrigated
+    irrigated_cereal_peak_with_ndmi: 0.60
+    irrigated_cereal_ndmi: 0.30   # or peak above the previous value with Apr-Jun NDMI above this
+    summer_min_peak: 0.45         # summer crops reach at least this
+    beet_sep_ndvi: 0.65           # still green in September ...
+    beet_oct_ndvi: 0.50           # ... and October -> sugar beet
+    sunflower_drop: 0.30          # peak by July, end of August this far below the peak
+
 reference:
   # Random cropland points whose fields are hand-drawn as segmentation reference (stage 3).
   n_points: 70          # 50 target + spares for points that are not on a field

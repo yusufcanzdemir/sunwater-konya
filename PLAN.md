@@ -25,6 +25,8 @@ Temel ölçü: **mavi su tüketimi (blue ET)** = gerçek evapotranspirasyon − 
 | D9 | Zemin çökmesi (KK0) | EGMS Türkiye'yi kapsamıyor; harita katmanı yok, yalnızca yayımlanmış InSAR çalışmalarına atıf (kural 7) | Kesin |
 | D10 | Segmentasyon yöntemi (KK2) | Yöntem B: SAM ViT-H (`segment-anything`, segment-geospatial yerine doğrudan), 2025 NDVI Mayıs/Temmuz/Ağustos yanlış renk girdisi, 512 px karolar. Test yarısında IoU ort. 0,68 / medyan 0,75 (SNIC en iyi: 0,60 / 0,65). 3.448 tarla | Kesin |
 | D11 | SNIC + birleştirme (KK2) | Denendi (03b), SNIC size=30'u geçmedi (test IoU 0,57); plana eklenmedi. Küçük parça temizliği şimdilik yok, etiketlemede sık görülürse yeniden değerlendirilir | Kesin |
+| D13 | Sınıflar ve etiket hedefi (KK3) | şeker pancarı, mısır, ayçiçeği, yonca, sulu kışlık tahıl, kuru kışlık tahıl, tahıl + ikinci ürün, nadas/boş, diğer (+ "emin değilim"); sınıf başına ≥40, toplam 300–500; önce rastgele sıra, gerekirse hedefli seçim (ayrı işaretlenir); yer gerçeği yok, etiketler görüntü yorumu olarak belgelenir | Kesin |
+| D14 | Sınıflandırma yöntemi (Aşama 4/6 değişikliği) | 300–500 elle etiket yerine: NDVI/NDMI profillerinin denetimsiz kümelenmesi (Gaussian karışım modeli), küme ortalamalarının config'teki açık fenoloji kurallarıyla adlandırılması, sınıf olasılığı = küme olasılıklarının toplamı. LightGBM kullanılmıyor. Kontrol: rastgele 50 tarlada kullanıcı önerilen sınıfı "uygun / değil / emin değilim" diye işaretler; sonuç "makullük kontrolü" olarak raporlanır (bağımsız doğruluk değil). Daha önce kör girilen etiketler ayrıca karşılaştırılır | Kesin |
 | D12 | Referans tarlalar | 70 rastgele tarım noktası, 66 elle çizilmiş tarla (`pipeline/reference/`); tek numaralı noktalar ayar, çift numaralılar test için | Kesin |
 
 Yeni bir karar alındığında bu tabloya satır eklenir.
@@ -292,3 +294,6 @@ github maine asla push yapmıyoruz belli bir süre hep branchlerde çalışıyor
 | 2026-10-22 | 1 – Çalışma alanı | Tamamlandı (KK1) | Havza HydroSHEDS L5 58.374 km²; pilot D [33.30,37.70,33.60,37.90] 586 km², tarım 314 km² (%54); D4–D6 kesin |
 | 2026-10-22 | 2 – Görüntü kompozitleri | Tamamlandı | Dekadal NDVI/EVI/NDMI (24 dekad) 2025+2024 ve seg_stack_2025 EE asset; tarım piksellerinde boşluk 2025 %0, 2024 %1,5 (yalnızca Mart) |
 | 2026-10-22 | 3 – Tarla segmentasyonu | Tamamlandı (KK2) | 66 referans tarla (/reference aracı); SNIC 3 deneme, SNIC+birleştirme, SAM; SAM seçildi (D10), fields.geojson 3.448 tarla |
+| 2026-10-24 | 4 – Etiketleme | Değiştirildi (D14) | /label aracı + rehber; 9 kör etiket; elle etiketleme yerine kümeleme + kural, /check ile 50 tarla makullük kontrolü |
+| 2026-10-24 | 5 – Özellik çıkarımı | Tamamlandı | 3.448 tarla x 107 özellik, 2025 ve 2024 (S2 dekad serileri, harmonikler, fenoloji, S1 VV/VH) |
+| 2026-10-24 | 6 – Ürün sınıflandırma | Tamamlandı (KK4 bekliyor) | GMM 20 küme + fenoloji kuralları; belirsiz %13; doğruluk ölçülmedi (kör 5/8, kontrol 47 uygun/3 emin değil, bağımlı) |

@@ -1,0 +1,10 @@
+field_id,class,confidence,sampling,labeled_by,labeled_at,lon,lat
+F01613,fallow,high,random,,2026-10-22T19:06:55.642Z,33.418099,37.806533
+F03442,bad_segment,,random,,2026-10-22T19:07:11.147Z,33.386938,37.700841
+F01884,irrigated_winter_cereal,high,random,,2026-10-22T19:07:30.044Z,33.48516,37.788417
+F03049,irrigated_winter_cereal,high,random,,2026-10-22T19:07:49.694Z,33.472905,37.721387
+F02918,sugar_beet,high,random,,2026-10-22T19:08:07.769Z,33.486463,37.727658
+F02131,maize,medium,random,,2026-10-22T19:09:06.751Z,33.323296,37.773708
+F00831,cereal_second_crop,high,random,,2026-10-22T19:10:02.945Z,33.565791,37.847956
+F00982,other,high,random,,2026-10-22T19:10:31.362Z,33.523882,37.84053
+F03420,maize,high,random,,2026-10-22T19:10:57.571Z,33.438317,37.70113

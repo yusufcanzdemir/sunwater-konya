@@ -1,10 +1,11 @@
 /// <reference types="vitest/config" />
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import type { IncomingMessage } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { checksFromCsv, checksToCsv, fromCsv, toCsv, type CheckRow, type LabelRow } from './src/label/labels.ts';
 
 const API_ROUTES: Record<string, string> = {
   '/api/parse-farm': '/api/parse-farm.ts',
@@ -181,6 +182,77 @@ function devReference(): Plugin {
   };
 }
 
+// Mirrors pipeline/config.yaml (labels.labels_file, labels.order_file) and step 04 outputs.
+const LABELS_FILE = `${PIPELINE_DIR}04_labels/labels.csv`;
+const LABEL_ORDER = `${PIPELINE_DIR}04_labels/label_order.json`;
+// classify.check_file and the check sample / proposals written by step 06
+const CHECKS_FILE = `${PIPELINE_DIR}04_labels/checks.csv`;
+const CHECK_SAMPLE = `${PIPELINE_DIR}04_labels/check_sample.json`;
+const CLASSIFY_OUTPUTS = `${PIPELINE_DIR}outputs/06_classify/`;
+const LABEL_OUTPUTS = `${PIPELINE_DIR}outputs/04_labels/`;
+
+/** Dev-only backend for the /label crop labelling tool; labels go to pipeline/04_labels/labels.csv. */
+function devLabel(): Plugin {
+  return {
+    name: 'dev-label',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const url = (req.url ?? '').split('?')[0];
+        if (!url.startsWith('/dev-api/label')) return next();
+        const json = (status: number, body: unknown) => {
+          res.statusCode = status;
+          res.setHeader('content-type', 'application/json');
+          res.end(JSON.stringify(body));
+        };
+        try {
+          if (req.method === 'GET' && url === '/dev-api/label') {
+            const meta = await readJsonOr<{ season?: number } | null>(`${LABEL_OUTPUTS}label_meta.json`, null);
+            if (!meta) return json(404, { error: 'Önce pipeline/04_label_data.py çalıştırılmalı.' });
+            const labels = await readFile(LABELS_FILE, 'utf-8').catch(() => '');
+            const reference = await readJsonOr<{ id: string }[]>(`${REFERENCE_OVERLAYS}overlays.json`, []);
+            return json(200, {
+              meta,
+              fields: await readJsonOr(`${LABEL_OUTPUTS}fields_web.geojson`, null),
+              series: await readJsonOr(`${LABEL_OUTPUTS}field_series_${meta.season}.json`, null),
+              order: await readJsonOr(LABEL_ORDER, null),
+              overlays: [
+                ...(await readJsonOr<object[]>(`${LABEL_OUTPUTS}overlays.json`, [])).map((o) => ({ ...o, dir: '04_labels' })),
+                ...reference.filter((o) => o.id.includes('ndvi')).map((o) => ({ ...o, dir: '03_reference' })),
+              ],
+              labels: fromCsv(labels),
+              proposals: await readJsonOr(`${CLASSIFY_OUTPUTS}proposals_${meta.season}.json`, null),
+              checkSample: await readJsonOr(CHECK_SAMPLE, null),
+              checks: checksFromCsv(await readFile(CHECKS_FILE, 'utf-8').catch(() => '')),
+            });
+          }
+          const overlay = url.match(/^\/dev-api\/label\/overlay\/(03_reference|04_labels)\/([\w-]+)\.(png|jpg)$/);
+          if (req.method === 'GET' && overlay) {
+            res.setHeader('content-type', overlay[3] === 'png' ? 'image/png' : 'image/jpeg');
+            return res.end(await readFile(`${PIPELINE_DIR}outputs/${overlay[1]}/${overlay[2]}.${overlay[3]}`));
+          }
+          if (req.method === 'POST' && url === '/dev-api/label/checks') {
+            const rows = JSON.parse(await readBody(req)) as CheckRow[];
+            if (!Array.isArray(rows)) return json(400, { error: 'Kontrol listesi bekleniyordu.' });
+            await writeFile(CHECKS_FILE, checksToCsv(rows), 'utf-8');
+            return json(200, { saved: rows.length });
+          }
+          if (req.method === 'POST' && url === '/dev-api/label/labels') {
+            const rows = JSON.parse(await readBody(req)) as LabelRow[];
+            if (!Array.isArray(rows)) return json(400, { error: 'Etiket listesi bekleniyordu.' });
+            await mkdir(`${PIPELINE_DIR}04_labels`, { recursive: true });
+            await writeFile(LABELS_FILE, toCsv(rows), 'utf-8');
+            return json(200, { saved: rows.length });
+          }
+          return json(404, { error: 'Bulunamadı.' });
+        } catch (e) {
+          server.config.logger.error(`[label] ${String(e)}`);
+          return json(500, { error: 'Sunucu hatası.' });
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   for (const key of SERVER_ENV) {
@@ -188,7 +260,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), tailwindcss(), devApi(), devReference()],
+    plugins: [react(), tailwindcss(), devApi(), devReference(), devLabel()],
     test: {
       include: ['src/**/*.test.ts', 'api/**/*.test.ts'],
     },
