@@ -301,3 +301,4 @@ github maine asla push yapmıyoruz belli bir süre hep branchlerde çalışıyor
 | 2026-10-24 | 6 – Ürün sınıflandırma | Tamamlandı (KK4 bekliyor) | GMM 20 küme + fenoloji kuralları; belirsiz %13; doğruluk ölçülmedi (kör 5/8, kontrol 47 uygun/3 emin değil, bağımlı) |
 | 2026-10-24 | 7 – Referans ET ve yağış | Tamamlandı | Open-Meteo 11 hücre; ERA5-Land FAO-56 PM çapraz kontrol: sezon ET0 farkı %3,5 (2025) / %10 (2024), r 0,98; yağış farkı daha büyük (%19 / %42), Aşama 8 aralığa taşır |
 | 2026-10-24 | 8 – ET (NDVI-Kc) | Tamamlandı | NDVI_min 0,078 / NDVI_max 0,911 (pilot persentilleri); 2025 pilot mavi su 221 Mm³ (159–261), 2024 aynı yöntem; kuru tahıl/nadas yağış+toprak suyu ile sınırlı; mavi su bitki dönemiyle sınırlı (D16) |
+| 2026-10-24 | 9 – SEBAL doğrulaması | Devam ediyor | Kendi SEBAL uygulaması (lib/sebal.py) yazıldı, testli; 2025 geçişlerinin 16/54 işlendi, önbellekten devam edilecek (DEVAM.md) |

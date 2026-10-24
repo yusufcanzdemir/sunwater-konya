@@ -187,6 +187,24 @@ et:
     kcb_max_delta: 0.10         # Kcb_max shifted by -/+ this
     # ET0 and precipitation: daily min / max of Open-Meteo and ERA5-Land (stage 7)
 
+sebal:
+  # Stage 9: SEBAL (own implementation, lib/sebal.py) on Landsat 8/9 C2 L2 overpasses.
+  collections: [LANDSAT/LC08/C02/T1_L2, LANDSAT/LC09/C02/T1_L2]
+  max_scene_cloud: 60           # CLOUD_COVER of the whole scene
+  min_clear_fraction: 0.5       # clear share of the pilot area, else the overpass is skipped
+  anchors:                      # automatic anchor pixels on WorldCover cropland
+    cold_ndvi_pct: 95           # cold: NDVI >= this percentile ...
+    cold_ts_pct: 20             # ... and LST <= this percentile among them
+    hot_ndvi_pct: 10            # hot: NDVI <= this percentile ...
+    hot_ts_pct: 80              # ... and LST >= this percentile among them
+  ef_max: 1.05
+  scale_m: 30
+  min_field_pixels: 4           # valid 30 m pixels needed for a field value
+  min_field_valid: 0.7          # and this share of the field's pixels
+  stress_ratio: 0.7             # SEBAL / NDVI-Kc ET below this on cropped overpasses ...
+  stress_min_obs: 2             # ... in at least this many -> water-stress flag
+  modis_id: MODIS/061/MOD16A2GF # aggregate cross-check (ET band, 0.1 kg/m2 per 8 days)
+
 reference:
   # Random cropland points whose fields are hand-drawn as segmentation reference (stage 3).
   n_points: 70          # 50 target + spares for points that are not on a field

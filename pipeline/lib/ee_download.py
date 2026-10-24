@@ -38,11 +38,11 @@ def grid_for_bbox(bbox: list[float], crs: str, scale: float) -> Grid:
     return Grid(crs, x0, y0, scale, round((x1 - x0) / scale), round((y0 - y1) / scale))
 
 
-def download_grid(ee, image, grid: Grid, path: Path, tile: int = 1024) -> None:
-    """Write `image` (all bands cast to int32) on `grid` to a GeoTIFF, tile by tile."""
+def fetch_grid(ee, image, grid: Grid, tile: int = 1024, quiet: bool = False) -> np.ndarray:
+    """(bands, height, width) int32 array of `image` (cast to int32) on `grid`, tile by tile."""
     image = image.toInt32()
-    bands = image.bandNames().getInfo()
-    out = np.zeros((len(bands), grid.height, grid.width), dtype=np.int32)
+    n_bands = len(image.bandNames().getInfo())
+    out = np.zeros((n_bands, grid.height, grid.width), dtype=np.int32)
     n_tiles = math.ceil(grid.height / tile) * math.ceil(grid.width / tile)
     done = 0
     for row in range(0, grid.height, tile):
@@ -63,7 +63,15 @@ def download_grid(ee, image, grid: Grid, path: Path, tile: int = 1024) -> None:
             with MemoryFile(raw) as mem, mem.open() as src:
                 out[:, row:row + h, col:col + w] = src.read()
             done += 1
-            print(f"  tile {done}/{n_tiles}", file=sys.stderr)
+            if not quiet:
+                print(f"  tile {done}/{n_tiles}", file=sys.stderr)
+    return out
+
+
+def download_grid(ee, image, grid: Grid, path: Path, tile: int = 1024) -> None:
+    """Write `image` (all bands cast to int32) on `grid` to a GeoTIFF."""
+    bands = image.bandNames().getInfo()
+    out = fetch_grid(ee, image, grid, tile)
     with rasterio.open(
         path, "w", driver="GTiff", width=grid.width, height=grid.height, count=len(bands),
         dtype="int32", crs=grid.crs, transform=grid.transform, compress="deflate",
