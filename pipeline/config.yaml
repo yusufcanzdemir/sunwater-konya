@@ -145,6 +145,48 @@ classify:
     beet_oct_ndvi: 0.50           # ... and October -> sugar beet
     sunflower_drop: 0.30          # peak by July, end of August this far below the peak
 
+weather:
+  # Stage 7: daily reference ET (FAO-56) and precipitation per weather grid cell.
+  open_meteo_url: https://archive-api.open-meteo.com/v1/archive
+  timezone: Europe/Istanbul
+  grid_step_deg: 0.1            # request lattice; Open-Meteo snaps each point to its grid cell
+  # Mirrors DEFAULT_RAIN_RULE in src/engine/waterBalance.ts: Peff = P < threshold ? 0 : factor * P
+  effective_rain: {threshold_mm: 5, factor: 0.8}
+  era5_land_id: ECMWF/ERA5_LAND/DAILY_AGGR   # cross-check: FAO-56 Penman-Monteith from ERA5-Land
+  era5_land_hourly_id: ECMWF/ERA5_LAND/HOURLY # hourly wind speed for that cross-check
+
+et:
+  # Stage 8: actual ET from scaled NDVI -> Kcb (main method, PLAN.md D3), no water stress.
+  kcb_min: 0.15                 # bare soil basal coefficient
+  ndvi_min: auto                # bare soil NDVI; auto = percentile of all field-dekad NDVI
+  ndvi_max: auto                # full cover NDVI
+  ndvi_min_percentile: 2
+  ndvi_max_percentile: 99
+  kcb_max:                      # mid-season Kcb, FAO-56 Table 17 (Allen et al. 1998)
+    sugar_beet: 1.15
+    maize: 1.15
+    sunflower: 1.00             # Table 17 range 0.95-1.10
+    alfalfa: 1.15               # hay, individual cutting periods
+    irrigated_winter_cereal: 1.10
+    rainfed_winter_cereal: 1.10
+    cereal_second_crop: 1.15    # cereal 1.10 then e.g. maize 1.15; the higher value
+    fallow: 1.00                # irrelevant at bare-soil NDVI
+    other: 1.00
+  smoothing: {window: 5, polyorder: 2}   # Savitzky-Golay over dekads before daily interpolation
+  soil_evaporation:             # simplified FAO-56 dual coefficient (Ke)
+    kc_max: 1.20                # upper limit of Kc after wetting (FAO-56 eq. 72, simplified)
+    rain_wetting_mm: 5          # rain days that wet the surface
+    decay_days: 3               # Kr = exp(-days since wetting / decay_days) (two-stage simplified)
+    irrigation_interval_days: 7 # ASSUMPTION: irrigated fields wetted every N days while cropped
+    crop_present_kcb: 0.30      # ... "cropped" = Kcb above this
+  rainfed_classes: [rainfed_winter_cereal, fallow]   # blue ET = 0, ET capped by water supply
+  crop_present_kcb: 0.30        # blue ET counts only days with Kcb above this (PLAN.md D16)
+  initial_soil_water_mm: 100    # ASSUMPTION: plant-available soil water at season start
+  sensitivity:                  # uncertainty range (low / high scenario)
+    ndvi_delta: 0.05            # NDVI_min and NDVI_max shifted by +/- this
+    kcb_max_delta: 0.10         # Kcb_max shifted by -/+ this
+    # ET0 and precipitation: daily min / max of Open-Meteo and ERA5-Land (stage 7)
+
 reference:
   # Random cropland points whose fields are hand-drawn as segmentation reference (stage 3).
   n_points: 70          # 50 target + spares for points that are not on a field

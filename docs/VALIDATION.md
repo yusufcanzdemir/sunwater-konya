@@ -103,3 +103,60 @@ hard pairs: sugar beet vs. maize, sunflower vs. maize, rainfed cereal vs. fallow
 
 Sources: `pipeline/outputs/06_classify/classify_report.json`, `cluster_profiles.png`,
 `pipeline/04_labels/labels.csv`, `pipeline/04_labels/checks.csv`.
+
+## 3. Reference evapotranspiration and precipitation (stage 7)
+
+Daily FAO-56 grass reference ET0 and precipitation come from the Open-Meteo historical API for
+the 11 weather grid cells covering the pilot area (fields are assigned to the nearest cell).
+Effective rain uses the web engine's rule: Peff = 0 if P < 5 mm, else 0.8 · P.
+
+Cross-check: FAO-56 Penman–Monteith computed independently from ERA5-Land at the same cells,
+with net radiation for the grass reference surface from incoming shortwave (FAO-56 eqs. 37–40)
+and wind as the daily mean of hourly speeds. A first version that used ERA5's own net radiation
+(bare, hot surface) and daily-mean wind vectors gave 28–33% lower ET0; both are method errors
+for a reference ET and were corrected. The FAO-56 functions are tested against the worked
+examples 8, 11, 14 and 18 of the FAO-56 manual.
+
+| Season (Mar–Oct) | Open-Meteo ET0 | ERA5-Land PM ET0 | Daily bias | Daily RMSE | r | Open-Meteo P | ERA5-Land P |
+|---|---|---|---|---|---|---|---|
+| 2025 | 1,324 mm | 1,279 mm | +0.18 mm | 0.40 mm | 0.985 | 113 mm | 135 mm |
+| 2024 | 1,356 mm | 1,229 mm | +0.52 mm | 0.65 mm | 0.983 | 131 mm | 186 mm |
+
+- ET0 agrees within 3.5% (2025) and 10% (2024); the difference is carried into the
+  uncertainty range of seasonal ET (stage 8).
+- Precipitation differs more (19% in 2025, 42% in 2024). Seasonal rain is small next to ET0,
+  but it feeds effective rain and therefore blue-water use; stage 8 reports blue ET with both
+  sources as a range.
+
+Sources: `pipeline/outputs/07_et0/et0_report.json`.
+
+## 4. Actual ET and blue-water use, NDVI-Kc (stage 8)
+
+Method summary (details in `pipeline/08_et_ndvikc.py` and `config.yaml` → `et`): daily NDVI
+(Savitzky–Golay over dekads, linear to days) → Kcb by scaled NDVI between NDVI_min = 0.078 and
+NDVI_max = 0.911 (2nd / 99th percentile of all field-dekad NDVI in 2025) and Kcb_min = 0.15 ..
+Kcb_max (FAO-56 Table 17 by class) → plus simplified FAO-56 soil evaporation → ET = (Kcb + Ke) ·
+ET0, no water stress. Rainfed cereal and fallow are capped at season precipitation + 100 mm
+initial soil water and have zero blue ET. Blue ET counts only crop-present days (Kcb > 0.30,
+PLAN.md D16).
+
+Seasonal results, 2025 central (low–high): pilot blue water 221 Mm³ (159–261); 2024: 220 Mm³
+(143–263). Median blue ET per field, 2025: maize 833 mm, sugar beet 881 mm, irrigated winter
+cereal 629 mm, alfalfa 1,322 mm, cereal + second crop 1,013 mm, sunflower 717 mm.
+
+Consistency checks done in this stage:
+- Rainfed cereal and fallow: uncapped NDVI-Kc ET exceeded season rain + soil water for all such
+  fields, so the cap is active; this shows the bare-soil floor (Kcb_min · ET0) is generous in
+  this arid summer. For irrigated fields it no longer enters blue water (D16).
+- Diagnostic decomposition (2025 medians): soil evaporation is 15–20% of ET for irrigated
+  classes; cereals still show ~120 mm ET in July because dekadal smoothing spreads the harvest.
+
+Known limits (to be checked against SEBAL in stage 9, KK5):
+- No water stress: deficit-irrigated or stressed fields are overestimated.
+- Irrigation wetting every 7 days while cropped is an assumption; it drives part of Ke.
+- Kcb_max is not adjusted for climate (FAO-56 eq. 70); the ±0.10 range covers that adjustment.
+- 2024 uses the 2025 field polygons and the 2025 NDVI_min/max.
+- Ranges combine NDVI_min/max ± 0.05, Kcb_max ± 0.10, and the daily min/max of the two ET0 and
+  precipitation sources; the low scenario also credits the 100 mm initial soil water.
+
+Sources: `pipeline/outputs/08_et/et_report.json`, `field_et_<year>.parquet`.
