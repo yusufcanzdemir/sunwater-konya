@@ -14,7 +14,12 @@ Bu not yalnızca PLAN.md'de olmayan "şu an ne yapıyorduk" bilgisini tutar.
   bu enerjiyi aşamadığı için yapısal olarak düşük kalıyor (adveksiyon). KK5 kararı verildi (D17):
   kalibrasyon yok, göreli stres bayrağı.
 - **Bitti:** Aşama 10 — havza bağlamı (`10_basin_context.py`, GLDAS aylıkları
-  `outputs/10_basin/gldas_monthly.parquet` önbelleğinde). Sıradaki: Aşama 11 (bütçe, KK6).
+  `outputs/10_basin/gldas_monthly.parquet` önbelleğinde).
+- **Bitti:** Aşama 11 — `11_budget.py` + `lib/budget.py`; KK6 önerilen varsayılanlarla kapandı (D19).
+- **Bitti:** Aşama 12 — `12_export.py` → `pipeline/outputs/12_export/data/` ve `public/data/` (repoda,
+  Vercel statik). Sıradaki: Aşama 13 (kurum paneli; PMTiles için HTTP Range gerekir, Vite ve Vercel destekliyor).
+  Ky kaynağı (FAO/IAEA, Moutonnet, Tablo 1: https://www.fao.org/4/Y3655E/y3655e04.htm) Aşama 15'te
+  DATA_SOURCES.md'ye taşınacak.
 - **Sırada:** Aşama 9'u bitirmek → **KK5** (kalibrasyon kararı) → Aşama 10 (GRACE havza) →
   11 (bütçe, KK6) → 12 (dışa aktarım) → 13 (kurum paneli) → 14 (Telegram) → 15 (belgeler).
 

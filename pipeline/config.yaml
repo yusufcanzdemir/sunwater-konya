@@ -208,6 +208,43 @@ sebal:
   stress_min_obs: 3             # ... over at least this many cropped overpasses -> flag
   modis_id: MODIS/061/MOD16A2GF # aggregate cross-check (ET band, 0.1 kg/m2 per 8 days)
 
+budget:
+  # Stage 11: field water budget. Defaults fixed at KK6 (PLAN.md D19); status shown against S1.
+  reference_kcb: class_median   # class_median: day-by-day median Kcb of the class (confident fields);
+                                # field: the field's own Kcb (then only soil evaporation differs)
+  efficient_fw: 0.35            # wetted soil fraction under drip, FAO-56 Table 20 (trickle 0.3-0.4)
+  s2_reduction: 0.20            # ASSUMPTION, fixed at KK6 (D19): S2 cuts pilot blue water by this share
+  status_within: 1.00           # ratio = measured blue / budget; <= this: within budget
+  status_limit: 1.15            # <= this: borderline; above: over budget
+  irrigation_efficiency:        # application efficiency, same values as src/engine/waterBalance.ts
+    flood: 0.55
+    sprinkler: 0.72
+    drip: 0.88
+  default_method: sprinkler     # ASSUMPTION, fixed at KK6: method is not observed per field
+  head_m: 120                   # ASSUMPTION, fixed at KK6: total pumping head; editable per field in the panel
+  pump_efficiency: 0.50         # ASSUMPTION, fixed at KK6: pump-motor efficiency (prototype form default)
+  deficit_et_reduction: 0.10    # deficit-irrigation lever: seasonal ET cut by this share
+  ky:                           # seasonal yield response, continuous deficit; FAO yield response
+    maize: 1.25                 # factors as tabulated in FAO/IAEA (Moutonnet), Table 1, from FAO-33
+    sugar_beet: 0.85            # table gives 0.80 and 0.90; midpoint
+    sunflower: 0.95
+    irrigated_winter_cereal: 1.00   # "winter wheat"
+    # alfalfa, cereal_second_crop, other: no verified value -> no yield estimate
+  crop_switch:                  # crop-change lever: compare with the class median blue ET
+    sugar_beet: irrigated_winter_cereal
+    maize: sunflower
+    alfalfa: irrigated_winter_cereal
+    sunflower: irrigated_winter_cereal
+    cereal_second_crop: irrigated_winter_cereal
+
+export:
+  # Stage 12: web data under outputs/12_export/data/
+  min_zoom: 9                   # pilot area (~30 km) fills the screen around zoom 10-11
+  max_zoom: 15                  # MapLibre overzooms beyond this
+  player_step_days: 7           # whole-map season player resolution
+  publish_dir: ../public/data   # relative to pipeline/; served statically by Vite / Vercel (D20)
+  publish_skip: ["*.parquet"]   # analysis copies only, the web app does not read them
+
 basin:
   # Stage 10: basin water-storage context from GRACE / GRACE-FO (PLAN.md D8) minus GLDAS.
   grace_main: NASA/GRACE/MASS_GRIDS_V04/MASCON_CRI   # JPL RL06.3Mv04, CRI filtered (recommended)

@@ -1,0 +1,60 @@
+{
+ "generated_at": "2026-10-25T06:50:38+00:00",
+ "seasons": [
+  2025,
+  2024
+ ],
+ "classes": {
+  "sugar_beet": "Şeker pancarı",
+  "maize": "Mısır",
+  "sunflower": "Ayçiçeği",
+  "alfalfa": "Yonca",
+  "irrigated_winter_cereal": "Sulu kışlık tahıl",
+  "rainfed_winter_cereal": "Kuru kışlık tahıl",
+  "cereal_second_crop": "Tahıl + ikinci ürün",
+  "fallow": "Nadas / boş",
+  "other": "Diğer"
+ },
+ "budget_parameters": {
+  "reference_kcb": "class_median",
+  "efficient_fw": 0.35,
+  "s2_reduction": 0.2,
+  "status_within": 1.0,
+  "status_limit": 1.15,
+  "irrigation_efficiency": {
+   "flood": 0.55,
+   "sprinkler": 0.72,
+   "drip": 0.88
+  },
+  "default_method": "sprinkler",
+  "head_m": 120,
+  "pump_efficiency": 0.5,
+  "deficit_et_reduction": 0.1,
+  "ky": {
+   "maize": 1.25,
+   "sugar_beet": 0.85,
+   "sunflower": 0.95,
+   "irrigated_winter_cereal": 1.0
+  },
+  "crop_switch": {
+   "sugar_beet": "irrigated_winter_cereal",
+   "maize": "sunflower",
+   "alfalfa": "irrigated_winter_cereal",
+   "sunflower": "irrigated_winter_cereal",
+   "cereal_second_crop": "irrigated_winter_cereal"
+  }
+ },
+ "status_scenario_default": "s1",
+ "sizes_mb": {
+  "field_files": 3448,
+  "field_mb": 35.8,
+  "basin.json": 0.01,
+  "fields_2024.parquet": 3.43,
+  "fields_2024.pmtiles": 2.56,
+  "fields_2025.parquet": 3.43,
+  "fields_2025.pmtiles": 2.56,
+  "metrics.json": 0.02,
+  "season_2024.json": 0.45,
+  "season_2025.json": 0.44
+ }
+}
