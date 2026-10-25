@@ -12,7 +12,9 @@ import { fieldStatus } from '../../src/engine/status.js';
 import type { FieldRecord } from '../../src/engine/waterBalance.js';
 import { defaultAssumptions, modelSettings, type Assumptions } from '../../src/state/assumptions.js';
 import { demoForm, toFarmParams, validateFarmForm, type FarmInput } from '../../src/state/farm.js';
+import { buildSummaryPayload, fieldBbox, findFields, imageryUrl, templateSummary } from '../../src/farmer/pilot.js';
 import { explain } from './handlers.js';
+import { PILOT_PREFIX, isPilotId, loadPilot, pilotFarm, pilotField } from './pilotData.js';
 import { getStore } from './store.js';
 
 export interface StoredFarm {
@@ -48,8 +50,17 @@ export const MAIN_KEYBOARD: Keyboard = [
     { text: '✅ Suladım', callback_data: 'irrigated' },
     { text: '🌧 Yağmur yağdı', callback_data: 'rain' },
   ],
-  [{ text: '📅 Haftalık plan', callback_data: 'weekly' }],
+  [
+    { text: '📅 Haftalık plan', callback_data: 'weekly' },
+    { text: '📊 Tarlamın durumu', callback_data: 'status' },
+  ],
 ];
+
+const LOCATION_KEYBOARD = {
+  keyboard: [[{ text: '📍 Konumumu paylaş', request_location: true }]],
+  resize_keyboard: true,
+  one_time_keyboard: true,
+};
 
 const RAIN_KEYBOARD: Keyboard = [
   [
@@ -77,6 +88,9 @@ export async function tg<T = unknown>(method: string, body: Record<string, unkno
 const send = (chatId: string, text: string, keyboard?: Keyboard) =>
   tg('sendMessage', { chat_id: chatId, text, ...(keyboard ? { reply_markup: { inline_keyboard: keyboard } } : {}) });
 
+const sendPhoto = (chatId: string, photo: string, caption: string, keyboard: Keyboard) =>
+  tg('sendPhoto', { chat_id: chatId, photo, caption, reply_markup: { inline_keyboard: keyboard } });
+
 let cachedUsername: string | null = null;
 export async function botUsername(): Promise<string> {
   cachedUsername ??= (await tg<{ username: string }>('getMe')).username;
@@ -96,8 +110,23 @@ export async function saveFarm(farm: StoredFarm): Promise<void> {
   await store.set('latestFarm', farm.id);
 }
 
+/** Web-saved field, the demo field, or a pilot field (`field:<id>`, null when the engine has no crop for it). */
 export async function loadFarm(id: string): Promise<StoredFarm | null> {
+  if (isPilotId(id)) return pilotFarm(id, Number(today().slice(0, 4)));
   return (await getStore().get<StoredFarm>(`farm:${id}`)) ?? (id === 'demo' ? demoFarm() : null);
+}
+
+/** The chat's engine farm; a pilot field without engine crop parameters gives null (no plan, summary only). */
+async function farmFor(chat: ChatState): Promise<StoredFarm | null> {
+  const farm = await loadFarm(chat.farmId);
+  return farm ?? (isPilotId(chat.farmId) ? null : demoFarm());
+}
+
+async function noPlan(chatId: string, chat: ChatState): Promise<void> {
+  const f = await pilotField(chat.farmId);
+  const { manifest } = await loadPilot();
+  const crop = f ? (manifest.classes[f.class] ?? f.class) : 'bu tarla';
+  await send(chatId, `📅 ${crop} için haftalık sulama planı hesaplamıyoruz. Sezon özetiniz için "📊 Tarlamın durumu"na basın.`, MAIN_KEYBOARD);
 }
 
 async function getChat(chatId: string): Promise<ChatState | null> {
@@ -179,7 +208,8 @@ export interface Alert {
 }
 
 export async function composeAlert(farm: StoredFarm): Promise<Alert> {
-  const ev = await evaluate(farm, await getRecords(farm.id), true);
+  // Out of season a pilot field gets its satellite summary, so no last-season what-if is needed
+  const ev = await evaluate(farm, await getRecords(farm.id), !isPilotId(farm.id));
   const payload = buildTelegramPayload({
     place: place(farm),
     cropName: cropName(farm),
@@ -192,11 +222,35 @@ export async function composeAlert(farm: StoredFarm): Promise<Alert> {
   return { text, payload, signature: planSignature(ev.week, ev.today), inSeason: ev.inSeason, source };
 }
 
-/** Sends the alert; with `cron`, stays silent out of season and adds a "plan changed" note. */
+/** Satellite season summary of a pilot field (PLAN.md stage 14), worded by Gemini with the number check. */
+export async function sendSummary(chatId: string, farmId: string): Promise<void> {
+  const f = await pilotField(farmId);
+  if (!f) {
+    await send(chatId, '📊 Bu sohbet uydu verisi olan bir pilot tarlaya bağlı değil. Konumunuzu paylaşmak için /start yazın.', MAIN_KEYBOARD);
+    return;
+  }
+  const { rows, season, manifest } = await loadPilot();
+  const payload = buildSummaryPayload(f, rows, season, manifest.classes);
+  // Rainfed fields have nothing to word but the fixed sentence; Gemini added claims we cannot back there
+  const { text } = payload.degerlendirildi ? await explain(payload, 'summary') : { text: templateSummary(payload) };
+  const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, '');
+  const link = base ? `\n🗺 Haritada: ${base}/panel?field=${f.field_id}` : '';
+  await send(chatId, text + link, MAIN_KEYBOARD);
+}
+
+/**
+ * Sends the alert; with `cron`, stays silent out of season and adds a "plan changed" note.
+ * Out of season a pilot field gets its season summary instead of the plan.
+ */
 export async function sendAlert(chatId: string, farm: StoredFarm, opts: { cron?: boolean } = {}): Promise<'sent' | 'skipped'> {
   const chat = await ensureChat(chatId);
   const alert = await composeAlert(farm);
   if (opts.cron && !alert.inSeason) return 'skipped';
+  if (!alert.inSeason && isPilotId(farm.id)) {
+    await sendSummary(chatId, farm.id);
+    await saveChat({ ...chat, farmId: farm.id, lastSignature: alert.signature });
+    return 'sent';
+  }
   const note = opts.cron ? planChangeNote(chat.lastSignature, alert.signature, alert.payload) : null;
   if (note) await send(chatId, note);
   await send(chatId, alert.text, MAIN_KEYBOARD);
@@ -235,11 +289,66 @@ function plannedNetMm(week: SeasonAnalysis, date: string): number | null {
 // --- Updates --------------------------------------------------------------------------------
 
 export interface TgUpdate {
-  message?: { chat: { id: number }; text?: string; voice?: unknown; audio?: unknown };
+  message?: {
+    chat: { id: number };
+    text?: string;
+    voice?: unknown;
+    audio?: unknown;
+    location?: { latitude: number; longitude: number };
+  };
   callback_query?: { id: string; data?: string; message?: { chat: { id: number } } };
 }
 
 const HOURS = /(\d+(?:[.,]\d+)?)\s*(?:saat|sa)\b/i;
+/** Deep link argument for a pilot field (Telegram start parameters allow [A-Za-z0-9_-]). */
+const PILOT_START = /^field_(F\d+)$/;
+
+async function linkFarm(chatId: string, farm: StoredFarm): Promise<void> {
+  await ensureChat(chatId, farm.id);
+  await send(
+    chatId,
+    `Merhaba! 👋 Bu sohbet "${place(farm)} – ${cropName(farm)}, ${tr(farm.input.areaDecare, 1)} dekar" tarlasına bağlandı.\nHer sabah 07:00'de sulama planınızı gönderirim. Suladığınızda veya yağmur yağdığında aşağıdaki butonlarla bana haber verin.`,
+  );
+  await sendAlert(chatId, farm);
+}
+
+/** Links a pilot field; crops without engine parameters get the summary only. */
+async function linkPilot(chatId: string, fieldId: string): Promise<void> {
+  const farmId = `${PILOT_PREFIX}${fieldId}`;
+  const farm = await loadFarm(farmId);
+  if (farm) return linkFarm(chatId, farm);
+  await ensureChat(chatId, farmId);
+  await send(chatId, `Merhaba! 👋 Bu sohbet ${fieldId} tarlasına bağlandı.`);
+  await sendSummary(chatId, farmId);
+}
+
+/** Photo of the candidate field with "yes" / "another field" buttons. */
+async function offerField(chatId: string, ids: string[]): Promise<void> {
+  const { byId, shapes, manifest } = await loadPilot();
+  const [id, ...rest] = ids;
+  const f = byId.get(id);
+  const rings = shapes[id];
+  if (!f || !rings) return;
+  const keyboard: Keyboard = [[{ text: '✅ Evet, bu tarla', callback_data: `link:${id}` }]];
+  if (rest.length) keyboard.push([{ text: '➡️ Başka tarla', callback_data: `alt:${rest.join(',')}` }]);
+  const caption = `${id} – ${manifest.classes[f.class] ?? f.class}, ${tr(f.area_ha * 10, 1)} dekar (uydu görüntüsünün ortasında).\nBu sizin tarlanız mı? Görüntü: Esri`;
+  await sendPhoto(chatId, imageryUrl(fieldBbox(rings)), caption, keyboard);
+}
+
+async function handleLocation(chatId: string, lat: number, lon: number): Promise<void> {
+  const { shapes, rows } = await loadPilot();
+  const ids = findFields(shapes, rows, lon, lat);
+  if (!ids.length) {
+    await tg('sendMessage', {
+      chat_id: chatId,
+      text: 'Paylaştığınız konumda pilot alana ait bir tarla bulamadım (Karapınar kuzey/kuzeybatısı). Örnek tarlayla denemek için /demo yazabilirsiniz.',
+      reply_markup: { remove_keyboard: true },
+    });
+    return;
+  }
+  await tg('sendMessage', { chat_id: chatId, text: '📍 Konumunuz alındı.', reply_markup: { remove_keyboard: true } });
+  await offerField(chatId, ids);
+}
 
 export async function handleUpdate(update: TgUpdate): Promise<void> {
   if (update.callback_query) return handleCallback(update.callback_query);
@@ -247,6 +356,7 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
   if (!msg) return;
   const chatId = String(msg.chat.id);
 
+  if (msg.location) return handleLocation(chatId, msg.location.latitude, msg.location.longitude);
   if (msg.voice || msg.audio) {
     await send(chatId, 'Şimdilik lütfen yazarak anlatın.');
     return;
@@ -255,18 +365,26 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
 
   if (text.startsWith('/start')) {
     const arg = text.split(/\s+/)[1];
-    const farm = (arg && (await loadFarm(arg))) || (await loadFarm((await getStore().get<string>('latestFarm')) ?? 'demo')) || demoFarm();
-    await ensureChat(chatId, farm.id);
-    await send(
-      chatId,
-      `Merhaba! 👋 Bu sohbet "${place(farm)} – ${cropName(farm)}, ${tr(farm.input.areaDecare, 1)} dekar" tarlasına bağlandı.\nHer sabah 07:00'de sulama planınızı gönderirim. Suladığınızda veya yağmur yağdığında aşağıdaki butonlarla bana haber verin.`,
-    );
-    await sendAlert(chatId, farm);
+    const pilot = arg?.match(PILOT_START);
+    if (pilot) return linkPilot(chatId, pilot[1]);
+    const farm = arg ? await loadFarm(arg) : null;
+    if (farm) return linkFarm(chatId, farm);
+    await tg('sendMessage', {
+      chat_id: chatId,
+      text: 'Merhaba! 👋 Tarlanızı bulmam için tarlanızdayken konumunuzu paylaşın. Örnek tarlayla denemek için /demo yazabilirsiniz.',
+      reply_markup: LOCATION_KEYBOARD,
+    });
     return;
   }
 
+  if (text === '/demo') {
+    return linkFarm(chatId, (await loadFarm((await getStore().get<string>('latestFarm')) ?? 'demo')) ?? demoFarm());
+  }
+
   const chat = await ensureChat(chatId);
-  const farm = (await loadFarm(chat.farmId)) ?? demoFarm();
+  if (text === '/durum') return sendSummary(chatId, chat.farmId);
+  const farm = await farmFor(chat);
+  if (!farm) return noPlan(chatId, chat);
   const hours = text.match(HOURS);
 
   if (hours && chat.awaitingHoursFor) {
@@ -294,9 +412,15 @@ async function handleCallback(cq: NonNullable<TgUpdate['callback_query']>): Prom
   await tg('answerCallbackQuery', { callback_query_id: cq.id }).catch(() => undefined);
   const chatId = cq.message ? String(cq.message.chat.id) : null;
   if (!chatId) return;
-  const chat = await ensureChat(chatId);
-  const farm = (await loadFarm(chat.farmId)) ?? demoFarm();
   const data = cq.data ?? '';
+
+  if (data.startsWith('link:')) return linkPilot(chatId, data.slice(5));
+  if (data.startsWith('alt:')) return offerField(chatId, data.slice(4).split(',').filter(Boolean));
+
+  const chat = await ensureChat(chatId);
+  if (data === 'status') return sendSummary(chatId, chat.farmId);
+  const farm = await farmFor(chat);
+  if (!farm) return noPlan(chatId, chat);
 
   if (data === 'rain') {
     await send(chatId, 'Ne kadar yağdı?', RAIN_KEYBOARD);

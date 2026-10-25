@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/send-alert.ts": { "maxDuration": 60 },
-    "api/telegram-webhook.ts": { "maxDuration": 60 },
+    "api/send-alert.ts": { "maxDuration": 60, "includeFiles": "public/data/{manifest.json,fields_*.json,field_shapes.json}" },
+    "api/telegram-webhook.ts": { "maxDuration": 60, "includeFiles": "public/data/{manifest.json,fields_*.json,field_shapes.json}" },
     "api/explain-plan.ts": { "maxDuration": 60 },
     "api/parse-query.ts": { "maxDuration": 60 }
   },

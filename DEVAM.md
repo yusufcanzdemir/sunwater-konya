@@ -18,8 +18,10 @@ Bu not yalnızca PLAN.md'de olmayan "şu an ne yapıyorduk" bilgisini tutar.
 - **Bitti:** Aşama 11 — `11_budget.py` + `lib/budget.py`; KK6 önerilen varsayılanlarla kapandı (D19).
 - **Bitti:** Aşama 12 — `12_export.py` → `pipeline/outputs/12_export/data/` ve `public/data/` (repoda,
   Vercel statik).
-- **Bitti:** Aşama 13 — kurum paneli `src/panel/` (`/panel`), `/api/parse-query`. Sıradaki: Aşama 14
-  (Telegram çiftçi kanalı: sezon özeti + haftalık plan, uydu Kcb ile).
+- **Bitti:** Aşama 13 — kurum paneli `src/panel/` (`/panel`), `/api/parse-query`.
+- **Bitti:** Aşama 14 — Telegram pilot tarlalar (`src/farmer/pilot.ts`, `api/_lib/pilotData.ts`). Gerçek botla
+  uçtan uca deneme yapılmadı (kullanıcının sohbetine mesaj gitmesin diye); deploy sonrası `PUBLIC_BASE_URL`
+  ayarlanmalı. Sıradaki: Aşama 15 (METHODOLOGY.md, DATA_SOURCES.md, kaynak doğrulamalı literatür karşılaştırması).
   Ky kaynağı (FAO/IAEA, Moutonnet, Tablo 1: https://www.fao.org/4/Y3655E/y3655e04.htm) Aşama 15'te
   DATA_SOURCES.md'ye taşınacak.
 - **Sırada:** Aşama 9'u bitirmek → **KK5** (kalibrasyon kararı) → Aşama 10 (GRACE havza) →

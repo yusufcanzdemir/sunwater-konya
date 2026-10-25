@@ -1,4 +1,5 @@
 // Bot flows end to end with every network call faked: no real Telegram message, no Gemini call.
+import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { addDays } from '../../src/engine/dates';
 import { defaultAssumptions } from '../../src/state/assumptions';
@@ -137,5 +138,66 @@ describe('telegram bot', () => {
   it('falls back to the demo field for an unknown id', async () => {
     expect((await loadFarm('nope'))).toBeNull();
     expect((await loadFarm('demo'))?.input.crop).toBe('sugar_beet');
+  });
+});
+
+describe('pilot fields (stage 14)', () => {
+  const table = JSON.parse(readFileSync('public/data/fields_2025.json', 'utf8')) as { columns: string[]; rows: unknown[][] };
+  const rows = table.rows.map((r) => Object.fromEntries(table.columns.map((c, i) => [c, r[i]]))) as Record<string, any>[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const shapes = JSON.parse(readFileSync('public/data/field_shapes.json', 'utf8')) as Record<string, number[][][]>;
+  const pick = (cls: string) => rows.find((r) => r.class === cls && !r.uncertain && r.cal_start >= 0)!;
+  const inside = (id: string) => {
+    // a point just inside the first ring: midpoint between a vertex and the ring's mean
+    const ring = shapes[id][0];
+    const mx = ring.reduce((s, p) => s + p[0], 0) / ring.length;
+    const my = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+    return { longitude: mx, latitude: my };
+  };
+  const beet = pick('sugar_beet');
+  const alfalfa = pick('alfalfa');
+  const pilotChat = { id: 77 };
+
+  it('/start without an argument asks for the location', async () => {
+    await handleUpdate({ message: { chat: pilotChat, text: '/start' } });
+    expect(JSON.stringify(sent[0].body.reply_markup)).toContain('request_location');
+  });
+
+  it('a shared location offers the field under it with a satellite photo', async () => {
+    await handleUpdate({ message: { chat: pilotChat, location: inside(beet.field_id) } });
+    const photo = sent.find((s) => s.method === 'sendPhoto')!;
+    expect(String(photo.body.photo)).toContain('World_Imagery/MapServer/export');
+    expect(String(photo.body.caption)).toMatch(/^F\d+ – /);
+    expect(JSON.stringify(photo.body.reply_markup)).toContain('link:F');
+  });
+
+  it('a location outside the pilot fields is refused', async () => {
+    await handleUpdate({ message: { chat: pilotChat, location: { latitude: 39.9, longitude: 32.85 } } });
+    expect(messages()[0]).toContain('pilot alana ait bir tarla bulamadım');
+  });
+
+  it('confirming links the field; "Tarlamın durumu" sends the satellite season summary', async () => {
+    await handleUpdate({ callback_query: { id: 'cb', data: `link:${beet.field_id}`, message: { chat: pilotChat } } });
+    expect(messages().join('\n')).toContain('bağlandı');
+    sent.length = 0;
+    await handleUpdate({ callback_query: { id: 'cb', data: 'status', message: { chat: pilotChat } } });
+    const text = messages()[0];
+    expect(text.split('\n')[0]).toBe(`🌱 ${beet.field_id} – Şeker pancarı tarlası, 2025 sezonu`);
+    expect(text).toContain(`yaklaşık ${Math.round(beet.blue_mm).toLocaleString('tr-TR')} mm`);
+  });
+
+  it('the engine farm of a pilot field is calibrated from its satellite calendar', async () => {
+    const farm = (await loadFarm(`field:${beet.field_id}`))!;
+    expect(farm.input.crop).toBe('sugar_beet');
+    expect(farm.input.irrigationMethod).toBe('sprinkler');
+    expect(farm.assumptions.crops.sugar_beet.stages.mid).toBeGreaterThanOrEqual(10);
+    expect(farm.input.areaDecare).toBeCloseTo(beet.area_ha * 10, 0);
+  });
+
+  it('crops without engine parameters get the summary but no weekly plan', async () => {
+    await handleUpdate({ callback_query: { id: 'cb', data: `link:${alfalfa.field_id}`, message: { chat: pilotChat } } });
+    expect(messages().join('\n')).toContain(`${alfalfa.field_id} – Yonca tarlası, 2025 sezonu`);
+    sent.length = 0;
+    await handleUpdate({ callback_query: { id: 'cb', data: 'weekly', message: { chat: pilotChat } } });
+    expect(messages()[0]).toContain('Yonca için haftalık sulama planı hesaplamıyoruz');
   });
 });

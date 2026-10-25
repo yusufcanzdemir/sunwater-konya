@@ -64,3 +64,29 @@ def pump_energy_kwh(blue_m3, head_m: float, pump_efficiency: float, irrigation_e
 def deficit_yield_loss(ky: float, et_reduction: float) -> float:
     """FAO-33: 1 - Ya/Ym = Ky (1 - ETa/ETm); returns the relative yield loss."""
     return ky * et_reduction
+
+
+def crop_calendar(kcb: np.ndarray, present: float, mid_share: float) -> dict[str, np.ndarray]:
+    """Satellite crop calendar per field, as day offsets into the season (-1 where never cropped).
+
+    start / end: first / last day with Kcb > present; mid_start / mid_end: first / last day with
+    Kcb >= mid_share · peak; peak: maximum Kcb. Used to calibrate the farmer-side FAO-56 engine.
+    """
+    d = kcb.shape[1]
+    peak = kcb.max(axis=1)
+    above = kcb > present
+    mid = kcb >= (mid_share * peak)[:, None]
+
+    def first(mask):
+        return np.where(mask.any(axis=1), np.argmax(mask, axis=1), -1)
+
+    def last(mask):
+        return np.where(mask.any(axis=1), d - 1 - np.argmax(mask[:, ::-1], axis=1), -1)
+
+    cropped = above.any(axis=1)
+    mid &= above
+    out = {"start": first(above), "end": last(above), "mid_start": first(mid), "mid_end": last(mid),
+           "peak": np.where(cropped, peak, np.nan)}
+    for k in ("mid_start", "mid_end"):
+        out[k] = np.where(cropped, out[k], -1)
+    return out

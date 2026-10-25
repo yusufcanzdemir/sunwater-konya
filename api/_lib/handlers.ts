@@ -5,6 +5,7 @@ import { GoogleGenAI, Type, type Schema } from '@google/genai';
 import { checkExplanation, templateExplanation, type ExplainPayload } from '../../src/ai/explain.js';
 import { MAX_FARM_TEXT_LENGTH, sanitizeParsedFarm } from '../../src/ai/parseFarm.js';
 import { templateTelegram, type TelegramPayload } from '../../src/ai/telegram.js';
+import { templateSummary, type SummaryPayload } from '../../src/farmer/pilot.js';
 import { STATUSES } from '../../src/panel/data.js';
 import { CLASS_IDS, REGIONS, SORT_KEYS, sanitizeQuery } from '../../src/panel/query.js';
 
@@ -20,6 +21,9 @@ const EXPLAIN_RULES =
 const EXPLAIN_SYSTEM_INSTRUCTION = `Konya'daki bir çiftçiye sulama planını sade Türkçeyle, en fazla 6 cümlede anlat. ${EXPLAIN_RULES}`;
 
 const TELEGRAM_SYSTEM_INSTRUCTION = `Konya'daki bir çiftçiye sulama planını sade Türkçeyle, Telegram mesajı olarak en fazla 5 kısa satırda anlat; her satır tek bir emoji ile başlasın, ilk satır tarlanın adı olsun. ${EXPLAIN_RULES}`;
+
+const SUMMARY_SYSTEM_INSTRUCTION =
+  "Konya'daki bir çiftçiye tarlasının geçen sezonki yeraltı suyu tüketimini sade Türkçeyle, Telegram mesajı olarak en fazla 5 kısa satırda anlat; her satır tek bir emoji ile başlasın, ilk satır tarla kodu, ürün ve sezon olsun. YALNIZCA verilen JSON'daki sayıları kullan, yeni sayı üretme. Teknik terim kullanma. Tüketimi uydu ölçümü olarak ver ve aralığı da söyle. Benzer tarlaların ortancası ve verimli sulama (damla) referansıyla karşılaştır. Suçlayıcı olma: durum aşım veya sınırda ise bunu damla sulama ve daha az toprak ıslatmayla tasarruf imkânı olarak anlat. degerlendirildi false ise tarlanın yağışa dayalı olduğunu ve tüketimin hesaplanmadığını söyle. goreli_dusuk_et true ise bitki gelişimini kontrol etmesini öner.";
 
 const nullableString = (description?: string): Schema => ({ type: Type.STRING, nullable: true, description });
 const nullableNumber = (description?: string): Schema => ({ type: Type.NUMBER, nullable: true, description });
@@ -146,7 +150,7 @@ export async function parseFarm(request: Request): Promise<Response> {
   }
 }
 
-export type ExplainFormat = 'web' | 'telegram';
+export type ExplainFormat = 'web' | 'telegram' | 'summary';
 
 export interface Explanation {
   text: string;
@@ -159,21 +163,33 @@ const MAX_TELEGRAM_LINES = 5;
  * Gemini text for an engine payload, checked so it only repeats the payload's numbers;
  * one retry, then the deterministic template.
  */
-export async function explain(payload: ExplainPayload | TelegramPayload, format: ExplainFormat): Promise<Explanation> {
+export async function explain(
+  payload: ExplainPayload | TelegramPayload | SummaryPayload,
+  format: ExplainFormat,
+): Promise<Explanation> {
   const template = (): Explanation => ({
-    text: format === 'telegram' ? templateTelegram(payload as TelegramPayload) : templateExplanation(payload as ExplainPayload),
+    text:
+      format === 'telegram'
+        ? templateTelegram(payload as TelegramPayload)
+        : format === 'summary'
+          ? templateSummary(payload as SummaryPayload)
+          : templateExplanation(payload as ExplainPayload),
     source: 'template',
   });
   const ai = client();
   if (!ai) return template();
 
   // Kept outside the spec's system instruction: the retrospective is a what-if, not a measured result.
+  const conditional = 'Tasarrufu koşullu anlat ("sağlardı", "kazandırırdı"), "sağlandı" deme.';
   const what =
     format === 'telegram'
-      ? '"gecmis_sezon_tasarruf" ve "hafta_tasarruf" tahmindir.'
-      : '"gecmis_sezon" bir tahmindir; bu plan geçen sezon uygulanmadı.';
-  const input = `${JSON.stringify(payload)}\n\nNot: ${what} Tasarrufu koşullu anlat ("sağlardı", "kazandırırdı"), "sağlandı" deme. Sayıları yazıyla değil, JSON'daki gibi rakamla yaz (ör. 60.878).`;
-  const systemInstruction = format === 'telegram' ? TELEGRAM_SYSTEM_INSTRUCTION : EXPLAIN_SYSTEM_INSTRUCTION;
+      ? `"gecmis_sezon_tasarruf" ve "hafta_tasarruf" tahmindir. ${conditional}`
+      : format === 'summary'
+        ? 'Tüketim uydudan bir tahmindir (aralığıyla birlikte); referans bir hedeftir, ölçüm değildir.'
+        : `"gecmis_sezon" bir tahmindir; bu plan geçen sezon uygulanmadı. ${conditional}`;
+  const input = `${JSON.stringify(payload)}\n\nNot: ${what} Sayıları yazıyla değil, JSON'daki gibi rakamla yaz (ör. 60.878).`;
+  const systemInstruction =
+    format === 'telegram' ? TELEGRAM_SYSTEM_INSTRUCTION : format === 'summary' ? SUMMARY_SYSTEM_INSTRUCTION : EXPLAIN_SYSTEM_INSTRUCTION;
   const deadline = Date.now() + EXPLAIN_DEADLINE_MS;
   let note = '';
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -184,7 +200,7 @@ export async function explain(payload: ExplainPayload | TelegramPayload, format:
       }, deadline);
       const text = (response.text ?? '').trim();
       const check = checkExplanation(text, payload);
-      const tooLong = format === 'telegram' && text.split('\n').filter((l) => l.trim()).length > MAX_TELEGRAM_LINES;
+      const tooLong = format !== 'web' && text.split('\n').filter((l) => l.trim()).length > MAX_TELEGRAM_LINES;
       if (check.ok && !tooLong) return { text, source: 'gemini' };
       note = tooLong
         ? `Önceki yanıt ${MAX_TELEGRAM_LINES} satırdan uzundu. En fazla ${MAX_TELEGRAM_LINES} kısa satır yaz.`

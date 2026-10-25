@@ -10,6 +10,7 @@ Outputs (outputs/12_export/data/, served as /data/ by the web app):
   field/<id>.json          per field, both seasons: daily NDVI, ET, cumulative blue ET and S1 budget line
   basin.json               GRACE / GLDAS monthly series and trends (stage 10)
   metrics.json             validation metrics of stages 3, 6-11
+  field_shapes.json        simplified outer rings of every field (Telegram location lookup)
   manifest.json            what was generated, when, from which parameters
 Everything except the GeoParquet files is then copied to export.publish_dir (public/data, D20).
 """
@@ -26,6 +27,7 @@ import numpy as np
 import pandas as pd
 import pyogrio
 
+from lib.budget import crop_calendar
 from lib.config import load_config, step_output_dir
 from lib.fields import load_fields, simplified
 
@@ -72,12 +74,31 @@ def attribute_table(gdf: gpd.GeoDataFrame) -> dict:
             "blue_mm_low", "blue_mm_high", "blue_m3", "reference_mm", "budget_s1_mm", "budget_s2_mm",
             "ratio_s1", "ratio_s2", "status_s1", "status_s2", "stress_flag", "energy_kwh", "energy_s1_kwh",
             "lever_evap_mm", "lever_deficit_mm", "lever_deficit_yield_loss", "lever_switch_to",
-            "lever_switch_mm", "lon", "lat"]
+            "lever_switch_mm", "lon", "lat", "cal_start", "cal_mid_start", "cal_mid_end", "cal_end", "kcb_peak"]
     df = df[cols].copy()
-    for col in ("class_prob", "area_ha", "ratio_s1", "ratio_s2", "lever_deficit_yield_loss"):
+    for col in ("class_prob", "area_ha", "ratio_s1", "ratio_s2", "lever_deficit_yield_loss", "kcb_peak"):
         df[col] = df[col].round(3)
     df = df.astype(object).where(df.notna(), None)
     return {"columns": cols, "rows": df.to_numpy().tolist()}
+
+
+def calendar(cfg: dict, daily: pd.DataFrame) -> pd.DataFrame:
+    """Satellite crop calendar (day offsets from the season start) for the farmer-side engine."""
+    kcb = daily.pivot(index="field_id", columns="date", values="kcb")
+    cal = crop_calendar(kcb.to_numpy(float), cfg["et"]["crop_present_kcb"], cfg["export"]["calendar_mid_share"])
+    df = pd.DataFrame({f"cal_{k}": v for k, v in cal.items() if k != "peak"}, index=kcb.index)
+    df["kcb_peak"] = cal["peak"]
+    return df.reset_index()
+
+
+def field_shapes(geoms: gpd.GeoDataFrame, tolerance_m: float) -> dict:
+    """Simplified outer rings, for finding the field under a shared location (Telegram)."""
+    s = simplified(geoms[["field_id", "geometry"]], tolerance_m)
+    out = {}
+    for fid, geom in zip(s["field_id"], s.geometry):
+        polys = list(geom.geoms) if geom.geom_type == "MultiPolygon" else [geom]
+        out[fid] = [[[round(x, 5), round(y, 5)] for x, y in poly.exterior.coords] for poly in polys]
+    return out
 
 
 def series_round(a: np.ndarray, decimals: int) -> list:
@@ -147,9 +168,10 @@ def main() -> int:
         gdf = field_table(cfg, year, geoms)
         gdf.to_parquet(out / f"fields_{year}.parquet", index=False)
         write_pmtiles(gdf, out / f"fields_{year}.pmtiles", ecfg)
+        daily, _ = daily_frames(cfg, year)
+        gdf = gdf.merge(calendar(cfg, daily), on="field_id", how="left")
         (out / f"fields_{year}.json").write_text(json.dumps(attribute_table(gdf), separators=(",", ":")),
                                                  encoding="utf-8")
-        daily, _ = daily_frames(cfg, year)
         (out / f"season_{year}.json").write_text(
             json.dumps(season_player(daily, ecfg["player_step_days"]), separators=(",", ":")), encoding="utf-8")
         start = daily["date"].min().strftime("%Y-%m-%d")
@@ -188,7 +210,10 @@ def main() -> int:
     sizes = {"field_files": sum(1 for p in files if p.parent.name == "field"),
              "field_mb": round(sum(p.stat().st_size for p in files if p.parent.name == "field") / 1e6, 1),
              **{p.name: round(p.stat().st_size / 1e6, 2) for p in files if p.parent == out}}
+    (out / "field_shapes.json").write_text(json.dumps(field_shapes(geoms, ecfg["simplify_m"]), separators=(",", ":")),
+                                           encoding="utf-8")
     manifest = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "season_start_mmdd": scfg["start_mmdd"], "kcb_max": cfg["et"]["kcb_max"],
                 "seasons": years, "classes": cfg["labels"]["classes"], "budget_parameters": cfg["budget"],
                 "status_scenario_default": "s1", "sizes_mb": sizes}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1, ensure_ascii=False), encoding="utf-8")

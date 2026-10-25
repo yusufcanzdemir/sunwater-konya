@@ -36,7 +36,8 @@ export default function PanelApp() {
   const [tab, setTab] = useState<Tab>('map');
   const [rows, setRows] = useState<FieldRow[] | null>(null);
   const [query, setQuery] = useState<FieldQuery>(EMPTY_QUERY);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // /panel?field=F01234 (Telegram summary link) opens that field
+  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('field'));
   const [player, setPlayer] = useState<{ frame: PlayerFrame; date: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from lib.budget import (
-    class_median_curve, deficit_yield_loss, fraction_from_kcb, pump_energy_kwh, seasonal_blue,
+    class_median_curve, crop_calendar, deficit_yield_loss, fraction_from_kcb, pump_energy_kwh, seasonal_blue,
     status, target_factor, wetted_fraction_ke,
 )
 from lib.et import basal_kc
@@ -55,3 +55,16 @@ def test_pump_energy_matches_prototype_formula():
 
 def test_deficit_yield_loss():
     assert deficit_yield_loss(1.25, 0.1) == pytest.approx(0.125)
+
+
+def test_crop_calendar():
+    t = np.arange(100)
+    kcb = np.vstack([
+        np.clip(np.interp(t, [0, 20, 40, 60, 80, 99], [0.15, 0.15, 1.1, 1.1, 0.2, 0.15]), 0, None),
+        np.full(100, 0.15),
+    ])
+    cal = crop_calendar(kcb, 0.3, 0.9)
+    assert cal["start"][0] == 24 and cal["end"][0] == 77  # 0.15 + 0.0475 k > 0.3 from k = 4
+    assert 37 <= cal["mid_start"][0] <= 38 and 62 <= cal["mid_end"][0] <= 63
+    assert cal["peak"][0] == pytest.approx(1.1)
+    assert cal["start"][1] == -1 and cal["mid_end"][1] == -1 and np.isnan(cal["peak"][1])
