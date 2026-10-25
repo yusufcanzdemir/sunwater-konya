@@ -1,62 +1,125 @@
 # SunWater Konya
 
-**AI-powered irrigation planning for sustainable groundwater management.**
+**Satellite-measured groundwater use per field, a water budget for the Konya Closed Basin, and solar-aware irrigation advice for farmers.**
 
-SunWater Konya is a data-driven irrigation planning project designed to help farmers in the Konya Closed Basin, Türkiye, make better irrigation decisions while reducing unnecessary groundwater extraction.
+The Konya Closed Basin (Türkiye) is losing groundwater. In a closed basin the water that is actually used up is the **blue water use**: evapotranspiration of irrigated crops minus effective rainfall. SunWater Konya measures it for every field in a pilot area from satellite data, compares it with a water budget, shows the result to institutions on a map, and tells each farmer, over Telegram, how their field did and when to irrigate with solar power.
 
-The project combines crop water requirement estimation, weather forecasts, rainfall data, and solar energy availability to generate practical irrigation recommendations tailored to individual fields.
+- **Pilot area:** north/north-west of Karapınar, 586 km², 3,448 fields detected from Sentinel-2.
+- **Seasons:** 2025 (main) and 2024.
+- **Rule:** nothing unmeasured is presented as measured; assumptions are labelled in the interface, and unverified figures are not used.
 
-## The Problem
+## What is in the repository
 
-Groundwater over-abstraction in the Konya Closed Basin raises concerns about declining groundwater levels, agricultural sustainability, and sinkhole formation. Solar-powered irrigation can reduce pumping costs, but without effective water management, low marginal energy costs may weaken incentives to conserve groundwater.
+| Part | Where | What it does |
+|---|---|---|
+| Processing pipeline | `pipeline/` (Python, Google Earth Engine) | Field boundaries, crop classes, ET and blue water per field, SEBAL check, GRACE basin trend, water budget, web export (stages 0–12) |
+| Institutional panel | `/panel` (`src/panel/`) | Map of all fields by budget status, filters, natural-language query, field detail, season player, basin tab, method and validation page, CSV |
+| Farmer planner | `/` (`src/`, `src/engine/`) | FAO-56 water balance and solar pumping plan for one field drawn or described by the farmer |
+| Telegram bot | `api/` | Links a farmer to a pilot field by location, sends the satellite season summary and the weekly solar irrigation plan |
+| Documentation | `docs/` | `METHODOLOGY.md`, `VALIDATION.md`, `DATA_SOURCES.md` |
 
-## Our Approach
+The decision log and the stage-by-stage plan are in `PLAN.md` (Turkish).
 
-- **Crop water requirements:** Estimate reference evapotranspiration (ET₀) and crop evapotranspiration (ETc) using FAO-56 principles.
-- **Weather-aware irrigation:** Incorporate rainfall forecasts and weather data into irrigation planning.
-- **Solar-aware scheduling:** Align pumping recommendations with expected solar energy availability.
-- **Accessible recommendations:** Use AI to translate structured calculations into clear, farmer-friendly guidance.
-- **Impact estimation:** Track estimated water savings, pumping energy use, and associated emissions under explicitly stated assumptions.
+## Architecture
 
-## Technology Stack
+```mermaid
+flowchart LR
+  subgraph EE[Google Earth Engine]
+    S2[Sentinel-2 / Sentinel-1]
+    LS[Landsat 8/9]
+    GR[GRACE / GLDAS / ERA5-Land / MODIS]
+  end
+  OM[Open-Meteo archive]
+  subgraph PY[pipeline/ Python stages 0-12]
+    SEG[Fields: SAM] --> CLS[Crop classes] --> ET[ET and blue water: NDVI-Kc]
+    ET --> SEB[SEBAL check]
+    ET --> BUD[Water budget]
+    BAS[Basin GRACE trend]
+    BUD --> EXP[Export]
+    BAS --> EXP
+  end
+  S2 --> SEG
+  OM --> ET
+  LS --> SEB
+  GR --> BAS
+  EXP -->|PMTiles, JSON| DATA[(public/data)]
+  DATA --> PANEL[/panel: MapLibre/]
+  DATA --> BOT[Telegram bot: api/]
+  PANEL -->|/api/parse-query| GEM[Gemini]
+  BOT -->|season summary, number-checked| GEM
+  BOT --> ENG[src/engine: FAO-56 + solar]
+  OMF[Open-Meteo forecast] --> ENG
+```
 
-- React and TypeScript
-- Open-Meteo weather and evapotranspiration APIs
-- FAO-56 crop water requirement methodology
-- Gemini API for natural-language interaction
+The pipeline runs offline and writes static files; the web app and the bot only read them. Gemini never produces numbers: every text it writes is checked so that it contains only numbers from the data, otherwise a fixed template is sent.
 
-## Institutional panel (`/panel`)
+## Results in one paragraph (2025)
 
-Map of every field in the pilot area (Karapınar north/northwest) with its satellite-measured blue-water use, budget status, SEBAL relative low-ET flag, levers and pump energy (assumption), plus the GRACE basin series and a "Yöntem ve Doğrulama" page. Data is precomputed by the Python pipeline (`pipeline/`, stages 1–12) and served statically from `public/data/` (regenerate with `pipeline/12_export.py`). Map: MapLibre GL + PMTiles. Natural-language field queries go through `/api/parse-query` (Gemini, structured output, sanitised against the filter schema).
+Measured blue water in the pilot: 221 million m³ (range 159–261). Against an efficient-irrigation (drip) reference, 801 of 3,147 irrigated fields are over budget and 1,570 borderline. An independent Landsat energy-balance model (SEBAL) gives about two-thirds of the NDVI-Kc values on crop days, a gap that is mostly structural (advection), so no calibration was applied. GRACE shows basin groundwater storage falling by 2.7 cm/yr (1.6 km³/yr) in 2018–2024, against no significant trend in 2003–2017. Details and limits: `docs/VALIDATION.md`.
 
-## Project Goals
+## Setup
 
-The long-term goal is to support more efficient agricultural water use, reduce avoidable groundwater extraction, and contribute to sustainable irrigation practices in the Konya Closed Basin.
+### Web app and API
 
-**Important:** Water savings, emissions reductions, and impacts on sinkhole risk are targets to be evaluated through field measurements and validated data. They are not yet established outcomes of the project.
+Node 20.19+ or 22.12+ (Vite requirement).
 
-## Telegram bot
+```bash
+npm install
+cp .env.example .env.local   # fill in the keys you need
+npm run dev                  # http://localhost:5173 (planner), http://localhost:5173/panel (panel)
+npm test                     # vitest
+npm run build                # type check + production build
+```
 
-The bot sends the field's plan to the farmer's phone and takes feedback ("✅ Suladım", "🌧 Yağmur yağdı", "📅 Haftalık plan"). The feedback is written into the water balance as observed records, so the next plan starts from the real field state. All numbers come from the engine; Gemini only rewords the message and is checked.
+`npm run dev` also serves the `/api/*` functions through a Vite middleware, so no Vercel CLI is needed locally. The panel reads `public/data/`, which is committed.
 
-| Endpoint | Purpose |
-| --- | --- |
-| `POST /api/telegram-webhook` | Telegram updates: `/start <fieldId>` links a chat to a field, button presses add records |
-| `POST /api/telegram-link` | Web app saves the current field and gets the `t.me/<bot>?start=<fieldId>` link (shown as QR) |
-| `POST /api/send-alert` | Web "Telegram'a bildirim gönder": alert to the chats linked to the field and `TELEGRAM_DEMO_CHAT_ID` |
-| `GET /api/send-alert` | Daily cron 07:00 Europe/Istanbul (`0 4 * * *` UTC in `vercel.json`); silent out of season, adds a "Plan değişti" note when the plan moved |
+### Environment variables
 
-### Environment
+All server-only (never prefix with `VITE_`); see `.env.example`.
 
-`TELEGRAM_BOT_TOKEN` (BotFather), `TELEGRAM_DEMO_CHAT_ID` (your user id), optional `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET`, and `KV_REST_API_URL` / `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`). Without Redis/KV the bot keeps chats and records in memory, which is fine locally but is lost on serverless cold starts.
+| Variable | Needed for |
+|---|---|
+| `GEMINI_API_KEY`, `GEMINI_MODEL` (optional) | Natural-language query, farmer text parsing, message wording (templates are used without it) |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot |
+| `TELEGRAM_DEMO_CHAT_ID` | Chat that receives the planner's "send alert" demo |
+| `TELEGRAM_WEBHOOK_SECRET` | Optional webhook check |
+| `TELEGRAM_POLLING=0` | Turns off local long-polling |
+| `CRON_SECRET` | Protects the daily cron endpoint |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_*`) | Persistent bot storage (memory otherwise) |
+| `PUBLIC_BASE_URL` | Optional: the Telegram summary links to `/panel?field=<id>` |
 
-A bot cannot write first: open the bot in Telegram and press **Start** once.
+### Processing pipeline
 
-### Local development
+Python 3.11+ (developed on 3.13) with [uv](https://docs.astral.sh/uv/); a Google Earth Engine account and a Cloud project registered for Earth Engine (set in `pipeline/config.yaml` → `earth_engine.project`, or `EE_PROJECT`).
 
-`npm run dev` long-polls Telegram (`getUpdates`) and feeds updates to the webhook handler, so no public URL is needed. Polling is skipped when a webhook is set; set `TELEGRAM_POLLING=0` to turn it off. Only one process may poll a bot at a time.
+```bash
+cd pipeline
+uv sync                      # on Windows without uv on PATH: py -3.13 -m uv sync
+uv run earthengine authenticate
+uv run pytest -q
+```
 
-### Webhook (after deploying)
+Run the stages in order (each writes to the git-ignored `pipeline/outputs/` and can be re-run; long Earth Engine steps cache their results):
+
+| Stage | Command | Output |
+|---|---|---|
+| 0 | `uv run python 00_setup_check.py` | Access check of every data source |
+| 1 | `uv run python 01_aoi.py` | Basin and pilot polygons, cropland stats |
+| 2 | `uv run python 02_composites.py --wait` | Sentinel-2 dekadal composites (Earth Engine assets) |
+| 3 | `uv run python 03b_merge_segments.py` then `uv run --extra sam python 03c_sam_segments.py` | Field boundaries (SAM ViT-H, CUDA GPU recommended; checkpoint path in config) |
+| 4–6 | `04_label_data.py`, `05_features.py`, `06_classify.py` | Field features and crop classes |
+| 7 | `07_et0.py` | Daily ET₀ and rain per weather cell |
+| 8 | `08_et_ndvikc.py` | Daily ET and seasonal blue water per field |
+| 9 | `09_sebal_validation.py` | SEBAL comparison and relative low-ET flag (~1 h, cached per overpass) |
+| 10 | `10_basin_context.py` | GRACE/GLDAS basin series and trends |
+| 11 | `11_budget.py` | Budgets, status, levers, pump energy |
+| 12 | `12_export.py` | Web data, copied to `public/data/` |
+
+The reference-drawing, labelling and checking tools used in stages 3–6 are dev-only pages: `/reference`, `/label`, `/check`.
+
+## Deploy (Vercel)
+
+The repository deploys as a Vite static site with Vercel functions in `api/`. `vercel.json` sets the `/panel` rewrite, function durations, the daily cron (07:00 Europe/Istanbul) and bundles `public/data` files into the bot functions. Set the environment variables above in the Vercel project. After deploying, register the Telegram webhook:
 
 ```bash
 curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
@@ -69,4 +132,25 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getWebhookInfo"
 curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/deleteWebhook"
 ```
 
-Assumptions used by the bot: rain buttons "az / orta / çok" = 5 / 15 / 30 mm; a typed duration ("6 saat") is converted to `Q × hours / area × efficiency` mm; "Suladım" without a duration records the planned net amount of the current round.
+## Telegram bot
+
+- `/start` asks for the farmer's location; the bot finds the pilot field under it and asks for confirmation with a satellite snapshot ("✅ Evet, bu tarla" / "➡️ Başka tarla"). `/start field_F01234` links a field directly; `/demo` links the demo field.
+- **📊 Tarlamın durumu** (`/durum`): satellite season summary – blue water with its range, the median of similar fields, the efficient-irrigation reference. Out of season this is the default message.
+- **📅 Haftalık plan**: 7-day solar pumping plan from the FAO-56 engine, with the crop calendar calibrated from the field's satellite season (sugar beet, maize, sunflower, irrigated wheat; other crops get the summary only).
+- **✅ Suladım / 🌧 Yağmur yağdı**: written into the water balance as observed records, so the next plan starts from the real field state.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /api/telegram-webhook` | Telegram updates |
+| `POST /api/telegram-link` | Planner saves the current field and gets the `t.me/<bot>?start=<fieldId>` link (QR) |
+| `POST /api/send-alert` | Planner "Telegram'a bildirim gönder": alert to the chats linked to the field and `TELEGRAM_DEMO_CHAT_ID` |
+| `GET /api/send-alert` | Daily cron; silent out of season, adds a "Plan değişti" note when the plan moved |
+| `POST /api/parse-query` | Panel natural-language query → filter JSON |
+
+A bot cannot write first: open it in Telegram and press **Start** once. Locally, `npm run dev` long-polls Telegram (skipped when a webhook is set; only one process may poll a bot at a time). Without Redis/KV, chats and records live in memory and are lost on serverless cold starts.
+
+Assumptions used by the bot: rain buttons "az / orta / çok" = 5 / 15 / 30 mm; a typed duration ("6 saat") becomes `Q × hours / area × efficiency` mm; for pilot fields the irrigation method, soil, pump and solar values are the demo assumptions (sprinkler, 120 m head, pump efficiency 0.50).
+
+## Limits
+
+Satellites see consumption, not pumping: water that percolates back to the aquifer is invisible, and "over budget" means saving potential against efficient irrigation. Crop classes have no measured accuracy. There are no flux-tower or lysimeter measurements in the pilot; ET is a satellite estimate with a stated range. Water savings, emission reductions and any effect on sinkhole risk are targets to be evaluated with field data, not established outcomes.

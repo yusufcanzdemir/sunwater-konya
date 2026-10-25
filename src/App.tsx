@@ -2,6 +2,7 @@ import { MapPin } from 'lucide-react';
 import { Suspense, lazy, useMemo, useState, type ReactNode } from 'react';
 import { buildExplainPayload } from './ai/explain';
 import { parsedFarmToForm, type ParsedFarm } from './ai/parseFarm';
+import { AppSwitch } from './components/AppSwitch';
 import { AssumptionsPanel } from './components/AssumptionsPanel';
 import { ExplanationPanel } from './components/ExplanationPanel';
 import { FarmFormView } from './components/FarmFormView';
@@ -282,11 +283,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-cream text-soil-900">
       <header className="border-b border-soil-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-5">
-          <h1 className="text-2xl font-bold text-wheat-800">Güneşli Sulama Asistanı</h1>
-          <p className="text-sm text-soil-600">
-            Tarlanızın su ihtiyacı ve güneşe göre sulama planı – FAO-56 yöntemi ve Open-Meteo'nun gerçek hava verisiyle.
-          </p>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-3 px-4 py-5">
+          <div>
+            <h1 className="text-2xl font-bold text-wheat-800">Güneşli Sulama Asistanı</h1>
+            <p className="text-sm text-soil-600">
+              Tarlanızın su ihtiyacı ve güneşe göre sulama planı – FAO-56 yöntemi ve Open-Meteo'nun gerçek hava verisiyle.
+            </p>
+          </div>
+          <AppSwitch current="/" />
         </div>
       </header>
       <ContextBand />

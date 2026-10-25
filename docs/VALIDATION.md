@@ -255,3 +255,27 @@ GWSA. Subsidence: EGMS does not cover Türkiye (D9); published InSAR studies are
 15 after verification. The basin series is context and is not used in the field budget.
 
 Sources: `pipeline/outputs/10_basin/basin.json`, `basin_series.parquet`, `basin_storage.png`.
+
+## 7. Uncertainty summary
+
+What is measured, what is estimated, and how large the known uncertainty is, for every figure
+the panel and the bot show. "Not quantified" means there is no independent measurement to put
+a number on it.
+
+| Output | Basis | Stated range / check | Not quantified |
+|---|---|---|---|
+| Field boundaries | SAM on Sentinel-2 | Test IoU mean 0.68, median 0.75 (33 fields); 64% of reference fields split into several segments | Errors outside the 66 reference fields |
+| Crop class | Clusters + phenology rules | 13% flagged uncertain; blind labels 5/8 agree (95% CI 31–86%) | Accuracy (no ground truth, D15) |
+| ET₀, rain | Open-Meteo, checked with ERA5-Land | ET₀ within 3.5% (2025) / 10% (2024); rain 19% / 42% apart; both in the ET range | – |
+| Seasonal ET, blue ET | NDVI-Kc, no stress | Low–high from NDVI bounds ± 0.05, Kcb_max ± 0.10, two weather sources: pilot blue water 159–261 Mm³ (2025) | Irrigation wetting (7-day assumption), actual stress |
+| Independent ET check | SEBAL, MODIS | SEBAL / NDVI-Kc 0.66 (2025), 0.59 (2024), r 0.63; mostly structural (§5) | True ET (no flux tower or lysimeter) |
+| Relative low-ET flag | SEBAL vs same-class fields | 127 (2025) / 119 (2024) fields, 38 in both years | Cause (deficit irrigation, poor stand or wrong class) |
+| Budget status | Reference need (class-median crop, drip) | Same model on both sides, shared errors largely cancel; same-wetting peer comparison flags ~2% | Real irrigation method per field |
+| S2 budget | Policy target | 20% reduction is an assumption (KK6) | Basin-consistent reduction for the pilot |
+| Pump energy | Formula with assumed head and efficiencies | Labelled "varsayım" | Real head, pump and method per field |
+| Deficit-irrigation yield loss | FAO-33 Ky (verified values only) | Not shown where Ky is not verified (alfalfa, second crops) | Stage-specific response |
+| Basin groundwater trend | GRACE CRI − GLDAS | 95% CI per period; four products agree in 2003–2017 (−0.20 to −0.30 cm/yr) | Surface-water share (lakes, reservoirs), leakage |
+
+Direction of the main known bias: NDVI-Kc is probably on the high side for irrigated fields
+(no stress, frequent wetting), SEBAL on the low side (energy-limited under advection). The
+literature comparison in §8 is the only external check on absolute seasonal values.

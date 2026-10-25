@@ -1,6 +1,7 @@
 // Institutional panel (/panel, PLAN.md stage 13): map, filters, cards, field panel, basin, method.
 
 import { useEffect, useMemo, useState } from 'react';
+import { AppSwitch } from '../components/AppSwitch';
 import { fmt } from '../components/ui';
 import BasinView from './BasinView';
 import { FilterBar, Legend, MapPlayer, QueryBox, SummaryCards } from './Controls';
@@ -113,9 +114,7 @@ export default function PanelApp() {
               </button>
             ))}
           </nav>
-          <a href="/" className="text-xs text-soil-600 underline">
-            Çiftçi planlayıcı
-          </a>
+          <AppSwitch current="/panel" />
         </div>
       </header>
 
