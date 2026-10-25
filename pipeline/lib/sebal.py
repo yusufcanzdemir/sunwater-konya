@@ -9,6 +9,7 @@ cool). H at the cold pixel is 0 and at the hot pixel equals Rn - G (classic SEBA
 import math
 
 import numpy as np
+import pandas as pd
 
 K = 0.41  # von Karman
 G_ACC = 9.81
@@ -85,6 +86,25 @@ def rn24_slob(albedo, rs24_wm2: float, ra24_wm2: float):
     """Daily net radiation, de Bruin (1987) as used in SEBAL: (1 - α) Rs24 - 110 τsw."""
     tau = rs24_wm2 / ra24_wm2
     return (1 - np.asarray(albedo)) * rs24_wm2 - 110 * tau
+
+
+def relative_stress(obs: pd.DataFrame, min_peers: int, ratio: float, min_obs: int) -> pd.DataFrame:
+    """Water-stress flag relative to peers, robust to a constant SEBAL bias (KK5).
+
+    `obs` has field_id, date, class, sebal_et_mm (cropped observations only). Each value is
+    divided by the median of the same class on the same overpass (groups of at least
+    `min_peers` fields); a field is flagged when the median of these relative values is below
+    `ratio` over at least `min_obs` overpasses.
+    """
+    d = obs.copy()
+    grp = d.groupby(["date", "class"])["sebal_et_mm"]
+    d["peers"] = grp.transform("size")
+    d["rel"] = d["sebal_et_mm"] / grp.transform("median")
+    d = d[d["peers"] >= min_peers]
+    agg = d.groupby("field_id")["rel"].agg(["median", "size"])
+    return pd.DataFrame({"field_id": agg.index, "sebal_rel_median": agg["median"].round(3),
+                         "rel_obs": agg["size"],
+                         "stress_flag": (agg["median"] < ratio) & (agg["size"] >= min_obs)}).reset_index(drop=True)
 
 
 # ---------------------------------------------------------------- Earth Engine

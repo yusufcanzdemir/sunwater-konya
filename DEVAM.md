@@ -8,8 +8,11 @@ Bu not yalnızca PLAN.md'de olmayan "şu an ne yapıyorduk" bilgisini tutar.
 - **Bitti:** Aşama 0–8 (kurulum, çalışma alanı, uydu kompozitleri, SAM ile 3.448 tarla,
   kümeleme + kurallarla ürün sınıfları, özellikler, ET0/yağış, NDVI-Kc ile tarla bazında ET ve
   mavi su). Sonuç: 2025 pilot mavi su ≈ 221 milyon m³ (aralık 159–261).
-- **Yarım:** Aşama 9 — SEBAL doğrulaması. Kod yazıldı ve test edildi; çalıştırma yarıda
-  durduruldu (54 adet 2025 geçişinin 16'sı işlendi, 2024 hiç başlamadı).
+- **Bitti:** Aşama 9 — SEBAL doğrulaması. Çalıştırma 2026-10-25'te tamamlandı (2025: 48,
+  2024: 44 geçiş; rapor `outputs/09_sebal/sebal_report.md`). SEBAL ekili günlerde NDVI-Kc'nin
+  ~%60–66'sı; yaz aylarında günlük net ışınım enerjisi (~6,4 mm) ET0'ın (~7,6 mm) altında, SEBAL
+  bu enerjiyi aşamadığı için yapısal olarak düşük kalıyor (adveksiyon). KK5 kararı verildi (D17):
+  kalibrasyon yok, göreli stres bayrağı. Aşama 9 tamamlandı; sıradaki Aşama 10.
 - **Sırada:** Aşama 9'u bitirmek → **KK5** (kalibrasyon kararı) → Aşama 10 (GRACE havza) →
   11 (bütçe, KK6) → 12 (dışa aktarım) → 13 (kurum paneli) → 14 (Telegram) → 15 (belgeler).
 
@@ -48,6 +51,8 @@ Bu not yalnızca PLAN.md'de olmayan "şu an ne yapıyorduk" bilgisini tutar.
 - `docs/METHODOLOGY.md` ve `docs/DATA_SOURCES.md` henüz yok (Aşama 15). Literatür
   karşılaştırması (Konya sulama deneyleri) kaynak doğrulanarak yapılacak; doğrulanmamış rakam
   kullanılmaz (kural 7).
+- Önceki proje dokümanındaki iddiaların kontrolü `docs/IDDIA_KONTROLU.md`'de (hangi rakam
+  kullanılabilir / kullanılamaz). Aşama 11 ve 15'te bakılacak.
 - Ürün sınıflarının doğruluğu ölçülmedi (D14, D15); panelde böyle gösterilecek.
 - React uygulamasının `/web` klasörüne taşınması Aşama 13'e bırakıldı.
 

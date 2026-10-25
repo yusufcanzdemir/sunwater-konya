@@ -6,7 +6,8 @@ For every Landsat 8/9 overpass in the season with enough clear sky over the pilo
   automatic hot / cold anchors on cropland; SEBAL with stability iteration (lib/sebal.py);
   daily ET = EF * Rn24 / λ; field means at 30 m on inner-buffered fields.
 Per-overpass results are cached in outputs/09_sebal/scenes/. Then, against the central NDVI-Kc
-daily ET of the same date: class bias / RMSE / ratio, a water-stress flag per field, and a
+daily ET of the same date: class bias / RMSE / ratio, a water-stress flag per field (relative to
+fields of the same class on the same overpass, KK5), and a
 MODIS MOD16 seasonal cross-check. Outputs: field_sebal_<year>.parquet, stress_<year>.parquet,
 sebal_report.{json,md}.
 """
@@ -212,14 +213,20 @@ def compare(cfg: dict, year: int, sebal_rows: pd.DataFrame, zones: Zones) -> tup
     crop = m[m["cropped"] & (m["et_mm"] > 1)].copy()
     crop["ratio"] = crop["sebal_et_mm"] / crop["et_mm"]
     agg = crop.groupby("field_id")["ratio"].agg(["median", "size"])
-    stress = (agg["median"] < bcfg["stress_ratio"]) & (agg["size"] >= bcfg["stress_min_obs"])
-    stress_df = pd.DataFrame({"field_id": agg.index, "season": year, "sebal_ratio_median": agg["median"].round(3),
-                              "sebal_obs": agg["size"], "stress_flag": stress.to_numpy()})
+    # Rainfed classes are not flagged: low ET there is expected, not a sign of under-irrigation
+    irrigated = crop[~crop["class"].isin(cfg["et"]["rainfed_classes"])]
+    stress_df = sebal.relative_stress(irrigated, bcfg["stress_min_peers"], bcfg["stress_ratio"],
+                                      bcfg["stress_min_obs"])
+    stress_df = stress_df.merge(pd.DataFrame({"field_id": agg.index, "sebal_ratio_median": agg["median"].round(3),
+                                              "sebal_obs": agg["size"]}).reset_index(drop=True),
+                                on="field_id", how="right")
+    stress_df["stress_flag"] = stress_df["stress_flag"].fillna(False).astype(bool)
+    stress_df.insert(1, "season", year)
     stress_share = (stress_df.merge(field_et[["field_id", "class"]], on="field_id")
                     .groupby("class")["stress_flag"].mean().round(3).to_dict())
     return {"overall": {"all": stats(m), "cropped": stats(m[m["cropped"]])}, "classes": by_class,
             "stress_share_by_class": stress_share,
-            "fields_with_obs": int(agg.shape[0]), "stress_fields": int(stress.sum())}, stress_df
+            "fields_with_obs": int(agg.shape[0]), "stress_fields": int(stress_df["stress_flag"].sum())}, stress_df
 
 
 def main() -> int:
@@ -288,7 +295,7 @@ def main() -> int:
                   f"{o.get('bias_mm')} mm/day, RMSE {o.get('rmse_mm')}, r {o.get('r')}, n {o.get('n')}",
                   f"MODIS MOD16 season ET on cropland {s['modis_mod16_season_mm_cropland']} mm vs NDVI-Kc "
                   f"area-weighted {s['ndvikc_season_et_mm_area_weighted']} mm",
-                  f"Water-stress flags: {s['comparison']['stress_fields']} of "
+                  f"Relative water-stress flags: {s['comparison']['stress_fields']} of "
                   f"{s['comparison']['fields_with_obs']} fields", "",
                   "| Class | n (cropped) | NDVI-Kc mm/d | SEBAL mm/d | Ratio | Bias | RMSE | r | Stress share |",
                   "|---|---|---|---|---|---|---|---|---|"]

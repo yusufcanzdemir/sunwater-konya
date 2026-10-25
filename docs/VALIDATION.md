@@ -160,3 +160,62 @@ Known limits (to be checked against SEBAL in stage 9, KK5):
   precipitation sources; the low scenario also credits the 100 mm initial soil water.
 
 Sources: `pipeline/outputs/08_et/et_report.json`, `field_et_<year>.parquet`.
+
+## 5. SEBAL check of NDVI-Kc ET (stage 9, decision gate KK5)
+
+Method summary (details in `pipeline/09_sebal_validation.py`, `pipeline/lib/sebal.py`,
+`config.yaml` → `sebal`): own implementation of classic SEBAL (Bastiaanssen et al. 1998) on
+Landsat 8/9 Collection 2 Level-2 overpasses with ≥ 50% clear sky over the pilot area. Automatic
+anchors on WorldCover cropland (cold: NDVI ≥ 95th percentile and LST ≤ 20th percentile among
+them; hot: NDVI ≤ 10th and LST ≥ 80th), stability iteration at the hot pixel and per pixel,
+ERA5-Land meteorology (pilot mean), daily ET = EF · Rn24 / λ with Rn24 after de Bruin (1987).
+Field means on the 30 m grid inside a 10 m inner buffer (≥ 4 pixels, ≥ 70% valid). Compared
+with the central NDVI-Kc daily ET of the same date.
+
+Overpasses used: 2025 48 (6 cloudy skipped), 2024 44 (11 cloudy skipped); no anchor failures.
+
+Results on crop-present days (Kcb > 0.30):
+
+| | 2025 | 2024 |
+|---|---|---|
+| SEBAL / NDVI-Kc (sum ratio) | 0.66 | 0.59 |
+| Mean difference NDVI-Kc − SEBAL | 2.0 mm/day | 2.6 mm/day |
+| RMSE | 2.6 mm/day | 3.3 mm/day |
+| Correlation r (field-days) | 0.64 | 0.63 |
+
+Irrigated classes all fall at ratio 0.53–0.81 (sugar beet 0.55–0.61, maize 0.58–0.65, alfalfa
+0.53–0.60); r is highest for sugar beet and maize (0.70–0.75). Rainfed cereal and fallow have
+SEBAL above NDVI-Kc (ratio ~1.6–2.2) at low absolute values (~1.4 vs 2.3–3.0 mm/day).
+
+Why SEBAL is lower — energy limit under advection. On the overpass days in June–August the
+daily net radiation of a crop surface (albedo 0.2) is equivalent to 6.4 mm/day on average,
+while ET0 is 7.6 mm/day: the dry surroundings supply additional sensible heat to irrigated
+fields. Classic SEBAL fixes H = 0 at the cold anchor and scales the instantaneous evaporative
+fraction with Rn24, so daily ET cannot exceed ~1.05 · Rn24 / λ. Full-canopy fields (Kcb ≥ 1.0)
+reach on average 0.68 · ET0 in SEBAL (90th percentile 5.8 mm/day against ET0 7.6), against
+1.12 · ET0 in NDVI-Kc. Green full-canopy beet and alfalfa at two-thirds of ET0 all summer is not
+a credible description of real stress; the gap is mostly structural. METRIC (cold anchor at
+1.05 · ETr, daily ET by ETrF · ETr) addresses this but would tie SEBAL to ET0 and make it a
+less independent check; not run.
+
+NDVI-Kc is likely at the high end: it assumes no stress and wetting every 7 days. Seasonal
+NDVI-Kc ET, 2025 area-weighted, Mar–Oct: sugar beet ~1,010 mm, maize ~970 mm, irrigated winter
+cereal ~800 mm, alfalfa ~1,360 mm (ET0 ~1,320 mm). Without flux-tower or lysimeter data the
+true value cannot be fixed; comparison with published Konya irrigation trials is pending
+(stage 15, sources verified first).
+
+MODIS MOD16A2GF seasonal ET on cropland: 209 mm (2025), 232 mm (2024), against NDVI-Kc 918 /
+941 mm area-weighted over fields. MOD16 (500 m, no irrigation input) is not usable as an
+absolute check for irrigated cropland; reported for completeness only.
+
+Decision at KK5 (PLAN.md D17): no calibration factor; NDVI-Kc stays the main estimate, with
+the SEBAL result stated next to it. The water-stress flag is relative to peers: SEBAL ET of a
+field divided by the median of the same class on the same overpass (≥ 10 fields); flagged when
+the median of these values is below 0.75 (assumption) over ≥ 3 crop-present overpasses.
+Rainfed cereal and fallow are not flagged. Result: 127 of 3,338 fields in 2025, 119 of 3,362
+in 2024 (38 in both years); 1–5% per irrigated class. A flag means "clearly less ET than
+similar fields on the same days" (possible deficit irrigation, poor stand, or a misclassified
+field), not a measured water deficit.
+
+Sources: `pipeline/outputs/09_sebal/sebal_report.{json,md}`, `field_sebal_<year>.parquet`,
+`stress_<year>.parquet`.

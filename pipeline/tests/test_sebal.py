@@ -1,10 +1,11 @@
 import math
 
+import pandas as pd
 import pytest
 
 from lib.sebal import (
     aero_resistance, daily_et_mm, dt_coefficients, friction_velocity, latent_heat, psi,
-    rn24_slob, solve_hot_pixel, wind_at_blend,
+    relative_stress, rn24_slob, solve_hot_pixel, wind_at_blend,
 )
 
 
@@ -49,3 +50,20 @@ def test_daily_et_units():
 
 def test_rn24_slob():
     assert float(rn24_slob(0.2, 300.0, 400.0)) == pytest.approx(0.8 * 300 - 110 * 0.75)
+
+
+def test_relative_stress_ignores_constant_bias():
+    # 12 maize fields on two overpasses, all at 60 % of "truth"; field 0 is at half its peers
+    rows = []
+    for date in ("2025-07-10", "2025-07-26"):
+        for fid in range(12):
+            rows.append({"field_id": fid, "date": date, "class": "maize",
+                         "sebal_et_mm": 2.0 if fid == 0 else 4.0 + 0.01 * fid})
+    out = relative_stress(pd.DataFrame(rows), min_peers=10, ratio=0.75, min_obs=2).set_index("field_id")
+    assert out.loc[0, "stress_flag"]
+    assert not out.loc[1:, "stress_flag"].any()
+    # One overpass only: not enough observations to flag
+    one = relative_stress(pd.DataFrame(rows[:12]), min_peers=10, ratio=0.75, min_obs=2)
+    assert not one["stress_flag"].any()
+    # Too few peers: no relative value at all
+    assert relative_stress(pd.DataFrame(rows[:5]), min_peers=10, ratio=0.75, min_obs=1).empty

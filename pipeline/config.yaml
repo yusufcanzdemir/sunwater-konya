@@ -201,8 +201,11 @@ sebal:
   scale_m: 30
   min_field_pixels: 4           # valid 30 m pixels needed for a field value
   min_field_valid: 0.7          # and this share of the field's pixels
-  stress_ratio: 0.7             # SEBAL / NDVI-Kc ET below this on cropped overpasses ...
-  stress_min_obs: 2             # ... in at least this many -> water-stress flag
+  # Water-stress flag relative to peers (KK5): SEBAL is ~40 % below NDVI-Kc on all irrigated
+  # classes (energy-limited under advection), so an absolute SEBAL / NDVI-Kc ratio flags most fields.
+  stress_min_peers: 10          # fields of the same class on the same overpass needed for a median
+  stress_ratio: 0.75            # ASSUMPTION: median of SEBAL / class-day median below this ...
+  stress_min_obs: 3             # ... over at least this many cropped overpasses -> flag
   modis_id: MODIS/061/MOD16A2GF # aggregate cross-check (ET band, 0.1 kg/m2 per 8 days)
 
 reference:
