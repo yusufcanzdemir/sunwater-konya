@@ -21,7 +21,15 @@ Bu not yalnızca PLAN.md'de olmayan "şu an ne yapıyorduk" bilgisini tutar.
 - **Bitti:** Aşama 13 — kurum paneli `src/panel/` (`/panel`), `/api/parse-query`.
 - **Bitti:** Aşama 14 — Telegram pilot tarlalar (`src/farmer/pilot.ts`, `api/_lib/pilotData.ts`). Gerçek botla
   uçtan uca deneme yapılmadı (kullanıcının sohbetine mesaj gitmesin diye); deploy sonrası `PUBLIC_BASE_URL`
-  ayarlanmalı. Sıradaki: Aşama 15 (METHODOLOGY.md, DATA_SOURCES.md, kaynak doğrulamalı literatür karşılaştırması).
+  ayarlanmalı.
+- **Bitti:** Aşama 15 — belgeler (docs/), lisans atıfları, Konya deneyleriyle karşılaştırma. Plan tamamlandı.
+
+## Açık kalan iyileştirmeler (plan dışı)
+- Sulu kışlık tahılda NDVI-Kc ET Konya deneylerinin %16–29 üstünde (VALIDATION §8): olgunlaşmada ıslatma
+  varsayımı ve ikinci ürünlü tarlaların kışlık tahıl sınıfına düşmesi incelenmeli.
+- Mısır (Kara & Sahin 2021) Tablo 3 değerleri bozuk PDF'ten okundu; atıf öncesi tekrar kontrol.
+- Telegram onay görüntüsüne tarla sınırı çizilmesi; gerçek botla uçtan uca deneme (deploy sonrası).
+- Open-Meteo ücretsiz API ve Earth Engine yalnızca ticari olmayan kullanım içindir; ürünleşirse abonelik gerekir.
   Ky kaynağı (FAO/IAEA, Moutonnet, Tablo 1: https://www.fao.org/4/Y3655E/y3655e04.htm) Aşama 15'te
   DATA_SOURCES.md'ye taşınacak.
 - **Sırada:** Aşama 9'u bitirmek → **KK5** (kalibrasyon kararı) → Aşama 10 (GRACE havza) →

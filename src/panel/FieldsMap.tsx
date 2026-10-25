@@ -6,6 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { Protocol } from 'pmtiles';
 import { useEffect, useRef } from 'react';
+import { ESRI_ATTRIBUTION, SENTINEL_ATTRIBUTION } from '../components/attribution';
 import { PILOT_BBOX } from './query';
 import { STATUS_COLORS, STATUS_NAMES, type FieldRow, type Scenario, type Status } from './data';
 
@@ -81,8 +82,8 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
       style: {
         version: 8,
         sources: {
-          imagery: { type: 'raster', tiles: [ESRI_IMAGERY], tileSize: 256, maxzoom: 19, attribution: 'Altlık © Esri' },
-          fields: { type: 'vector', url: pmtilesUrl(season), promoteId: 'field_id' },
+          imagery: { type: 'raster', tiles: [ESRI_IMAGERY], tileSize: 256, maxzoom: 19, attribution: ESRI_ATTRIBUTION },
+          fields: { type: 'vector', url: pmtilesUrl(season), promoteId: 'field_id', attribution: SENTINEL_ATTRIBUTION },
         },
         layers: [
           { id: 'imagery', type: 'raster', source: 'imagery' },

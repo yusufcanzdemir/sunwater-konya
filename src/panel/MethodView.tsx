@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { fmt } from '../components/ui';
 import { loadMetrics, type Manifest, type Metrics } from './data';
+import { KONYA_SUBSIDENCE, KONYA_TRIALS } from './literature';
 
 type Obj = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -22,13 +23,15 @@ const SOURCES: [string, string][] = [
   ['Sentinel-1 GRD', 'Sınıflandırmaya ek özellik'],
   ['Landsat 8/9 C2 L2', 'Yüzey sıcaklığı, SEBAL doğrulaması'],
   ['ESA WorldCover 2021', 'Tarım alanı maskesi'],
-  ['Open-Meteo arşivi', 'Günlük ET₀ (FAO-56) ve yağış'],
+  ['Open-Meteo arşivi ve tahmini (ücretsiz API, ticari olmayan kullanım; CC BY 4.0)', 'Günlük ET₀ (FAO-56) ve yağış, çiftçi planı'],
   ['ERA5-Land (saatlik/günlük)', 'ET₀ ve yağış çapraz kontrolü, SEBAL meteorolojisi'],
   ['MODIS MOD16A2GF', 'Sezonluk ET karşılaştırması'],
   ['GRACE/GRACE-FO JPL mascon RL06.3 CRI', 'Havza toplam su depolaması'],
   ['GLDAS 2.1 Noah', 'Toprak nemi, kar, bitki üstü su'],
   ['HydroSHEDS seviye 5', 'Konya Kapalı Havzası sınırı'],
-  ['FAO-56 (Allen vd. 1998), FAO-33 Ky (FAO/IAEA tablosu)', 'Bitki katsayıları, verim tepki katsayıları'],
+  ['FAO-56 (Allen vd. 1998), FAO-33 Ky (Moutonnet 2002, FAO Water Reports 22)', 'Bitki katsayıları, verim tepki katsayıları'],
+  ['Segment Anything (Kirillov vd. 2023, Apache 2.0)', 'Tarla sınırları'],
+  ['Esri World Imagery', 'Harita altlığı, Telegram tarla görüntüsü'],
 ];
 
 export default function MethodView({ manifest }: { manifest: Manifest }) {
@@ -49,6 +52,7 @@ export default function MethodView({ manifest }: { manifest: Manifest }) {
   const p = manifest.budget_parameters;
   const names = manifest.classes;
   const years = Object.keys(et.seasons).sort().reverse();
+  const cropEt = (m.crop_period_et ?? {}) as Record<string, Record<string, { median: number; p25: number; p75: number }>>;
 
   return (
     <div className="space-y-4">
@@ -153,8 +157,48 @@ export default function MethodView({ manifest }: { manifest: Manifest }) {
         </table>
         <p className="text-xs text-soil-600">
           SEBAL ekili günlerde NDVI-Kc'nin yaklaşık üçte ikisini veriyor. Fark büyük ölçüde yöntemsel: yaz aylarında günlük net ışınım ET₀'ın
-          altında kalıyor ve klasik SEBAL çevreden gelen ek ısıyı (adveksiyon) saymıyor. Bu yüzden kalibrasyon uygulanmadı; gerçek değer büyük
-          olasılıkla iki yöntemin arasında. MODIS (500 m, sulama bilgisi yok) sulu tarımda ölçüt olarak kullanılamaz.
+          altında kalıyor ve klasik SEBAL çevreden gelen ek ısıyı (adveksiyon) saymıyor. Bu yüzden kalibrasyon uygulanmadı. SEBAL değerleri her
+          üründe Konya tarla deneylerinin de altında kalıyor (aşağıdaki karşılaştırma). MODIS (500 m, sulama bilgisi yok) sulu tarımda ölçüt olarak
+          kullanılamaz.
+        </p>
+      </Section>
+
+      <Section title="Konya tarla deneyleriyle karşılaştırma">
+        <p className="text-xs text-soil-600">
+          Bitkinin tarlada olduğu günlerdeki NDVI-Kc ET'si (ürünü belirsiz olmayan tarlaların ortancası) ile Konya'da yayımlanmış tarla
+          deneylerinin sezonluk su tüketimi.
+        </p>
+        <table className="w-full text-left text-xs">
+          <thead className="text-soil-500">
+            <tr>
+              <th className="font-medium">Ürün</th>
+              {years.map((y) => (
+                <th key={y} className="font-medium">
+                  Uydu {y}
+                </th>
+              ))}
+              <th className="font-medium">Konya deneyleri</th>
+              <th className="font-medium">Kaynak</th>
+            </tr>
+          </thead>
+          <tbody>
+            {KONYA_TRIALS.map((r) => (
+              <tr key={r.cls} className="border-t border-soil-100 align-top">
+                <td>{names[r.cls] ?? r.cls}</td>
+                {years.map((y) => {
+                  const v = cropEt[y]?.[r.cls];
+                  return <td key={y}>{v ? `${fmt(v.median)} mm (${fmt(v.p25)}–${fmt(v.p75)})` : '–'}</td>;
+                })}
+                <td>{r.trial}</td>
+                <td className="text-soil-500">{r.source}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="text-xs text-soil-600">
+          Pancar ve ayçiçeğinde uydu tahmini deneylerin içinde veya biraz altında; mısırda tam sulama değerlerinin biraz üstünde; sulu kışlık
+          tahılda belirgin şekilde yüksek (1 Mart öncesi dahil edilmediği hâlde). Kışlık tahıl tüketimi bir üst tahmin olarak okunmalıdır. Deneyler
+          tek yer ve yılda, çoğunlukla damla sulamayla yapılmıştır; karşılaştırma ürün bazında büyüklük sırasını sınar, tek tarlayı değil.
         </p>
       </Section>
 
@@ -194,6 +238,20 @@ export default function MethodView({ manifest }: { manifest: Manifest }) {
         </table>
       </Section>
 
+      <Section title="Zemin çökmesi (yayımlanmış çalışmalar)">
+        <p className="text-xs text-soil-600">EGMS Türkiye'yi kapsamadığı için harita katmanı yok; hakemli InSAR/GNSS çalışmalarından özetler:</p>
+        <ul className="list-disc space-y-0.5 pl-5 text-xs">
+          {KONYA_SUBSIDENCE.map((s) => (
+            <li key={s.doi}>
+              {s.finding} — {s.citation},{' '}
+              <a className="underline" href={`https://doi.org/${s.doi}`} target="_blank" rel="noreferrer">
+                doi:{s.doi}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
       <Section title="Veri kaynakları">
         <ul className="list-disc space-y-0.5 pl-5 text-xs">
           {SOURCES.map(([s, use]) => (
@@ -208,7 +266,10 @@ export default function MethodView({ manifest }: { manifest: Manifest }) {
         <ul className="list-disc space-y-1 pl-5 text-xs">
           <li>Uydu tüketimi (ET) görür; toprağa sızan fazla sulama suyunu ve pompalanan hacmi görmez.</li>
           <li>Sahada ölçüm (akı kulesi, lizimetre) ve doğrulanmış ürün bilgisi yok; ET ve sınıflar uydu tahminidir.</li>
-          <li>NDVI-Kc stres yok ve her 7 günde bir ıslatma varsayar; değerler büyük olasılıkla aralığın üst tarafındadır.</li>
+          <li>
+            NDVI-Kc stres yok ve her 7 günde bir ıslatma varsayar. Konya deneylerine göre pancar ve ayçiçeğinde uyumlu, mısırda biraz, sulu kışlık
+            tahılda belirgin şekilde yüksek.
+          </li>
           <li>Sulama yöntemi, basma yüksekliği ve pompa verimi tarla bazında bilinmiyor; enerji rakamları varsayımdır.</li>
           <li>Obruk sayısı, yeraltı suyu düşüş miktarı, ruhsatsız kuyu sayısı gibi doğrulanmamış rakamlar kullanılmaz.</li>
         </ul>

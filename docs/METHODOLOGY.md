@@ -101,7 +101,8 @@ Per field and day, 1 March – 31 October:
 2. Canopy fraction f = (NDVI − NDVI_min) / (NDVI_max − NDVI_min), clamped to [0, 1]. NDVI_min =
    0.078 and NDVI_max = 0.911 are the 2nd and 99th percentiles of all field-dekad NDVI in 2025, used
    for both seasons.
-3. Basal crop coefficient Kcb = Kcb_min + (Kcb_max − Kcb_min) · f with Kcb_min = 0.15 and Kcb_max
+3. Basal crop coefficient Kcb = Kcb_min + (Kcb_max − Kcb_min) · f (the vegetation-index approach
+   reviewed by Pôças et al. 2020; ground-cover basis in Allen & Pereira 2009) with Kcb_min = 0.15 and Kcb_max
    by class from FAO-56 Table 17 (sugar beet, maize, alfalfa, cereal + second crop 1.15; winter
    cereals 1.10; sunflower, fallow, other 1.00).
 4. Soil evaporation, simplified FAO-56 dual-coefficient form:
@@ -219,4 +220,51 @@ not flagged. Cross-check: MODIS MOD16A2GF seasonal ET over cropland.
 
 ## References
 
-<!-- REFERENCES -->
+All references were checked against the publisher page, DOI metadata or the document itself on
+2026-10-25. Dataset citations and licences are in `docs/DATA_SOURCES.md`.
+
+- Allen, R.G., Pereira, L.S. (2009). Estimating crop coefficients from fraction of ground cover and
+  height. Irrigation Science, 28(1), 17–34. doi:10.1007/s00271-009-0182-z
+- Allen, R.G., Pereira, L.S., Raes, D., Smith, M. (1998). Crop evapotranspiration – Guidelines for
+  computing crop water requirements. FAO Irrigation and Drainage Paper 56. FAO, Rome.
+- Bastiaanssen, W.G.M., Menenti, M., Feddes, R.A., Holtslag, A.A.M. (1998). A remote sensing surface
+  energy balance algorithm for land (SEBAL). 1. Formulation. Journal of Hydrology, 212–213, 198–212.
+  doi:10.1016/S0022-1694(98)00253-4
+- Bastiaanssen, W.G.M., Pelgrum, H., Wang, J., Ma, Y., Moreno, J.F., Roerink, G.J., van der Wal, T.
+  (1998). A remote sensing surface energy balance algorithm for land (SEBAL). 2. Validation. Journal
+  of Hydrology, 212–213, 213–229. doi:10.1016/S0022-1694(98)00254-6
+- de Bruin, H.A.R. (1987). From Penman to Makkink. In: Hooghart, J.C. (ed.), Evaporation and Weather.
+  TNO Committee on Hydrological Research, Proceedings and Information 39, The Hague, 5–31. (Source of
+  the daily net radiation form Rn24 = (1 − α) Rs24 − 110 τsw; verified through Ferreira et al. 2020,
+  Agricultural and Forest Meteorology 291, 108052, doi:10.1016/j.agrformet.2020.108052; the 1987
+  original was not opened.)
+- Doorenbos, J., Kassam, A.H. (1979). Yield response to water. FAO Irrigation and Drainage Paper 33.
+  FAO, Rome.
+- Kirillov, A., Mintun, E., Ravi, N., Mao, H., Rolland, C., Gustafson, L., Xiao, T., Whitehead, S.,
+  Berg, A.C., Lo, W.-Y., Dollár, P., Girshick, R. (2023). Segment Anything. Proceedings of the
+  IEEE/CVF International Conference on Computer Vision (ICCV), 3992–4003.
+  doi:10.1109/ICCV51070.2023.00371
+- Lehner, B., Grill, G. (2013). Global river hydrography and network routing: baseline data and new
+  approaches to study the world's large river systems. Hydrological Processes, 27(15), 2171–2186.
+  doi:10.1002/hyp.9740
+- Liang, S. (2001). Narrowband to broadband conversions of land surface albedo I: Algorithms. Remote
+  Sensing of Environment, 76(2), 213–238. doi:10.1016/S0034-4257(00)00205-4
+- Moutonnet, P. (2002). Yield response factors of field crops to deficit irrigation. In: Deficit
+  Irrigation Practices, FAO Water Reports 22. FAO, Rome. https://www.fao.org/4/Y3655E/y3655e04.htm
+  (source of the seasonal Ky values; the FAO HTML front page carries a 2000 copyright line).
+- Mu, Q., Zhao, M., Running, S.W. (2011). Improvements to a MODIS global terrestrial
+  evapotranspiration algorithm. Remote Sensing of Environment, 115(8), 1781–1800.
+  doi:10.1016/j.rse.2011.02.019
+- Muñoz-Sabater, J. et al. (2021). ERA5-Land: a state-of-the-art global reanalysis dataset for land
+  applications. Earth System Science Data, 13(9), 4349–4383. doi:10.5194/essd-13-4349-2021
+- Pôças, I., Calera, A., Campos, I., Cunha, M. (2020). Remote sensing for estimating and mapping
+  single and basal crop coefficients: a review on spectral vegetation indices approaches.
+  Agricultural Water Management, 233, 106081. doi:10.1016/j.agwat.2020.106081
+- Rodell, M. et al. (2004). The Global Land Data Assimilation System. Bulletin of the American
+  Meteorological Society, 85(3), 381–394. doi:10.1175/BAMS-85-3-381
+- Watkins, M.M., Wiese, D.N., Yuan, D.-N., Boening, C., Landerer, F.W. (2015). Improved methods for
+  observing Earth's time variable mass distribution with GRACE using spherical cap mascons. Journal of
+  Geophysical Research: Solid Earth, 120(4), 2648–2671. doi:10.1002/2014JB011547
+- Wiese, D.N., Landerer, F.W., Watkins, M.M. (2016). Quantifying and reducing leakage errors in the JPL
+  RL05M GRACE mascon solution. Water Resources Research, 52(9), 7490–7502. doi:10.1002/2016WR019344
+- Zanaga, D. et al. (2022). ESA WorldCover 10 m 2021 v200. doi:10.5281/zenodo.7254221

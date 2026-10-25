@@ -134,7 +134,7 @@ export default function BasinView() {
           <li>GLDAS Noah sulama ve yeraltı suyu içermez; yeraltı suyu bileşeni kalan fark olarak hesaplanır.</li>
           <li>Göl ve baraj suyu (Beyşehir, Tuz Gölü, barajlar) ayrılmadı, yeraltı suyu bileşeninde kalır.</li>
           <li>GRACE-FO dönemi altı yıllık ve kurak yıllar içeriyor; bu dönemin hızı başlangıç ve bitiş aylarına duyarlıdır.</li>
-          <li>Zemin çökmesi: EGMS Türkiye'yi kapsamıyor; harita katmanı yok.</li>
+          <li>Zemin çökmesi: EGMS Türkiye'yi kapsamıyor, harita katmanı yok. Yayımlanmış InSAR çalışmaları havzada yılda 1–4 cm'den yer yer 90 mm'ye varan çökme bildiriyor (Üstün vd. 2015; Orhan vd. 2021, 2024); kaynaklar "Yöntem ve Doğrulama" sekmesinde.</li>
           <li>Bu seri bağlam bilgisidir, tarla bütçesinde kullanılmaz.</li>
         </ul>
       </section>

@@ -16,7 +16,9 @@ Aşama 15'te kullanılan satırlar bağlantılarıyla `docs/DATA_SOURCES.md`'ye 
 | Güneş pompaları aşırı çekimi artırabilir | Literatürde risk olarak destekleniyor; sonuç bağlama bağlı | Konya için araştırılacak risk olarak; Hindistan çalışmasının künyesi bulunmadan atıf yok |
 | Şebeke emisyon faktörü 0,44–0,48 kg CO₂/kWh | **Doğrulanmadı.** ETKB'nin 0,6242 tCO₂/MWh değeri güneş/rüzgâr projeleri için birleşik marj, tüketim faktörü değil | Kullanılmaz; CO₂ hesabı yapılacaksa faktörün yılı, tanımı ve kaynağı önce netleşmeli |
 | Karapınar GES ~1,35 GWp | Doğrulandı: ETKB faaliyet raporu, 2022 sonu 1.350 MWp / 1.000 MWe | Kaynakla birlikte |
-| Konya obruk sayısı, yeraltı suyu düşüşü, ruhsatsız kuyu sayısı | **Doğrulanmadı** | Kullanılmaz (PLAN kural 7) |
+| Konya obruk sayısı, yeraltı suyu seviyesi düşüşü, ruhsatsız kuyu sayısı | **Doğrulanmadı** | Kullanılmaz (PLAN kural 7) |
+| Konya'da zemin çökmesi hızı | Doğrulandı (2026-10-25): hakemli InSAR/GNSS çalışmaları yılda 1–4 cm (Üstün vd. 2015) ile yer yer 70–90 mm (Orhan vd. 2021, 2024) arası hız bildiriyor | Kaynağıyla birlikte (docs/DATA_SOURCES.md) |
+| Havza yeraltı suyu depolaması | Projede ölçüldü (GRACE, Aşama 10): 2018–2024 yılda −2,7 cm (−1,6 km³) | Belirsizlik aralığıyla (docs/VALIDATION.md §6) |
 | Konya'nın buğday / şeker pancarı sıralaması | Doğrulanmadı | TÜİK il-ürün tablosundan yıl belirtilerek alınırsa kullanılır |
 
 ## Örnek senaryo hesapları

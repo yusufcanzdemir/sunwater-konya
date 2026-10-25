@@ -7,6 +7,7 @@ import type { Feature, Polygon } from 'geojson';
 import L from 'leaflet';
 import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { ESRI_ATTRIBUTION } from './attribution';
 import { polygonAreaDecare, polygonCentroid } from '../engine/geometry';
 
 export interface DrawnField {
@@ -88,7 +89,7 @@ export default function FieldMap({
 }) {
   return (
     <MapContainer center={center ?? KARAPINAR} zoom={13} className="h-80 w-full rounded-lg sm:h-96" scrollWheelZoom={false}>
-      <TileLayer url={ESRI_IMAGERY} attribution="Tiles © Esri" maxZoom={19} />
+      <TileLayer url={ESRI_IMAGERY} attribution={ESRI_ATTRIBUTION} maxZoom={19} />
       <DrawControls onChange={onChange} />
       <Recenter center={center} />
     </MapContainer>

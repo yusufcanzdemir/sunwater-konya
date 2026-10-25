@@ -3,6 +3,7 @@ import { Suspense, lazy, useMemo, useState, type ReactNode } from 'react';
 import { buildExplainPayload } from './ai/explain';
 import { parsedFarmToForm, type ParsedFarm } from './ai/parseFarm';
 import { AppSwitch } from './components/AppSwitch';
+import { OpenMeteoCredit } from './components/attribution';
 import { AssumptionsPanel } from './components/AssumptionsPanel';
 import { ExplanationPanel } from './components/ExplanationPanel';
 import { FarmFormView } from './components/FarmFormView';
@@ -507,7 +508,9 @@ export default function App() {
       <footer className="border-t border-soil-200 bg-white">
         <div className="mx-auto max-w-6xl space-y-1 px-4 py-4 text-xs text-soil-500">
           <p>{DISCLAIMER}</p>
-          <p>Hava verisi: Open-Meteo (tahmin ve arşiv). Hesaplar tarayıcıda, açık formüllerle yapılır; yapay zekâ sayı üretmez.</p>
+          <p>
+            Hava verisi: <OpenMeteoCredit /> (tahmin ve arşiv). Hesaplar tarayıcıda, açık formüllerle yapılır; yapay zekâ sayı üretmez.
+          </p>
         </div>
       </footer>
     </div>

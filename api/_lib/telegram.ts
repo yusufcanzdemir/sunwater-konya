@@ -331,7 +331,8 @@ async function offerField(chatId: string, ids: string[]): Promise<void> {
   if (!f || !rings) return;
   const keyboard: Keyboard = [[{ text: '✅ Evet, bu tarla', callback_data: `link:${id}` }]];
   if (rest.length) keyboard.push([{ text: '➡️ Başka tarla', callback_data: `alt:${rest.join(',')}` }]);
-  const caption = `${id} – ${manifest.classes[f.class] ?? f.class}, ${tr(f.area_ha * 10, 1)} dekar (uydu görüntüsünün ortasında).\nBu sizin tarlanız mı? Görüntü: Esri`;
+  const caption = `${id} – ${manifest.classes[f.class] ?? f.class}, ${tr(f.area_ha * 10, 1)} dekar (uydu görüntüsünün ortasında).\nBu sizin tarlanız mı?
+Görüntü: Esri, Vantor, Earthstar Geographics`;
   await sendPhoto(chatId, imageryUrl(fieldBbox(rings)), caption, keyboard);
 }
 

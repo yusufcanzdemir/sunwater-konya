@@ -144,7 +144,23 @@ def metrics(cfg: dict) -> dict:
         "basin": {k: basin[k] for k in ("series", "trends", "gwsa_grace_period_product_range_cm_yr",
                                         "mean_monthly_grace_uncertainty_cm", "notes")},
         "budget": budget,
+        "crop_period_et": crop_period_et(cfg),
     }
+
+
+def crop_period_et(cfg: dict) -> dict:
+    """Median ET over crop-present days by class (confident fields), comparable to field trials."""
+    out = {}
+    for year in (cfg["seasons"]["main"], cfg["seasons"]["comparison"]):
+        et_dir = step_output_dir(cfg, "08_et")
+        d = pd.read_parquet(et_dir / f"daily_et_{year}.parquet", columns=["field_id", "kcb", "et_mm"])
+        crop = d[d["kcb"] > cfg["et"]["crop_present_kcb"]].groupby("field_id")["et_mm"].sum().rename("crop_et")
+        f = pd.read_parquet(et_dir / f"field_et_{year}.parquet", columns=["field_id", "class", "uncertain"])
+        f = f[~f["uncertain"]].join(crop, on="field_id")
+        q = f.groupby("class")["crop_et"].quantile([0.25, 0.5, 0.75]).unstack()
+        out[str(year)] = {c: {"p25": round(r[0.25]), "median": round(r[0.5]), "p75": round(r[0.75]),
+                              "fields": int((f["class"] == c).sum())} for c, r in q.iterrows()}
+    return out
 
 
 def main() -> int:

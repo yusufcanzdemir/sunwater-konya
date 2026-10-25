@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AppSwitch } from '../components/AppSwitch';
+import { PanelCredits } from '../components/attribution';
 import { fmt } from '../components/ui';
 import BasinView from './BasinView';
 import { FilterBar, Legend, MapPlayer, QueryBox, SummaryCards } from './Controls';
@@ -194,6 +195,9 @@ export default function PanelApp() {
         {tab === 'basin' && <BasinView />}
         {tab === 'method' && <MethodView manifest={manifest} />}
       </main>
+      <footer className="mx-auto max-w-screen-2xl px-4 pb-6">
+        <PanelCredits />
+      </footer>
     </div>
   );
 }

@@ -276,6 +276,42 @@ a number on it.
 | Deficit-irrigation yield loss | FAO-33 Ky (verified values only) | Not shown where Ky is not verified (alfalfa, second crops) | Stage-specific response |
 | Basin groundwater trend | GRACE CRI − GLDAS | 95% CI per period; four products agree in 2003–2017 (−0.20 to −0.30 cm/yr) | Surface-water share (lakes, reservoirs), leakage |
 
-Direction of the main known bias: NDVI-Kc is probably on the high side for irrigated fields
-(no stress, frequent wetting), SEBAL on the low side (energy-limited under advection). The
-literature comparison in §8 is the only external check on absolute seasonal values.
+Direction of the main known bias: SEBAL is on the low side (energy-limited under advection).
+NDVI-Kc assumes no stress and frequent wetting; against Konya field trials (§8) it agrees for
+sugar beet and sunflower, is a little high for maize and clearly high for irrigated winter
+cereals. The literature comparison is the only external check on absolute seasonal values.
+
+## 8. Comparison with Konya field trials
+
+Seasonal crop water consumption measured in field trials in the Konya plain, against the
+NDVI-Kc ET summed over the days the crop is in the field (Kcb > 0.30), median and interquartile
+range of confident fields. Sources were read in the original (references in
+`docs/DATA_SOURCES.md`); trial values are for full irrigation unless stated.
+
+| Crop | NDVI-Kc crop-period ET, 2025 median (IQR) | 2024 median | Konya trials |
+|---|---|---|---|
+| Sugar beet | 905 mm (843–959) | 942 mm | 958 mm, drip, Çumra 2013 (Kaya & Topak 2016); measured range 592–965 mm over treatments, 2012–2013 (Süheri et al. 2019, citing Topak et al. 2016); about 1,000 mm (cited in Kaya & Topak 2016) |
+| Grain maize | 842 mm (785–887) | 856 mm | 781–821 mm for full irrigation, drip, 2009–2010; the authors' recommended level 728–760 mm (Kara & Sahin 2021, values from the table; to be re-checked) |
+| Sunflower | 693 mm (646–730) | 712 mm | 749 mm for the wettest treatment (125% of pan evaporation), drip, 2013–2014 (Yavuz et al. 2019) |
+| Irrigated winter cereal | 661 mm (610–703) | 667 mm | 206–571 mm over 22 treatments including full irrigation (Tari 2016); 518 mm seasonal guideline value for wheat in Konya (cited in Dündar & Topak 2025) |
+| Alfalfa | 1,360 mm (1,323–1,392) | 1,410 mm | no Konya trial found |
+
+Reading:
+
+- Sugar beet and sunflower: the satellite estimate lies within, or slightly below, the
+  full-irrigation trial values. The NDVI-Kc "no stress" assumption does not inflate them.
+- Maize: the medians are 3–4% above the top of the full-irrigation range (821 mm) and 11–16%
+  above the recommended level. Trials used drip, which wets less soil than the sprinkler or furrow
+  irrigation common in farmers' fields, so part of the difference can be real soil evaporation.
+- Irrigated winter cereal: 16–17% above the highest trial value and 28–29% above the guideline,
+  although the satellite period starts on 1 March and leaves out autumn and winter ET. Winter cereal ET, and
+  with it blue water, is overestimated. Likely causes: the assumed 7-day irrigation wetting
+  continues while Kcb is above 0.30 during ripening, and some fields with a second crop after
+  harvest are classified as winter cereal (§2; e.g. F01128 in the panel). The 2025 irrigated
+  winter cereal total (45.9 Mm³) should be read as an upper estimate.
+- SEBAL (two-thirds of NDVI-Kc on crop days, §5) is below the trials for every crop, which
+  supports reading the SEBAL gap as structural rather than as widespread stress.
+
+Limits of the comparison: trials are single sites and years under controlled irrigation
+(mostly drip); satellite values are field medians in 2024–2025 under farmers' practice. The
+comparison checks the order of magnitude per crop, not individual fields.
