@@ -3,7 +3,7 @@ import type { ImpactFactors } from '../engine/impact';
 import type { SoilId, SoilParams } from '../engine/soil';
 import { IRRIGATION_METHOD_NAMES, type IrrigationMethod } from '../engine/waterBalance';
 import type { Assumptions } from '../state/assumptions';
-import { AssumptionBadge, NumberField } from './ui';
+import { NumberField } from './ui';
 
 interface Props {
   assumptions: Assumptions;
@@ -34,18 +34,13 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
     onChange({ ...assumptions, impactFactors: { ...assumptions.impactFactors, ...patch } });
 
   return (
-    <details className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
-      <summary className="cursor-pointer font-semibold text-soil-800">
-        Varsayımlar <AssumptionBadge />
-        <span className="ml-2 text-sm font-normal text-soil-500">
-          (FAO-56'dan yaklaşık değerler – düzenleyebilirsiniz, sonuç anında güncellenir)
-        </span>
-      </summary>
+    <details className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
+      <summary className="cursor-pointer font-semibold text-stone-700">Gelişmiş ayarlar</summary>
 
       <div className="mt-4 space-y-5">
         <section>
           <h4 className="mb-2 text-sm font-semibold text-soil-700">
-            Ürün katsayıları: {crop.name} <AssumptionBadge />
+            Ürün katsayıları: {crop.name}
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
             <NumberField label="Kc başlangıç" value={crop.kcIni} min={0} max={2} onChange={(kcIni) => setCrop({ kcIni })} />
@@ -71,7 +66,7 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
 
         <section>
           <h4 className="mb-2 text-sm font-semibold text-soil-700">
-            Toprak: {soil.name} <AssumptionBadge />
+            Toprak: {soil.name}
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <NumberField label="θ tarla kapasitesi" value={soil.thetaFc} min={0.01} max={0.7} onChange={(thetaFc) => setSoil({ thetaFc })} />
@@ -81,7 +76,7 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
 
         <section>
           <h4 className="mb-2 text-sm font-semibold text-soil-700">
-            Sulama ve yağış <AssumptionBadge />
+            Sulama ve yağış
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
             <NumberField
@@ -129,7 +124,7 @@ export function AssumptionsPanel({ assumptions, cropId, soilId, method, onChange
 
         <section>
           <h4 className="mb-2 text-sm font-semibold text-soil-700">
-            Enerji ve etki <AssumptionBadge />
+            Enerji ve etki
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <NumberField

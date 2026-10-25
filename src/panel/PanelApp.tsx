@@ -17,10 +17,13 @@ type Tab = 'map' | 'basin' | 'method';
 const TABS: [Tab, string][] = [
   ['map', 'Harita'],
   ['basin', 'Havza'],
-  ['method', 'Yöntem ve Doğrulama'],
+  ['method', 'Yöntem'],
 ];
 
 const LIST_LIMIT = 50;
+
+/** Ratio to the target as "+%18" / "−%5". */
+const overText = (r: number | null) => (r == null ? '' : `${r >= 1 ? '+' : '−'}%${fmt(Math.abs(r - 1) * 100)}`);
 
 function download(name: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
@@ -44,7 +47,7 @@ export default function PanelApp() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = 'Konya Su Bütçesi – Kurum Paneli';
+    document.title = 'SunWater · Kurumlar';
     loadManifest().then(
       (m) => {
         setManifest(m);
@@ -76,71 +79,47 @@ export default function PanelApp() {
   const classNames = manifest.classes;
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-soil-200 bg-white">
-        <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center gap-3 px-4 py-3">
-          <div className="mr-auto">
-            <h1 className="text-lg font-semibold text-soil-900">Konya Su Bütçesi · Kurum Paneli</h1>
-            <p className="text-xs text-soil-500">Karapınar kuzey/kuzeybatı pilot alanı · uydu tabanlı mavi su (yeraltı suyu) tüketimi</p>
-          </div>
-          <label className="text-xs text-soil-700">
-            Sezon{' '}
-            <select className="rounded border border-soil-300 bg-white px-1.5 py-1 text-sm" value={season} onChange={(e) => { setSeason(Number(e.target.value)); setSelectedId(null); }}>
+    <div className="min-h-screen bg-stone-50">
+      <AppSwitch current="/panel">
+          <select aria-label="Sezon" className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium" value={season} onChange={(e) => { setSeason(Number(e.target.value)); setSelectedId(null); }}>
               {manifest.seasons.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
               ))}
-            </select>
-          </label>
-          <label className="text-xs text-soil-700">
-            Senaryo{' '}
-            <select className="rounded border border-soil-300 bg-white px-1.5 py-1 text-sm" value={scenario} onChange={(e) => setScenario(e.target.value as Scenario)}>
+          </select>
+          <select aria-label="Hedef" className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium" value={scenario} onChange={(e) => setScenario(e.target.value as Scenario)}>
               {(['s1', 's2'] as Scenario[]).map((s) => (
                 <option key={s} value={s}>
                   {SCENARIO_NAMES[s]}
                 </option>
               ))}
-            </select>
-          </label>
-          <nav className="flex gap-1" aria-label="Sekmeler">
+          </select>
+          <nav className="flex gap-1 rounded-full bg-stone-100 p-1" aria-label="Sekmeler">
             {TABS.map(([id, name]) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
                 aria-current={tab === id ? 'page' : undefined}
-                className={`rounded-md px-3 py-1.5 text-sm ${tab === id ? 'bg-soil-800 text-white' : 'text-soil-700 hover:bg-soil-100'}`}
+                className={`rounded-full px-3 py-1 text-sm font-medium ${tab === id ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'}`}
               >
                 {name}
               </button>
             ))}
           </nav>
-          <AppSwitch current="/panel" />
-        </div>
-      </header>
+      </AppSwitch>
 
       <main className="mx-auto max-w-screen-2xl space-y-3 px-4 py-4">
         {tab === 'map' && (
           <>
             <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
-              <FilterBar query={query} onChange={setQuery} classNames={classNames} scenario={scenario} />
+              <FilterBar query={query} onChange={setQuery} classNames={classNames} />
               <QueryBox classNames={classNames} onQuery={setQuery} />
             </div>
             {!rows ? (
               <p className="text-sm text-soil-500">Tarlalar yükleniyor…</p>
             ) : (
               <SummaryCards summary={summary} scenario={scenario} classNames={classNames} onCsv={() => download(`tarlalar_${season}_${scenario}.csv`, fieldsCsv(filtered))} />
-            )}
-            {scenario === 's1' ? (
-              <p className="text-xs text-soil-600">
-                Durum, aynı ürünün tipik tarlasının damla sulamayla beklenen tüketimine göredir: "aşım" verimli sulamaya göre tasarruf potansiyeli
-                demektir. Uydu tüketimi görür, toprağa sızan fazla suyu görmez.
-              </p>
-            ) : (
-              <p className="text-xs text-soil-600">
-                S2, pilot toplam mavi suyun %{fmt(manifest.budget_parameters.s2_reduction * 100)} azaltılması hedefidir (varsayım); azaltım tarlalara
-                ürün bazlı ihtiyaç oranında dağıtılır.
-              </p>
             )}
             <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
               <div className="relative h-[68vh] min-h-[420px]">
@@ -164,9 +143,9 @@ export default function PanelApp() {
                 {selected ? (
                   <FieldDetail field={selected} season={season} scenario={scenario} manifest={manifest} onClose={() => setSelectedId(null)} />
                 ) : (
-                  <div className="flex h-full flex-col rounded-lg border border-soil-200 bg-white">
-                    <p className="border-b border-soil-100 p-3 text-xs text-soil-600">
-                      {fmt(filtered.length)} tarla{filtered.length > LIST_LIMIT ? `, ilk ${LIST_LIMIT} gösteriliyor` : ''}. Ayrıntı için listeden ya da haritadan bir tarla seçin.
+                  <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
+                    <p className="border-b border-stone-100 px-4 py-3 text-sm font-semibold text-stone-800">
+                      En çok su kullanan tarlalar <span className="font-normal text-stone-500">· {fmt(filtered.length)} tarla</span>
                     </p>
                     <ul className="flex-1 overflow-y-auto">
                       {list.map((f) => (
@@ -179,7 +158,7 @@ export default function PanelApp() {
                               </span>
                             </span>
                             <span className="flex items-center gap-2">
-                              <span className="tabular-nums text-soil-700">{ratioOf(f, scenario) == null ? '–' : fmt(ratioOf(f, scenario) as number, 2)}</span>
+                              <span className="tabular-nums text-soil-700">{overText(ratioOf(f, scenario))}</span>
                               <StatusChip status={statusOf(f, scenario)} />
                             </span>
                           </button>
@@ -196,7 +175,10 @@ export default function PanelApp() {
         {tab === 'method' && <MethodView manifest={manifest} />}
       </main>
       <footer className="mx-auto max-w-screen-2xl px-4 pb-6">
-        <PanelCredits />
+        <details className="text-xs text-stone-500">
+          <summary className="cursor-pointer">Veri kaynakları</summary>
+          <PanelCredits />
+        </details>
       </footer>
     </div>
   );

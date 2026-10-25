@@ -37,10 +37,23 @@ function sanitizeAssumptions(raw: unknown): Assumptions {
   return { ...d, ...r };
 }
 
-/** POST {input, geo, assumptions} → saves the field and returns the bot deep link. */
+/** GET ?field=F01234 → bot deep link for a pilot field (nothing is stored). */
+async function pilotLink(request: Request): Promise<Response> {
+  const field = new URL(request.url).searchParams.get('field') ?? '';
+  if (!/^F\d+$/.test(field)) return json({ error: 'Geçersiz tarla.' }, 400);
+  try {
+    const username = await botUsername();
+    return json({ configured: true, botUsername: username, startUrl: `https://t.me/${username}?start=field_${field}` });
+  } catch (e) {
+    return json({ error: friendly(e) }, 502);
+  }
+}
+
+/** POST {input, geo, assumptions} → saves the field and returns the bot deep link. GET: see pilotLink. */
 export async function telegramLink(request: Request): Promise<Response> {
-  if (request.method !== 'POST') return json({ error: 'Yalnızca POST.' }, 405);
   if (!configured()) return json({ configured: false });
+  if (request.method === 'GET') return pilotLink(request);
+  if (request.method !== 'POST') return json({ error: 'Yalnızca POST.' }, 405);
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const input = sanitizeFarmInput(body?.input);
   const geo = body?.geo as StoredFarm['geo'] | undefined;

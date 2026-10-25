@@ -18,11 +18,6 @@ export function ExplanationPanel({ payload }: { payload: ExplainPayload }) {
       {explanation ? (
         <>
           <p className="text-base leading-relaxed text-soil-800">{explanation.text}</p>
-          <p className="text-xs text-soil-500">
-            {explanation.source === 'gemini'
-              ? 'Yapay zekâ ile yazıldı; içindeki her sayının hesap motorunun sonucunda geçtiği kontrol edildi.'
-              : 'Hazır şablon metin (yapay zekâ yanıtı alınamadı veya kontrolden geçmedi). Sayılar hesap motorundan.'}
-          </p>
         </>
       ) : (
         <p className="text-sm text-soil-600">Planı ve geçen sezonun sonucunu birkaç cümleyle, sade Türkçe özetler.</p>

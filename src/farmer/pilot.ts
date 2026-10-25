@@ -5,6 +5,8 @@
 import type { CropId, CropParams } from '../engine/crops.js';
 import { addDays } from '../engine/dates.js';
 import { STATUS_NAMES, type FieldRow } from '../panel/data.js';
+import { defaultAssumptions, type Assumptions } from '../state/assumptions.js';
+import { demoForm, validateFarmForm, type FarmInput } from '../state/farm.js';
 
 /** Satellite crop calendar columns exported with the field table (day offsets from the season start). */
 export interface PilotField extends FieldRow {
@@ -120,6 +122,33 @@ export function calibratedCrop(
     crop: { ...base, stages: { ini, dev, mid, late }, kcMid: Math.round(base.kcMid * cover * 100) / 100 },
     plantingDate: addDays(seasonStart, plantingOffset),
   };
+}
+
+/**
+ * Engine farm for a pilot field: crop and calendar from the satellite season, area from the field
+ * polygon; method, soil, pump and solar values are the demo defaults (not observed per field, same
+ * defaults as the budget, PLAN.md D19). Null when the engine has no parameters for the crop.
+ */
+export function pilotEngineFarm(
+  f: PilotField,
+  manifest: { season_start_mmdd: string; kcb_max: Record<string, number> },
+  year: number,
+): { input: FarmInput; assumptions: Assumptions } | null {
+  const crop = ENGINE_CROP[f.class];
+  if (!crop) return null;
+  const assumptions = defaultAssumptions();
+  const cal = calibratedCrop(assumptions.crops[crop], f, manifest.kcb_max[f.class], manifest.season_start_mmdd, year);
+  if (!cal) return null;
+  assumptions.crops[crop] = cal.crop;
+  const { input } = validateFarmForm({
+    ...demoForm(year),
+    locationText: `Tarla ${f.field_id}`,
+    crop,
+    plantingDate: cal.plantingDate,
+    areaDecare: String(Math.round(f.area_ha * 100) / 10).replace('.', ','),
+    irrigationMethod: 'sprinkler',
+  });
+  return input ? { input, assumptions } : null;
 }
 
 export interface SummaryPayload {

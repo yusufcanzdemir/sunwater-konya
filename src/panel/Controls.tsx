@@ -3,7 +3,7 @@
 import { Download, Pause, Play, Search, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { requestParseQuery } from '../ai/client';
-import { AssumptionBadge, fmt, inputClass } from '../components/ui';
+import { fmt, inputClass } from '../components/ui';
 import { PLAYER_STOPS, type PlayerFrame } from './FieldsMap';
 import { SCENARIO_NAMES, STATUSES, STATUS_COLORS, STATUS_NAMES, loadSeasonPlayer, type Scenario, type SeasonPlayerData } from './data';
 import { CLASS_IDS, EMPTY_QUERY, REGIONS, REGION_NAMES, describeQuery, type ClassId, type FieldQuery, type Region } from './query';
@@ -18,17 +18,15 @@ export function FilterBar({
   query,
   onChange,
   classNames,
-  scenario,
 }: {
   query: FieldQuery;
   onChange: (q: FieldQuery) => void;
   classNames: Record<string, string>;
-  scenario: Scenario;
 }) {
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   const num = (v: string) => (v.trim() === '' || Number.isNaN(Number(v.replace(',', '.'))) ? null : Number(v.replace(',', '.')));
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-soil-200 bg-white p-3" role="group" aria-label="Filtreler">
+    <div className="flex flex-col gap-2 rounded-2xl border border-black/5 bg-white p-4 shadow-sm" role="group" aria-label="Filtreler">
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="mr-1 text-xs font-semibold text-soil-600">Ürün</span>
         {CLASS_IDS.map((c) => (
@@ -38,7 +36,7 @@ export function FilterBar({
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-xs font-semibold text-soil-600">Durum ({scenario.toUpperCase()})</span>
+        <span className="mr-1 text-xs font-semibold text-soil-600">Durum</span>
         {STATUSES.map((s) => (
           <button key={s} className={chip(query.statuses.includes(s))} aria-pressed={query.statuses.includes(s)} onClick={() => onChange({ ...query, statuses: toggle(query.statuses, s) })}>
             <span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: STATUS_COLORS[s] }} aria-hidden />
@@ -64,11 +62,11 @@ export function FilterBar({
         </label>
         <label className="ml-2 flex items-center gap-1 text-xs text-soil-700">
           <input type="checkbox" checked={query.stress_only} onChange={(e) => onChange({ ...query, stress_only: e.target.checked })} />
-          yalnızca göreli düşük ET
+          gelişimi zayıf görünenler
         </label>
         <label className="ml-2 flex items-center gap-1 text-xs text-soil-700">
           <input type="checkbox" checked={!query.include_uncertain} onChange={(e) => onChange({ ...query, include_uncertain: !e.target.checked })} />
-          ürünü belirsizleri gizle
+          yalnızca ürünü kesin olanlar
         </label>
         <button className="ml-auto text-xs text-soil-600 underline" onClick={() => onChange(EMPTY_QUERY)}>
           Filtreleri temizle
@@ -107,15 +105,15 @@ export function QueryBox({
   };
 
   return (
-    <form onSubmit={submit} className="rounded-lg border border-soil-200 bg-white p-3">
+    <form onSubmit={submit} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
       <label className="flex items-center gap-2 text-xs font-semibold text-soil-600" htmlFor="nlq">
-        <Sparkles size={14} aria-hidden /> Sorgu (doğal dil)
+        <Sparkles size={14} aria-hidden /> Yapay zekâya sor
       </label>
       <div className="mt-1 flex gap-2">
         <input
           id="nlq"
           className={`${inputClass} flex-1 text-sm`}
-          placeholder="ör. kuzeyde bütçesini en çok aşan 20 pancar tarlası"
+          placeholder="ör. kuzeyde hedefi en çok aşan 20 pancar tarlası"
           value={text}
           maxLength={300}
           onChange={(e) => setText(e.target.value)}
@@ -126,7 +124,7 @@ export function QueryBox({
       </div>
       {result && (
         <p className="mt-2 text-xs text-soil-700">
-          <span className="font-semibold">Anlaşılan:</span> {result.reading}.{result.note && <span className="ml-1 text-amber-800">{result.note}</span>}
+          <span className="font-semibold">Gösterilen:</span> {result.reading}.
         </p>
       )}
       {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
@@ -134,15 +132,12 @@ export function QueryBox({
   );
 }
 
-function Card({ label, value, sub, badge }: { label: string; value: string; sub?: string; badge?: boolean }) {
+function Card({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-lg border border-soil-200 bg-white p-3">
-      <div className="text-xs text-soil-500">
-        {label}
-        {badge && <AssumptionBadge />}
-      </div>
-      <div className="mt-0.5 text-xl font-semibold text-soil-900">{value}</div>
-      {sub && <div className="text-xs text-soil-500">{sub}</div>}
+    <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
+      <div className="text-xs font-medium text-stone-500">{label}</div>
+      <div className="mt-1 text-2xl font-bold tracking-tight text-stone-900">{value}</div>
+      {sub && <div className="text-xs text-stone-500">{sub}</div>}
     </div>
   );
 }
@@ -154,17 +149,17 @@ export function SummaryCards({ summary, scenario, classNames, onCsv }: { summary
   const maxClass = Math.max(1, ...summary.byClass.map((c) => c.measuredM3));
   return (
     <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
-      <Card label="Mavi su tüketimi (uydu)" value={`${mm3(summary.measuredM3)} milyon m³`} sub={`${fmt(summary.fields)} tarla, ${fmt(summary.areaHa)} ha`} />
+      <Card label="Yeraltı suyu tüketimi" value={`${mm3(summary.measuredM3)} milyon m³`} sub={`${fmt(summary.fields)} tarla · ${fmt(summary.areaHa)} ha`} />
       <Card
-        label={`${SCENARIO_NAMES[scenario]} bütçesi`}
+        label={SCENARIO_NAMES[scenario]}
         value={`${mm3(summary.budgetM3)} milyon m³`}
-        sub={`fark ${diff >= 0 ? '+' : '−'}${mm3(Math.abs(diff))} milyon m³${scenario === 's2' ? ' (hedef varsayım)' : ''}`}
+        sub={diff < 0 ? `${mm3(-diff)} milyon m³ tasarruf mümkün` : 'hedefin altında'}
       />
-      <Card label="Bütçeyi aşan" value={`${fmt(over.fields)} tarla`} sub={`${fmt(over.areaHa)} ha · sınırda ${fmt(summary.byStatus.borderline.fields)}`} />
-      <Card label="Pompalama enerjisi" value={`${fmt(summary.energyKwh / 1e6, 1)} GWh`} sub={`göreli düşük ET: ${fmt(summary.stressFields)} tarla`} badge />
-      <div className="col-span-2 rounded-lg border border-soil-200 bg-white p-3 lg:col-span-1">
-        <div className="flex items-center justify-between text-xs text-soil-500">
-          Ürüne göre mavi su
+      <Card label="Hedefi aşan" value={`${fmt(over.fields)} tarla`} sub={`${fmt(over.areaHa)} ha · sınırda ${fmt(summary.byStatus.borderline.fields)}`} />
+      <Card label="Pompa enerjisi" value={`${fmt(summary.energyKwh / 1e6, 1)} GWh`} sub="bu sezon" />
+      <div className="col-span-2 rounded-2xl border border-black/5 bg-white p-4 shadow-sm lg:col-span-1">
+        <div className="flex items-center justify-between text-xs font-medium text-stone-500">
+          Ürüne göre tüketim (milyon m³)
           <button onClick={onCsv} className="flex items-center gap-1 text-soil-700 underline">
             <Download size={12} aria-hidden /> CSV
           </button>
@@ -214,10 +209,6 @@ export function Legend({ playerOn }: { playerOn: boolean }) {
           {STATUS_NAMES[s]}
         </li>
       ))}
-      <li className="flex items-center gap-1.5">
-        <span className="h-0 w-2.5 border-t-2 border-dashed border-soil-700" aria-hidden />
-        Ürünü belirsiz (kesikli sınır)
-      </li>
     </ul>
   );
 }

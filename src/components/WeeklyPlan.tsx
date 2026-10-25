@@ -1,7 +1,7 @@
 import type { SeasonAnalysis } from '../engine/plan';
 import { dailyPumping, formatWindow } from '../engine/schedule';
 import type { EnergySource } from '../state/farm';
-import { AssumptionBadge, fmt } from './ui';
+import { fmt } from './ui';
 
 const DAY_NAMES = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const dayLabel = (iso: string) => {
@@ -12,12 +12,11 @@ const dayLabel = (iso: string) => {
 interface Props {
   analysis: SeasonAnalysis;
   energySource: EnergySource;
-  initialDepletionMm: number;
   forecastDays: number;
   onShowRetrospective: () => void;
 }
 
-export function WeeklyPlan({ analysis, energySource, initialDepletionMm, forecastDays, onShowRetrospective }: Props) {
+export function WeeklyPlan({ analysis, energySource, forecastDays, onShowRetrospective }: Props) {
   const { balance, schedule } = analysis;
 
   if (balance.days.length === 0) {
@@ -40,8 +39,7 @@ export function WeeklyPlan({ analysis, energySource, initialDepletionMm, forecas
   return (
     <div className="space-y-3">
       <p className="text-sm text-soil-600">
-        {dayLabel(first)} – {dayLabel(last)} tahmini. Bugün kök bölgesindeki eksiklik {fmt(initialDepletionMm)} mm kabul
-        edildi <AssumptionBadge />
+        {dayLabel(first)} – {dayLabel(last)}
       </p>
 
       {schedule.irrigations.length === 0 ? (

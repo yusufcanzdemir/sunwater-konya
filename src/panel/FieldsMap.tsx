@@ -59,9 +59,10 @@ interface Props {
   onSelect: (id: string | null) => void;
   classNames: Record<string, string>;
   player: PlayerFrame | null;
+  className?: string;
 }
 
-export default function FieldsMap({ season, scenario, visibleIds, selected, onSelect, classNames, player }: Props) {
+export default function FieldsMap({ season, scenario, visibleIds, selected, onSelect, classNames, player, className }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibre | null>(null);
   const ready = useRef(false);
@@ -79,6 +80,7 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
       container: container.current!,
       bounds: [PILOT_BBOX.west, PILOT_BBOX.south, PILOT_BBOX.east, PILOT_BBOX.north],
       fitBoundsOptions: { padding: 20 },
+      attributionControl: { compact: true },
       style: {
         version: 8,
         sources: {
@@ -108,7 +110,7 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
             source: 'fields',
             'source-layer': 'fields',
             filter: ['==', ['get', 'uncertain'], true],
-            paint: { 'line-color': '#ffffff', 'line-width': 1.4, 'line-dasharray': [2, 2] },
+            paint: { 'line-color': '#ffffff', 'line-width': 1, 'line-opacity': 0.7 },
           },
           {
             id: 'fields-selected',
@@ -134,9 +136,9 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
       box.className = 'text-xs text-soil-900';
       const value = document.createElement('div');
       value.className = 'font-semibold';
-      value.textContent = `${Math.round(Number(p.blue_mm ?? 0))} mm mavi su`;
+      value.textContent = `${namesRef.current[String(p.class)] ?? String(p.class)} · ${String(p.field_id)}`;
       const label = document.createElement('div');
-      label.textContent = `${String(p.field_id)} · ${namesRef.current[String(p.class)] ?? String(p.class)} · ${STATUS_NAMES[status] ?? ''}`;
+      label.textContent = STATUS_NAMES[status] ?? '';
       box.append(value, label);
       popup.setLngLat(e.lngLat).setDOMContent(box).addTo(map);
     });
@@ -149,6 +151,8 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
       onSelectRef.current(hit ? String(hit.properties.field_id) : null);
     });
     map.on('load', () => {
+      // Compact attribution starts collapsed behind its (i) button
+      container.current?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
       ready.current = true;
       for (const fn of pending.current.splice(0)) fn(map);
     });
@@ -211,5 +215,5 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
     });
   }, [selected?.field_id]);
 
-  return <div ref={container} className="h-full min-h-[420px] w-full overflow-hidden rounded-lg" aria-label="Tarla haritası" />;
+  return <div ref={container} className={className ?? 'h-full min-h-[420px] w-full overflow-hidden rounded-lg'} aria-label="Tarla haritası" />;
 }

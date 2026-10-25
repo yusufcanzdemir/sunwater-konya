@@ -3,6 +3,7 @@
 /* Earthy palette: cream ground, soil-brown text, ripe-wheat accent;
    one vivid blue reserved for water, yellow for sun. */
 @theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --color-cream: #fbf6ea;
 
   --color-soil-50: #faf6f0;

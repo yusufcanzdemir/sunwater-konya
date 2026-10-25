@@ -6,10 +6,10 @@ export type Scenario = 's1' | 's2';
 export const STATUSES: Status[] = ['within', 'borderline', 'over', 'not_assessed'];
 
 export const STATUS_NAMES: Record<Status, string> = {
-  within: 'Bütçe içinde',
+  within: 'Hedef içinde',
   borderline: 'Sınırda',
-  over: 'Bütçe aşımı',
-  not_assessed: 'Değerlendirilmedi (yağışa dayalı)',
+  over: 'Hedef üstü',
+  not_assessed: 'Yağışa dayalı',
 };
 
 /** Fixed status palette (good / warning / critical), never reused for series; always shown with a label. */
@@ -21,8 +21,8 @@ export const STATUS_COLORS: Record<Status, string> = {
 };
 
 export const SCENARIO_NAMES: Record<Scenario, string> = {
-  s1: 'S1 Verimli sulama',
-  s2: 'S2 Havza hedefi',
+  s1: 'Verimli sulama hedefi',
+  s2: '%20 azaltım hedefi',
 };
 
 export interface FieldRow {
@@ -170,6 +170,8 @@ export const loadSeasonPlayer = (season: number) => getJson<SeasonPlayerData>(`s
 export const loadFieldDetail = (id: string) => getJson<FieldDetailData>(`field/${encodeURIComponent(id)}.json`);
 export const loadBasin = () => getJson<BasinData>('basin.json');
 export const loadMetrics = () => getJson<Metrics>('metrics.json');
+/** Field id → outer rings (field_shapes.json, ~2 MB: loaded only when a location is shared). */
+export const loadShapes = () => getJson<Record<string, [number, number][][]>>('field_shapes.json');
 
 export const statusOf = (f: FieldRow, s: Scenario): Status => (s === 's1' ? f.status_s1 : f.status_s2);
 export const ratioOf = (f: FieldRow, s: Scenario): number | null => (s === 's1' ? f.ratio_s1 : f.ratio_s2);

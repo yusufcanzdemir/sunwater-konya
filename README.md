@@ -13,8 +13,9 @@ The Konya Closed Basin (Türkiye) is losing groundwater. In a closed basin the w
 | Part | Where | What it does |
 |---|---|---|
 | Processing pipeline | `pipeline/` (Python, Google Earth Engine) | Field boundaries, crop classes, ET and blue water per field, SEBAL check, GRACE basin trend, water budget, web export (stages 0–12) |
+| Farmer app | `/` (`src/farmer/`) | Pick a pilot field (map, location or number): this week's solar irrigation plan, season use against similar fields and efficient irrigation, savings options, Telegram link |
 | Institutional panel | `/panel` (`src/panel/`) | Map of all fields by budget status, filters, natural-language query, field detail, season player, basin tab, method and validation page, CSV |
-| Farmer planner | `/` (`src/`, `src/engine/`) | FAO-56 water balance and solar pumping plan for one field drawn or described by the farmer |
+| Field planner | `/planla` (`src/App.tsx`, `src/engine/`) | FAO-56 water balance and solar pumping plan for a field drawn or described by the farmer (outside the pilot) |
 | Telegram bot | `api/` | Links a farmer to a pilot field by location, sends the satellite season summary and the weekly solar irrigation plan |
 | Documentation | `docs/` | `METHODOLOGY.md`, `VALIDATION.md`, `DATA_SOURCES.md` |
 
@@ -66,7 +67,7 @@ Node 20.19+ or 22.12+ (Vite requirement).
 ```bash
 npm install
 cp .env.example .env.local   # fill in the keys you need
-npm run dev                  # http://localhost:5173 (planner), http://localhost:5173/panel (panel)
+npm run dev                  # http://localhost:5173 (farmer app), /planla (field planner), /panel (panel)
 npm test                     # vitest
 npm run build                # type check + production build
 ```
@@ -142,6 +143,7 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/deleteWebhook"
 | Endpoint | Purpose |
 | --- | --- |
 | `POST /api/telegram-webhook` | Telegram updates |
+| `GET /api/telegram-link?field=F01234` | Farmer app: bot deep link for a pilot field (`start=field_F01234`) |
 | `POST /api/telegram-link` | Planner saves the current field and gets the `t.me/<bot>?start=<fieldId>` link (QR) |
 | `POST /api/send-alert` | Planner "Telegram'a bildirim gönder": alert to the chats linked to the field and `TELEGRAM_DEMO_CHAT_ID` |
 | `GET /api/send-alert` | Daily cron; silent out of season, adds a "Plan değişti" note when the plan moved |

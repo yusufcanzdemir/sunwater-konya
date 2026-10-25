@@ -130,7 +130,7 @@ describe('describeQuery', () => {
   it('reads the query back in Turkish', () => {
     const q = { ...EMPTY_QUERY, classes: ['sugar_beet' as const], statuses: ['over' as const], region: 'north' as const, sort_by: 'excess_m3' as const, limit: 20 };
     expect(describeQuery(q, { sugar_beet: 'Şeker pancarı' })).toBe(
-      'Pilot alanın kuzey yarısında bütçeyi aşan şeker pancarı tarlaları, bütçe aşımı (m³) büyükten küçüğe sıralı, ilk 20',
+      'Pilot alanın kuzey yarısında hedefi aşan şeker pancarı tarlaları, hedef üstü tüketim (m³) büyükten küçüğe sıralı, ilk 20',
     );
   });
 });

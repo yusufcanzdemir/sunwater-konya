@@ -10,8 +10,8 @@ import { FarmFormView } from './components/FarmFormView';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import type { DrawnField } from './components/FieldMap';
 import { FarmTextInput } from './components/FarmTextInput';
-import { ContextBand, StepNav, TodayAndVision, type Step } from './components/Presentation';
-import { DISCLAIMER, Retrospective } from './components/Retrospective';
+import { StepNav, type Step } from './components/Presentation';
+import { Retrospective } from './components/Retrospective';
 import { SolarPumpDay } from './components/SolarPumpDay';
 import { SummaryCards } from './components/SummaryCards';
 import { TelegramPanel } from './components/TelegramPanel';
@@ -71,7 +71,7 @@ async function load<T>(p: Promise<T>): Promise<Loaded<T>> {
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children: ReactNode }) {
   return (
-    <section className="space-y-4 rounded-xl border border-soil-200 bg-white p-5 shadow-sm">
+    <section className="space-y-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
       <div>
         <h2 className="text-lg font-semibold">{title}</h2>
         {subtitle && <div className="text-sm text-soil-600">{subtitle}</div>}
@@ -97,7 +97,7 @@ function StepButtons({ prev, next, onSelect }: { prev?: [Step, string]; next?: [
   return (
     <div className="flex justify-between gap-3">
       {prev ? (
-        <button type="button" onClick={() => onSelect(prev[0])} className="text-sm font-medium text-wheat-800 hover:underline">
+        <button type="button" onClick={() => onSelect(prev[0])} className="text-sm font-medium text-emerald-900 hover:underline">
           ← {prev[1]}
         </button>
       ) : (
@@ -107,7 +107,7 @@ function StepButtons({ prev, next, onSelect }: { prev?: [Step, string]; next?: [
         <button
           type="button"
           onClick={() => onSelect(next[0])}
-          className="rounded-md bg-wheat-700 px-4 py-2 text-sm font-medium text-white hover:bg-wheat-800"
+          className="rounded-md bg-emerald-900 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-900"
         >
           {next[1]} →
         </button>
@@ -282,21 +282,14 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-cream text-soil-900">
-      <header className="border-b border-soil-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-3 px-4 py-5">
-          <div>
-            <h1 className="text-2xl font-bold text-wheat-800">Güneşli Sulama Asistanı</h1>
-            <p className="text-sm text-soil-600">
-              Tarlanızın su ihtiyacı ve güneşe göre sulama planı – FAO-56 yöntemi ve Open-Meteo'nun gerçek hava verisiyle.
-            </p>
-          </div>
-          <AppSwitch current="/" />
-        </div>
-      </header>
-      <ContextBand />
+    <div className="min-h-screen bg-stone-50 text-soil-900">
+      <AppSwitch current="/planla" />
 
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-stone-900">Tarlanı çiz, planını al</h1>
+          <p className="mt-1 text-stone-600">Haritada tarlanı çiz ya da birkaç cümleyle anlat; sulama planın hazır.</p>
+        </div>
         <StepNav current={step} enabled={run != null} onSelect={goTo} />
 
         {step !== 1 && run && (
@@ -307,7 +300,7 @@ export default function App() {
         {step !== 1 && staleNotice}
 
         {step === 1 && (
-          <section className="rounded-xl border border-soil-200 bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">1) Tarlanı göster</h2>
               <button
@@ -317,7 +310,7 @@ export default function App() {
                   setErrors({});
                   setFollowUp(null);
                 }}
-                className="rounded-md border border-wheat-700 px-3 py-1.5 text-sm font-medium text-wheat-800 hover:bg-wheat-50"
+                className="rounded-md border border-emerald-900 px-3 py-1.5 text-sm font-medium text-emerald-900 hover:bg-emerald-50"
               >
                 Demo tarla yükle
               </button>
@@ -326,7 +319,7 @@ export default function App() {
             <div className="mb-5 grid gap-4 lg:grid-cols-2">
               <div>
                 <p className="mb-2 flex items-start gap-2 text-sm text-soil-700">
-                  <MapPin size={18} className="mt-0.5 shrink-0 text-wheat-700" />
+                  <MapPin size={18} className="mt-0.5 shrink-0 text-emerald-800" />
                   Haritada sol üstteki çizim aracıyla tarlanızın köşelerine tıklayın. Alan ve konum forma kendiliğinden
                   yazılır.
                 </p>
@@ -387,7 +380,7 @@ export default function App() {
 
             <div className="mt-5 flex flex-wrap items-center justify-end gap-3 border-t border-soil-100 pt-4">
               {run && !formChanged && (
-                <button type="button" onClick={() => goTo(2)} className="text-sm font-medium text-wheat-800 hover:underline">
+                <button type="button" onClick={() => goTo(2)} className="text-sm font-medium text-emerald-900 hover:underline">
                   Sonuçlara git →
                 </button>
               )}
@@ -395,7 +388,7 @@ export default function App() {
                 type="button"
                 disabled={loading}
                 onClick={() => void calculate()}
-                className="rounded-xl bg-wheat-700 px-6 py-3 text-lg font-semibold text-white shadow-sm hover:bg-wheat-800 disabled:opacity-60"
+                className="rounded-2xl bg-emerald-900 px-6 py-3 text-lg font-semibold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-60"
               >
                 {loading ? 'Hava verisi alınıyor…' : 'Planı hesapla'}
               </button>
@@ -434,7 +427,6 @@ export default function App() {
                   <WeeklyPlan
                     analysis={week}
                     energySource={run.input.energySource}
-                    initialDepletionMm={assumptions.forecastInitialDepletionMm}
                     forecastDays={FORECAST_DAYS}
                     onShowRetrospective={() => goTo(3)}
                   />
@@ -501,17 +493,10 @@ export default function App() {
             onReset={() => setAssumptions(defaultAssumptions())}
           />
         )}
-
-        <TodayAndVision />
       </main>
 
-      <footer className="border-t border-soil-200 bg-white">
-        <div className="mx-auto max-w-6xl space-y-1 px-4 py-4 text-xs text-soil-500">
-          <p>{DISCLAIMER}</p>
-          <p>
-            Hava verisi: <OpenMeteoCredit /> (tahmin ve arşiv). Hesaplar tarayıcıda, açık formüllerle yapılır; yapay zekâ sayı üretmez.
-          </p>
-        </div>
+      <footer className="mx-auto max-w-6xl px-4 pb-6 text-xs text-stone-500">
+        <OpenMeteoCredit />
       </footer>
     </div>
   );

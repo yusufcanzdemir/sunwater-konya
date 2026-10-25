@@ -81,6 +81,8 @@ const CALL_TIMEOUT_MS = 15_000;
 /** Whole-request budgets: after these the user gets the error / template instead of waiting. */
 const PARSE_DEADLINE_MS = 40_000;
 const EXPLAIN_DEADLINE_MS = 30_000;
+/** Telegram replies: a farmer pressing a button should not wait; the template is sent after this. */
+const CHAT_DEADLINE_MS = 6_000;
 
 const isTimeout = (e: unknown) => ['AbortError', 'TimeoutError'].includes((e as { name?: string }).name ?? '');
 
@@ -190,7 +192,7 @@ export async function explain(
   const input = `${JSON.stringify(payload)}\n\nNot: ${what} Sayıları yazıyla değil, JSON'daki gibi rakamla yaz (ör. 60.878).`;
   const systemInstruction =
     format === 'telegram' ? TELEGRAM_SYSTEM_INSTRUCTION : format === 'summary' ? SUMMARY_SYSTEM_INSTRUCTION : EXPLAIN_SYSTEM_INSTRUCTION;
-  const deadline = Date.now() + EXPLAIN_DEADLINE_MS;
+  const deadline = Date.now() + (format === 'web' ? EXPLAIN_DEADLINE_MS : CHAT_DEADLINE_MS);
   let note = '';
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -237,7 +239,7 @@ const MAX_QUERY_NOTE_LENGTH = 300;
 
 const QUERY_SYSTEM_INSTRUCTION = `Kurum panelindeki Türkçe tarla sorgusunu filtre JSON'una çevir. Yalnızca şemadaki değerleri kullan, uydurma.
 Ürünler: şeker pancarı=sugar_beet, mısır=maize, ayçiçeği=sunflower, yonca=alfalfa, sulu buğday/arpa/tahıl=irrigated_winter_cereal, kuru buğday/tahıl=rainfed_winter_cereal, tahıl sonrası ikinci ürün=cereal_second_crop, nadas/boş=fallow, diğer=other. "Buğday" tek başına geçerse irrigated_winter_cereal ve rainfed_winter_cereal ikisini de seç.
-Durumlar: bütçe içinde=within, sınırda=borderline, bütçeyi aşan/aşım=over, değerlendirilmeyen=not_assessed.
+Durumlar: bütçe/hedef içinde=within, sınırda=borderline, bütçeyi/hedefi aşan, aşım, hedef üstü=over, değerlendirilmeyen/yağışa dayalı=not_assessed.
 "En çok aşan" → statuses [over], sort_by excess_m3, sort_desc true. "En çok su tüketen" → sort_by blue_m3. "Oran" → ratio.
 "Stresli / su stresi" → stress_only true. "Ürünü belli olanlar" → include_uncertain false.
 Bölge yalnızca pilot alan içindeki yön için: kuzey, güney, doğu, batı, orta. Pilot alan Karapınar'ın kuzey/kuzeybatısıdır (yaklaşık 586 km²). Ereğli, Konya merkezi, Çumra gibi pilot dışındaki yerler için region null bırak ve note alanında bunu kısaca söyle.

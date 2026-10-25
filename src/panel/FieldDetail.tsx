@@ -3,9 +3,8 @@
 import { AlertTriangle, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { AssumptionBadge, fmt } from '../components/ui';
+import { fmt } from '../components/ui';
 import {
-  SCENARIO_NAMES,
   STATUS_COLORS,
   STATUS_NAMES,
   budgetOf,
@@ -130,107 +129,90 @@ export default function FieldDetail({
   const m3 = (mm: number | null) => (mm == null ? null : mm * field.area_ha * 10);
 
   return (
-    <aside className="flex h-full flex-col overflow-y-auto rounded-lg border border-soil-200 bg-white p-4" aria-label={`Tarla ${field.field_id}`}>
+    <aside className="flex h-full flex-col overflow-y-auto rounded-2xl border border-black/5 bg-white p-5 shadow-sm" aria-label={`Tarla ${field.field_id}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="text-lg font-semibold text-soil-900">{field.field_id}</h2>
-          <p className="text-sm text-soil-700">
-            {names[field.class] ?? field.class} · {fmt(field.area_ha, 1)} ha
-          </p>
-          <p className="mt-0.5 text-xs text-soil-500">
-            Ürün uydu eğrisinden tahmin (olasılık %{fmt(field.class_prob * 100)}), doğruluğu ölçülmedi.
-            {field.uncertain && <span className="ml-1 font-semibold text-amber-700">Belirsiz.</span>}
+          <h2 className="text-xl font-bold tracking-tight text-stone-900">{names[field.class] ?? field.class}</h2>
+          <p className="text-sm text-stone-500">
+            Tarla {field.field_id} · {fmt(field.area_ha, 1)} ha
           </p>
         </div>
-        <button onClick={onClose} className="rounded p-1 text-soil-500 hover:bg-soil-100" aria-label="Tarla panelini kapat">
+        <button onClick={onClose} className="rounded-full p-1.5 text-stone-500 hover:bg-stone-100" aria-label="Tarla panelini kapat">
           <X size={18} />
         </button>
       </div>
 
-      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-        <div className="col-span-2 flex items-center gap-2">
-          <dt className="sr-only">Durum</dt>
-          <dd>
-            <StatusChip status={status} />
-          </dd>
-          <span className="text-xs text-soil-500">{SCENARIO_NAMES[scenario]}</span>
+      <div className="mt-3">
+        <StatusChip status={status} />
+      </div>
+
+      <dl className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-stone-50 p-3">
+          <dt className="text-xs text-stone-500">Tüketim</dt>
+          <dd className="text-lg font-bold text-stone-900">{fmt(field.blue_m3)} m³</dd>
         </div>
-        <div>
-          <dt className="text-xs text-soil-500">Mavi su (uydu)</dt>
-          <dd className="font-semibold text-soil-900">
-            {fmt(field.blue_mm)} mm
-            <span className="block text-xs font-normal text-soil-500">
-              aralık {fmt(field.blue_mm_low)}–{fmt(field.blue_mm_high)} mm · {fmt(field.blue_m3)} m³
-            </span>
-          </dd>
+        <div className="rounded-xl bg-stone-50 p-3">
+          <dt className="text-xs text-stone-500">Hedef</dt>
+          <dd className="text-lg font-bold text-stone-900">{budget == null ? '–' : `${fmt(m3(budget) ?? 0)} m³`}</dd>
         </div>
-        <div>
-          <dt className="text-xs text-soil-500">Bütçe ({scenario.toUpperCase()})</dt>
-          <dd className="font-semibold text-soil-900">
-            {budget == null ? '–' : `${fmt(budget)} mm`}
-            {ratio != null && <span className="block text-xs font-normal text-soil-500">oran {fmt(ratio, 2)}</span>}
-          </dd>
-        </div>
+        {field.assessed && excess != null && excess > 0 && (
+          <div className="col-span-2 rounded-xl bg-rose-50 p-3">
+            <dt className="text-xs text-rose-700">Hedefin üzerinde</dt>
+            <dd className="text-lg font-bold text-rose-800">
+              {fmt(excess)} m³{ratio != null && <span className="ml-1 text-sm font-semibold">(+%{fmt((ratio - 1) * 100)})</span>}
+            </dd>
+          </div>
+        )}
       </dl>
 
-      {field.assessed && excess != null && excess > 0 && (
-        <p className="mt-2 text-xs text-soil-700">
-          Bütçenin üzerindeki tüketim ≈ {fmt(excess)} m³. Bu, verimli sulamaya (damla) göre tasarruf potansiyelidir;
-          uydu tüketimi görür, toprağa sızan fazla suyu görmez.
-        </p>
-      )}
-      {!field.assessed && (
-        <p className="mt-2 text-xs text-soil-700">Yağışa dayalı tarla (kuru tahıl / nadas): mavi su 0 kabul edilir, bütçe değerlendirmesi yapılmaz.</p>
-      )}
-
       {field.stress_flag && (
-        <p className="mt-2 flex gap-1.5 rounded-md bg-amber-50 p-2 text-xs text-amber-900">
-          <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
-          <span>
-            <strong>Göreli düşük ET:</strong> Landsat (SEBAL) geçişlerinde bu tarla aynı gün aynı üründeki tarlalardan belirgin şekilde az
-            buharlaştırdı. Kısıtlı sulama, zayıf gelişim veya yanlış sınıf olabilir; ölçülmüş bir su eksikliği değildir.
-          </span>
+        <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-amber-800">
+          <AlertTriangle size={14} className="shrink-0" aria-hidden /> Bu sezon gelişimi benzer tarlalardan zayıf göründü.
         </p>
       )}
 
       {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-      {!s && !error && <p className="mt-3 text-sm text-soil-500">Seriler yükleniyor…</p>}
+      {!s && !error && <div className="mt-4 h-36 animate-pulse rounded-xl bg-stone-50" />}
       {s && (
         <>
           <Chart
-            title="Kümülatif mavi su ve bütçe çizgisi (mm)"
+            title="Sezon boyunca tüketim (mm)"
             data={series}
             unit="mm"
             lines={[
-              { key: 'blue', name: 'Uydu (kümülatif)', color: SERIES_1 },
-              { key: 'budget', name: `Bütçe ${scenario.toUpperCase()}`, color: SERIES_2, dashed: true },
+              { key: 'blue', name: 'Tarla', color: SERIES_1 },
+              { key: 'budget', name: 'Hedef', color: SERIES_2, dashed: true },
             ]}
           />
-          <Chart title="Günlük ET (mm/gün)" data={series} unit="mm" lines={[{ key: 'et', name: 'ET', color: SERIES_1 }]} />
-          <Chart title="NDVI" data={series} unit="" lines={[{ key: 'ndvi', name: 'NDVI', color: SERIES_1 }]} />
+          <Chart title="Bitki gelişimi (NDVI)" data={series} unit="" lines={[{ key: 'ndvi', name: 'NDVI', color: SERIES_1 }]} />
         </>
       )}
 
       {field.assessed && (
-        <section className="mt-4 text-sm">
-          <h3 className="font-semibold text-soil-800">Tasarruf seçenekleri</h3>
-          <ul className="mt-1 list-disc space-y-1 pl-5 text-soil-700">
+        <section className="mt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500">Tasarruf seçenekleri</h3>
+          <ul className="mt-2 divide-y divide-stone-100 text-sm">
             {field.lever_evap_mm != null && field.lever_evap_mm > 0 && (
-              <li>
-                Damla sulama / daha az toprak ıslatma: ≈ {fmt(field.lever_evap_mm)} mm ({fmt(m3(field.lever_evap_mm) ?? 0)} m³).
+              <li className="flex justify-between gap-2 py-2">
+                <span>Damla sulama</span>
+                <span className="font-semibold text-emerald-700">−{fmt(m3(field.lever_evap_mm) ?? 0)} m³</span>
               </li>
             )}
             {field.lever_deficit_mm != null && (
-              <li>
-                %{fmt(p.deficit_et_reduction * 100)} açık sulama: ≈ {fmt(field.lever_deficit_mm)} mm ({fmt(m3(field.lever_deficit_mm) ?? 0)} m³);{' '}
-                {field.lever_deficit_yield_loss != null
-                  ? `beklenen verim kaybı ≈ %${fmt(field.lever_deficit_yield_loss * 100)} (FAO-33 Ky).`
-                  : 'bu ürün için doğrulanmış verim katsayısı yok.'}
+              <li className="flex justify-between gap-2 py-2">
+                <span>
+                  %{fmt(p.deficit_et_reduction * 100)} az sulama
+                  {field.lever_deficit_yield_loss != null && (
+                    <span className="block text-xs text-stone-500">verimde ≈ %{fmt(field.lever_deficit_yield_loss * 100)} düşüş</span>
+                  )}
+                </span>
+                <span className="font-semibold text-emerald-700">−{fmt(m3(field.lever_deficit_mm) ?? 0)} m³</span>
               </li>
             )}
             {field.lever_switch_to && field.lever_switch_mm != null && field.lever_switch_mm > 0 && (
-              <li>
-                {names[field.lever_switch_to] ?? field.lever_switch_to} ekilirse (pilottaki tipik değer): ≈ {fmt(field.lever_switch_mm)} mm daha az.
+              <li className="flex justify-between gap-2 py-2">
+                <span>{names[field.lever_switch_to] ?? field.lever_switch_to} ekimi</span>
+                <span className="font-semibold text-emerald-700">−{fmt(m3(field.lever_switch_mm) ?? 0)} m³</span>
               </li>
             )}
           </ul>
@@ -238,19 +220,9 @@ export default function FieldDetail({
       )}
 
       {field.assessed && (
-        <section className="mt-4 text-sm">
-          <h3 className="font-semibold text-soil-800">
-            Pompalama enerjisi
-            <AssumptionBadge />
-          </h3>
-          <p className="mt-1 text-soil-700">
-            ≈ {fmt(field.energy_kwh)} kWh (S1 bütçesinde {fmt(field.energy_s1_kwh)} kWh).
-          </p>
-          <p className="text-xs text-soil-500">
-            Basma yüksekliği {p.head_m} m, pompa-motor verimi {fmt(p.pump_efficiency, 2)}, {p.default_method === 'sprinkler' ? 'yağmurlama' : p.default_method}{' '}
-            sulama verimi {fmt(p.irrigation_efficiency[p.default_method], 2)} varsayıldı.
-          </p>
-        </section>
+        <p className="mt-3 text-sm text-stone-600">
+          Pompa enerjisi: <span className="font-semibold text-stone-900">{fmt(field.energy_kwh)} kWh</span>
+        </p>
       )}
     </aside>
   );

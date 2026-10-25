@@ -40,11 +40,11 @@ export const SORT_KEYS = ['ratio', 'blue_mm', 'blue_m3', 'area_ha', 'excess_m3']
 export type SortKey = (typeof SORT_KEYS)[number];
 
 export const SORT_NAMES: Record<SortKey, string> = {
-  ratio: 'bütçe oranı',
+  ratio: 'hedefe oran',
   blue_mm: 'mavi su (mm)',
   blue_m3: 'mavi su (m³)',
   area_ha: 'alan',
-  excess_m3: 'bütçe aşımı (m³)',
+  excess_m3: 'hedef üstü tüketim (m³)',
 };
 
 export interface FieldQuery {
@@ -171,9 +171,9 @@ export function sanitizeQuery(raw: unknown): FieldQuery {
 }
 
 const STATUS_WORDS: Record<Status, string> = {
-  within: 'bütçe içinde',
+  within: 'hedef içinde',
   borderline: 'sınırda',
-  over: 'bütçeyi aşan',
+  over: 'hedefi aşan',
   not_assessed: 'değerlendirilmeyen',
 };
 

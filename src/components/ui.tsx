@@ -4,14 +4,6 @@ import { parseNumber } from '../state/farm';
 export const fmt = (n: number, digits = 0) =>
   n.toLocaleString('tr-TR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-export function AssumptionBadge() {
-  return (
-    <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-      varsayım
-    </span>
-  );
-}
-
 export function Field({
   label,
   error,

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { waterEquivalents } from '../engine/constants';
 import type { Range, Savings } from '../engine/impact';
 import type { EnergySource } from '../state/farm';
-import { AssumptionBadge, fmt } from './ui';
+import { fmt } from './ui';
 
 /** Counts up to `value` the first time it scrolls into view. */
 function CountUp({ value, digits = 0 }: { value: number; digits?: number }) {
@@ -122,9 +122,6 @@ export function ImpactCards({ savings, energySource }: { savings: Savings; energ
           <Users size={28} className="shrink-0 text-water-600" />
           <span>
             ≈ <strong className="text-xl">{fmt(eq.householdYears)}</strong> hanenin bir yıllık şebeke suyu
-            <span className="block text-xs text-soil-600">
-              TÜİK 2024 kişi başı 255 L/gün, hane 3,14 kişi <AssumptionBadge />
-            </span>
           </span>
         </div>
       </div>

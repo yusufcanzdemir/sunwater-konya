@@ -3,14 +3,7 @@ import type { SeasonAnalysis } from '../engine/plan';
 import type { EnergySource } from '../state/farm';
 import { ImpactCards } from './ImpactCards';
 import { SeasonPlayer } from './SeasonPlayer';
-import { AssumptionBadge, fmt } from './ui';
-
-export const DISCLAIMER =
-  'Bu sonuçlar FAO-56 yöntemi, gerçek hava verisi ve varsayımlara dayalı TAHMİNDİR. Gerçek tasarruf, pilot tarlalarda kuyu sayacı ölçümüyle doğrulanacaktır.';
-
-export function Disclaimer() {
-  return <p className="rounded-md border border-soil-300 bg-soil-100 p-3 text-sm font-medium text-soil-700">{DISCLAIMER}</p>;
-}
+import { fmt } from './ui';
 
 const range = (r: Range, digits = 0) => `${fmt(r.low, digits)} – ${fmt(r.high, digits)}`;
 
@@ -52,14 +45,7 @@ export function Retrospective({ analysis, energySource, seasonLabel, maxRotation
         )}
         <p className="mt-1 text-sm text-soil-600">
           Mevcut alışkanlık: {fmt(baseline.volumeM3)} m³
-          {baseline.kind === 'habit' ? (
-            <> ({baseline.irrigationCount} sulama)</>
-          ) : (
-            <>
-              {' '}
-              – alışkanlık girilmediği için planın üzerine fazla sulama varsayıldı <AssumptionBadge />
-            </>
-          )}{' '}
+          {baseline.kind === 'habit' && <> ({baseline.irrigationCount} sulama)</>}{' '}
           · Bu plan: {fmt(modelM3)} m³ ({balance.totals.irrigationCount} sulama)
         </p>
       </div>
@@ -69,10 +55,6 @@ export function Retrospective({ analysis, energySource, seasonLabel, maxRotation
       {savings && (
         <>
           <ImpactCards savings={savings} energySource={energySource} />
-          <p className="text-xs text-soil-500">
-            Aralıklar ±%{fmt(((savings.waterM3.high - savings.waterM3.mid) / savings.waterM3.mid) * 100)} belirsizliği
-            gösterir <AssumptionBadge />
-          </p>
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm">
@@ -97,15 +79,12 @@ export function Retrospective({ analysis, energySource, seasonLabel, maxRotation
                 ))}
               </tbody>
             </table>
-            <p className="mt-1 text-xs text-soil-500">Ölçek tablosu bu tarlanın değerinin tarla sayısıyla çarpımıdır.</p>
           </div>
         </>
       )}
 
       <div className="rounded-lg border border-soil-200 p-4 text-sm text-soil-700">
-        <h4 className="mb-2 font-semibold">
-          Güneşe göre dönüşümlü pompa planı (bu sezon) <AssumptionBadge />
-        </h4>
+        <h4 className="mb-2 font-semibold">Güneşe göre pompa planı</h4>
         <ul className="list-disc space-y-1 pl-5">
           <li>
             Tarla parsel parsel, dönüşümlü sulanır: her sulama turu bir sonraki tura kadar (en fazla {maxRotationDays}{' '}
@@ -132,7 +111,6 @@ export function Retrospective({ analysis, energySource, seasonLabel, maxRotation
         </ul>
       </div>
 
-      <Disclaimer />
     </div>
   );
 }

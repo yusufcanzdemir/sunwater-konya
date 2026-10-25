@@ -3,10 +3,8 @@
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ENGINE_CROP, calibratedCrop, type FieldShapes, type PilotField } from '../../src/farmer/pilot.js';
+import { pilotEngineFarm, type FieldShapes, type PilotField } from '../../src/farmer/pilot.js';
 import { parseTable, type Manifest, type Table } from '../../src/panel/data.js';
-import { defaultAssumptions } from '../../src/state/assumptions.js';
-import { demoForm, validateFarmForm } from '../../src/state/farm.js';
 import type { StoredFarm } from './telegram.js';
 
 export const PILOT_PREFIX = 'field:';
@@ -47,30 +45,14 @@ export async function pilotField(farmId: string): Promise<PilotField | null> {
   return (await loadPilot()).byId.get(pilotFieldId(farmId)) ?? null;
 }
 
-/**
- * Engine farm for a pilot field: crop and calendar from the satellite season, area from the field
- * polygon; method, soil, pump and solar values are the demo assumptions (not observed per field,
- * same defaults as the budget, PLAN.md D19). Null when the engine has no parameters for the crop.
- */
+/** Engine farm for a pilot field (see pilotEngineFarm). Null when the engine has no parameters for the crop. */
 export async function pilotFarm(farmId: string, year: number): Promise<StoredFarm | null> {
   const f = await pilotField(farmId);
   if (!f) return null;
-  const crop = ENGINE_CROP[f.class];
-  if (!crop) return null;
   const { manifest } = await loadPilot();
-  const assumptions = defaultAssumptions();
-  const cal = calibratedCrop(assumptions.crops[crop], f, manifest.kcb_max[f.class], manifest.season_start_mmdd, year);
-  if (!cal) return null;
-  assumptions.crops[crop] = cal.crop;
-  const { input } = validateFarmForm({
-    ...demoForm(year),
-    locationText: `Tarla ${f.field_id}`,
-    crop,
-    plantingDate: cal.plantingDate,
-    areaDecare: String(Math.round(f.area_ha * 100) / 10).replace('.', ','),
-    irrigationMethod: 'sprinkler',
-  });
-  if (!input) return null;
+  const engine = pilotEngineFarm(f, manifest, year);
+  if (!engine) return null;
+  const { input, assumptions } = engine;
   return {
     id: farmId,
     input,
