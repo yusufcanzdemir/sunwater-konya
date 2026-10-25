@@ -208,6 +208,23 @@ sebal:
   stress_min_obs: 3             # ... over at least this many cropped overpasses -> flag
   modis_id: MODIS/061/MOD16A2GF # aggregate cross-check (ET band, 0.1 kg/m2 per 8 days)
 
+basin:
+  # Stage 10: basin water-storage context from GRACE / GRACE-FO (PLAN.md D8) minus GLDAS.
+  grace_main: NASA/GRACE/MASS_GRIDS_V04/MASCON_CRI   # JPL RL06.3Mv04, CRI filtered (recommended)
+  grace_alt: NASA/GRACE/MASS_GRIDS_V04/MASCON        # same, unfiltered: sensitivity
+  grace_sh: NASA/GRACE/MASS_GRIDS_V04/LAND           # CSR / GFZ / JPL spherical harmonics, GRACE only
+  grace_sh_to_cm: 100           # LAND bands come in metres (basin std 0.07 vs 7.3 cm mascon, r 0.95)
+  grace_scale_m: 55660          # 0.5° grid (true mascon size ~3°)
+  gldas_id: NASA/GLDAS/V021/NOAH/G025/T3H
+  gldas_bands: [SoilMoi0_10cm_inst, SoilMoi10_40cm_inst, SoilMoi40_100cm_inst, SoilMoi100_200cm_inst,
+                SWE_inst, CanopInt_inst]                 # kg/m² = mm
+  gldas_scale_m: 27830
+  start: "2003-01-01"           # PLAN.md: series from 2003
+  baseline: ["2004-01-01", "2010-01-01"]   # common anomaly baseline (JPL mascon convention)
+  grace_end: "2017-07-01"       # GRACE mission months before this, GRACE-FO from fo_start
+  fo_start: "2018-06-01"
+  monte_carlo: 500              # draws of the monthly GRACE uncertainty for the trend spread
+
 reference:
   # Random cropland points whose fields are hand-drawn as segmentation reference (stage 3).
   n_points: 70          # 50 target + spares for points that are not on a field

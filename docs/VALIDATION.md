@@ -219,3 +219,39 @@ field), not a measured water deficit.
 
 Sources: `pipeline/outputs/09_sebal/sebal_report.{json,md}`, `field_sebal_<year>.parquet`,
 `stress_<year>.parquet`.
+
+## 6. Basin water storage, GRACE / GRACE-FO (stage 10)
+
+Method (`pipeline/10_basin_context.py`, `pipeline/lib/basin.py`, `config.yaml` → `basin`):
+monthly basin-mean total water storage anomaly (TWSA) from JPL mascon RL06.3Mv04 CRI
+(`NASA/GRACE/MASS_GRIDS_V04/MASCON_CRI`) over the Konya Closed Basin (58,374 km²); groundwater
+anomaly GWSA = TWSA − anomalies of GLDAS 2.1 Noah soil moisture (0–200 cm), snow and canopy
+water; common baseline 2004–2009. Trend fitted with annual and semi-annual harmonics; 95%
+interval from the regression error inflated for lag-1 autocorrelation (r1 ≈ 0.6–0.9) combined
+with a Monte Carlo of the monthly mascon uncertainty (mean 2.4 cm). 229 months 2003-01 –
+2024-10, 33 missing including the 2017-07 – 2018-05 GRACE / GRACE-FO gap.
+
+| GWSA trend | cm/yr (95%) | km³/yr over the basin (95%) |
+|---|---|---|
+| 2003-01 – 2024-10 | −0.66 (−1.00 to −0.32) | −0.39 (−0.59 to −0.18) |
+| GRACE 2003-01 – 2017-06 | −0.20 (−0.73 to +0.33) | −0.12 (−0.43 to +0.19) |
+| GRACE-FO 2018-06 – 2024-10 | −2.73 (−3.52 to −1.94) | −1.59 (−2.05 to −1.13) |
+
+Cross-checks:
+- Product spread, GRACE period: JPL mascon CRI −0.20, CSR −0.24, GFZ −0.30, JPL spherical
+  harmonics −0.25 cm/yr (the `MASS_GRIDS_V04/LAND` bands come in metres in Earth Engine and are
+  converted). Unfiltered JPL mascon, full record: −0.47 cm/yr against −0.66 with CRI.
+- GLDAS soil + snow + canopy trend is small (−0.19 cm/yr full record), so the TWSA decline
+  is almost all attributed to the residual.
+
+The decline is not uniform: little or no significant trend in 2003–2017, a steep fall after
+2018. A single 2003–2024 rate understates the recent loss; both periods are reported. The
+GRACE-FO period is six years and contains dry years, so its rate depends on the endpoints.
+
+Limits: mascon resolution (~3°, ~300 km) is coarser than the basin, so this is a basin-scale
+signal that includes leakage from neighbouring areas; GLDAS Noah has no irrigation and no
+groundwater store; surface water (Beyşehir, Tuz Gölü, reservoirs) is not removed and stays in
+GWSA. Subsidence: EGMS does not cover Türkiye (D9); published InSAR studies are cited in stage
+15 after verification. The basin series is context and is not used in the field budget.
+
+Sources: `pipeline/outputs/10_basin/basin.json`, `basin_series.parquet`, `basin_storage.png`.

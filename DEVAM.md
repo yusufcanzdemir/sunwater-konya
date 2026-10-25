@@ -12,7 +12,9 @@ Bu not yalnızca PLAN.md'de olmayan "şu an ne yapıyorduk" bilgisini tutar.
   2024: 44 geçiş; rapor `outputs/09_sebal/sebal_report.md`). SEBAL ekili günlerde NDVI-Kc'nin
   ~%60–66'sı; yaz aylarında günlük net ışınım enerjisi (~6,4 mm) ET0'ın (~7,6 mm) altında, SEBAL
   bu enerjiyi aşamadığı için yapısal olarak düşük kalıyor (adveksiyon). KK5 kararı verildi (D17):
-  kalibrasyon yok, göreli stres bayrağı. Aşama 9 tamamlandı; sıradaki Aşama 10.
+  kalibrasyon yok, göreli stres bayrağı.
+- **Bitti:** Aşama 10 — havza bağlamı (`10_basin_context.py`, GLDAS aylıkları
+  `outputs/10_basin/gldas_monthly.parquet` önbelleğinde). Sıradaki: Aşama 11 (bütçe, KK6).
 - **Sırada:** Aşama 9'u bitirmek → **KK5** (kalibrasyon kararı) → Aşama 10 (GRACE havza) →
   11 (bütçe, KK6) → 12 (dışa aktarım) → 13 (kurum paneli) → 14 (Telegram) → 15 (belgeler).
 
