@@ -5,6 +5,8 @@ import { GoogleGenAI, Type, type Schema } from '@google/genai';
 import { checkExplanation, templateExplanation, type ExplainPayload } from '../../src/ai/explain.js';
 import { MAX_FARM_TEXT_LENGTH, sanitizeParsedFarm } from '../../src/ai/parseFarm.js';
 import { templateTelegram, type TelegramPayload } from '../../src/ai/telegram.js';
+import { STATUSES } from '../../src/panel/data.js';
+import { CLASS_IDS, REGIONS, SORT_KEYS, sanitizeQuery } from '../../src/panel/query.js';
 
 const DEFAULT_MODEL = 'gemini-3.8-flash';
 const MAX_PAYLOAD_BYTES = 20_000;
@@ -212,4 +214,80 @@ export async function explainPlan(request: Request): Promise<Response> {
   const valid = format === 'telegram' ? typeof payload.tarla === 'string' : payload.bu_hafta != null;
   if (!valid) return error('Geçersiz istek.', 400);
   return json(await explain(payload as unknown as ExplainPayload | TelegramPayload, format));
+}
+
+const MAX_QUERY_TEXT_LENGTH = 300;
+const MAX_QUERY_NOTE_LENGTH = 300;
+
+const QUERY_SYSTEM_INSTRUCTION = `Kurum panelindeki Türkçe tarla sorgusunu filtre JSON'una çevir. Yalnızca şemadaki değerleri kullan, uydurma.
+Ürünler: şeker pancarı=sugar_beet, mısır=maize, ayçiçeği=sunflower, yonca=alfalfa, sulu buğday/arpa/tahıl=irrigated_winter_cereal, kuru buğday/tahıl=rainfed_winter_cereal, tahıl sonrası ikinci ürün=cereal_second_crop, nadas/boş=fallow, diğer=other. "Buğday" tek başına geçerse irrigated_winter_cereal ve rainfed_winter_cereal ikisini de seç.
+Durumlar: bütçe içinde=within, sınırda=borderline, bütçeyi aşan/aşım=over, değerlendirilmeyen=not_assessed.
+"En çok aşan" → statuses [over], sort_by excess_m3, sort_desc true. "En çok su tüketen" → sort_by blue_m3. "Oran" → ratio.
+"Stresli / su stresi" → stress_only true. "Ürünü belli olanlar" → include_uncertain false.
+Bölge yalnızca pilot alan içindeki yön için: kuzey, güney, doğu, batı, orta. Pilot alan Karapınar'ın kuzey/kuzeybatısıdır (yaklaşık 586 km²). Ereğli, Konya merkezi, Çumra gibi pilot dışındaki yerler için region null bırak ve note alanında bunu kısaca söyle.
+Alan dekar verilirse hektara çevir (10 dekar = 1 ha). Sayı söylenmediyse limit null.
+note: anlamadığın veya uygulayamadığın kısmı tek kısa Türkçe cümleyle yaz; sorun yoksa boş bırak.`;
+
+const QUERY_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    classes: { type: Type.ARRAY, items: { type: Type.STRING, enum: [...CLASS_IDS] } },
+    statuses: { type: Type.ARRAY, items: { type: Type.STRING, enum: [...STATUSES] } },
+    area_min_ha: nullableNumber('Hektar'),
+    area_max_ha: nullableNumber('Hektar'),
+    stress_only: { type: Type.BOOLEAN },
+    include_uncertain: { type: Type.BOOLEAN },
+    region: nullableEnum([...REGIONS]),
+    sort_by: nullableEnum([...SORT_KEYS]),
+    sort_desc: { type: Type.BOOLEAN },
+    limit: nullableNumber('Kaç tarla'),
+    note: { type: Type.STRING },
+  },
+  required: [
+    'classes',
+    'statuses',
+    'area_min_ha',
+    'area_max_ha',
+    'stress_only',
+    'include_uncertain',
+    'region',
+    'sort_by',
+    'sort_desc',
+    'limit',
+    'note',
+  ],
+};
+
+/** Natural-language field query → sanitised FieldQuery (src/panel/query.ts) plus a short note. */
+export async function parseQuery(request: Request): Promise<Response> {
+  if (request.method !== 'POST') return error('Yalnızca POST.', 405);
+  let body: { text?: unknown };
+  try {
+    body = (await readJson(request)) as { text?: unknown };
+  } catch {
+    return error('Geçersiz istek.', 400);
+  }
+  const text = typeof body.text === 'string' ? body.text.trim() : '';
+  if (!text) return error('Bir sorgu yazın.', 400);
+  if (text.length > MAX_QUERY_TEXT_LENGTH) return error(`Sorgu en fazla ${MAX_QUERY_TEXT_LENGTH} karakter olabilir.`, 400);
+
+  const ai = client();
+  if (!ai) return error('Yapay zekâ servisi yapılandırılmamış. Filtreleri elle seçebilirsiniz.', 503);
+  try {
+    const response = await generate(ai, {
+      contents: `Sorgu:\n${text}`,
+      config: {
+        systemInstruction: QUERY_SYSTEM_INSTRUCTION,
+        responseMimeType: 'application/json',
+        responseSchema: QUERY_SCHEMA,
+        temperature: 0,
+      },
+    }, Date.now() + PARSE_DEADLINE_MS);
+    const raw = JSON.parse(response.text ?? '{}') as Record<string, unknown>;
+    const note = typeof raw.note === 'string' ? raw.note.trim().slice(0, MAX_QUERY_NOTE_LENGTH) : '';
+    return json({ query: sanitizeQuery(raw), note });
+  } catch (e) {
+    console.error('parse-query failed', e);
+    return error('Sorgu şu an yorumlanamadı. Filtreleri elle seçebilirsiniz.', 502);
+  }
 }

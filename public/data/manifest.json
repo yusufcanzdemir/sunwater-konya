@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-25T06:50:38+00:00",
+ "generated_at": "2026-10-25T07:15:26+00:00",
  "seasons": [
   2025,
   2024
@@ -49,10 +49,12 @@
   "field_files": 3448,
   "field_mb": 35.8,
   "basin.json": 0.01,
+  "fields_2024.json": 0.71,
   "fields_2024.parquet": 3.43,
-  "fields_2024.pmtiles": 2.56,
+  "fields_2024.pmtiles": 2.32,
+  "fields_2025.json": 0.7,
   "fields_2025.parquet": 3.43,
-  "fields_2025.pmtiles": 2.56,
+  "fields_2025.pmtiles": 2.32,
   "metrics.json": 0.02,
   "season_2024.json": 0.45,
   "season_2025.json": 0.44

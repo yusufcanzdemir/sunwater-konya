@@ -25,6 +25,10 @@ Groundwater over-abstraction in the Konya Closed Basin raises concerns about dec
 - FAO-56 crop water requirement methodology
 - Gemini API for natural-language interaction
 
+## Institutional panel (`/panel`)
+
+Map of every field in the pilot area (Karapınar north/northwest) with its satellite-measured blue-water use, budget status, SEBAL relative low-ET flag, levers and pump energy (assumption), plus the GRACE basin series and a "Yöntem ve Doğrulama" page. Data is precomputed by the Python pipeline (`pipeline/`, stages 1–12) and served statically from `public/data/` (regenerate with `pipeline/12_export.py`). Map: MapLibre GL + PMTiles. Natural-language field queries go through `/api/parse-query` (Gemini, structured output, sanitised against the filter schema).
+
 ## Project Goals
 
 The long-term goal is to support more efficient agricultural water use, reduce avoidable groundwater extraction, and contribute to sustainable irrigation practices in the Konya Closed Basin.

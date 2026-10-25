@@ -3,7 +3,9 @@
   "functions": {
     "api/send-alert.ts": { "maxDuration": 60 },
     "api/telegram-webhook.ts": { "maxDuration": 60 },
-    "api/explain-plan.ts": { "maxDuration": 60 }
+    "api/explain-plan.ts": { "maxDuration": 60 },
+    "api/parse-query.ts": { "maxDuration": 60 }
   },
+  "rewrites": [{ "source": "/panel", "destination": "/index.html" }],
   "crons": [{ "path": "/api/send-alert", "schedule": "0 4 * * *" }]
 }

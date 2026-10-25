@@ -5,6 +5,7 @@ Outputs (outputs/12_export/data/, served as /data/ by the web app):
   fields_<year>.parquet    GeoParquet, one row per field: geometry, class, ET, blue ET with range,
                            reference need, S1 / S2 budgets, status, stress flag, energy, levers
   fields_<year>.pmtiles    vector tiles (layer "fields") with the attributes the map styles on
+  fields_<year>.json       attribute table of all fields (no geometry) for filters, cards, CSV, queries
   season_<year>.json       weekly cumulative blue ET of every field, for the whole-map season player
   field/<id>.json          per field, both seasons: daily NDVI, ET, cumulative blue ET and S1 budget line
   basin.json               GRACE / GLDAS monthly series and trends (stage 10)
@@ -26,7 +27,7 @@ import pandas as pd
 import pyogrio
 
 from lib.config import load_config, step_output_dir
-from lib.fields import load_fields
+from lib.fields import load_fields, simplified
 
 TILE_PROPS = ["field_id", "class", "uncertain", "area_ha", "blue_mm", "ratio_s1", "ratio_s2",
               "status_s1", "status_s2", "stress_flag"]
@@ -54,12 +55,29 @@ def field_table(cfg: dict, year: int, geoms: gpd.GeoDataFrame) -> gpd.GeoDataFra
 def write_pmtiles(gdf: gpd.GeoDataFrame, path, ecfg: dict) -> None:
     if path.exists():
         path.unlink()
-    tiles = gdf[TILE_PROPS + ["geometry"]].copy()
+    # SAM fields follow the 10 m pixel grid; simplify the staircase edges for the map only
+    tiles = simplified(gdf[TILE_PROPS + ["geometry"]].copy(), ecfg["simplify_m"])
     for c in ("area_ha", "blue_mm", "ratio_s1", "ratio_s2"):
         tiles[c] = tiles[c].round(2)
     pyogrio.write_dataframe(tiles, path, driver="PMTiles", layer="fields",
                             dataset_options={"MINZOOM": ecfg["min_zoom"], "MAXZOOM": ecfg["max_zoom"],
                                              "NAME": path.stem})
+
+
+def attribute_table(gdf: gpd.GeoDataFrame) -> dict:
+    """All fields without geometry, column-name header + rows, for filters, cards, CSV and queries."""
+    c = gdf.to_crs("EPSG:32636").centroid.to_crs("EPSG:4326")
+    df = gdf.drop(columns="geometry").assign(lon=c.x.round(5), lat=c.y.round(5))
+    cols = ["field_id", "class", "class_prob", "uncertain", "area_ha", "assessed", "et_mm", "blue_mm",
+            "blue_mm_low", "blue_mm_high", "blue_m3", "reference_mm", "budget_s1_mm", "budget_s2_mm",
+            "ratio_s1", "ratio_s2", "status_s1", "status_s2", "stress_flag", "energy_kwh", "energy_s1_kwh",
+            "lever_evap_mm", "lever_deficit_mm", "lever_deficit_yield_loss", "lever_switch_to",
+            "lever_switch_mm", "lon", "lat"]
+    df = df[cols].copy()
+    for col in ("class_prob", "area_ha", "ratio_s1", "ratio_s2", "lever_deficit_yield_loss"):
+        df[col] = df[col].round(3)
+    df = df.astype(object).where(df.notna(), None)
+    return {"columns": cols, "rows": df.to_numpy().tolist()}
 
 
 def series_round(a: np.ndarray, decimals: int) -> list:
@@ -93,7 +111,8 @@ def metrics(cfg: dict) -> dict:
     basin = read_json(cfg, "10_basin", "basin.json")
     budget = read_json(cfg, "11_budget", "budget_report.json")
     return {
-        "segmentation": {k: sam[k] for k in ("reference", "selected_input", "n_fields", "median_field_ha")},
+        "segmentation": {**{k: sam[k] for k in ("reference", "selected_input", "n_fields", "median_field_ha")},
+                         "selected_metrics": sam["inputs"][sam["selected_input"]]},
         "classification": {"accuracy_measured": False,
                            **{k: cls[k] for k in ("seasons", "blind_labels", "plausibility_check")}},
         "et0_crosscheck": et0["crosscheck"],
@@ -128,6 +147,8 @@ def main() -> int:
         gdf = field_table(cfg, year, geoms)
         gdf.to_parquet(out / f"fields_{year}.parquet", index=False)
         write_pmtiles(gdf, out / f"fields_{year}.pmtiles", ecfg)
+        (out / f"fields_{year}.json").write_text(json.dumps(attribute_table(gdf), separators=(",", ":")),
+                                                 encoding="utf-8")
         daily, _ = daily_frames(cfg, year)
         (out / f"season_{year}.json").write_text(
             json.dumps(season_player(daily, ecfg["player_step_days"]), separators=(",", ":")), encoding="utf-8")

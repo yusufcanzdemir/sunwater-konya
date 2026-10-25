@@ -2,6 +2,7 @@
 
 import { templateExplanation, type ExplainPayload } from './explain';
 import { sanitizeParsedFarm, type ParsedFarm } from './parseFarm';
+import { sanitizeQuery, type FieldQuery } from '../panel/query';
 
 async function post(url: string, body: unknown): Promise<Response> {
   try {
@@ -38,4 +39,11 @@ export async function requestExplanation(payload: ExplainPayload): Promise<Expla
     // fall through to the template
   }
   return { text: templateExplanation(payload), source: 'template' };
+}
+
+export async function requestParseQuery(text: string): Promise<{ query: FieldQuery; note: string }> {
+  const res = await post('/api/parse-query', { text });
+  const body = (await res.json().catch(() => null)) as { error?: string; query?: unknown; note?: unknown } | null;
+  if (!res.ok || !body) throw new Error(body?.error ?? 'Sorgu şu an yorumlanamadı. Filtreleri elle seçebilirsiniz.');
+  return { query: sanitizeQuery(body.query), note: typeof body.note === 'string' ? body.note : '' };
 }

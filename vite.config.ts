@@ -10,6 +10,7 @@ import { checksFromCsv, checksToCsv, fromCsv, toCsv, type CheckRow, type LabelRo
 const API_ROUTES: Record<string, string> = {
   '/api/parse-farm': '/api/parse-farm.ts',
   '/api/explain-plan': '/api/explain-plan.ts',
+  '/api/parse-query': '/api/parse-query.ts',
   '/api/telegram-link': '/api/telegram-link.ts',
   '/api/send-alert': '/api/send-alert.ts',
   '/api/telegram-webhook': '/api/telegram-webhook.ts',

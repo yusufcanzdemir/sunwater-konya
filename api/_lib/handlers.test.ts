@@ -8,7 +8,7 @@ vi.mock('@google/genai', async (importOriginal) => ({
   },
 }));
 
-const { explainPlan, parseFarm } = await import('./handlers');
+const { explainPlan, parseFarm, parseQuery } = await import('./handlers');
 
 type Json = Record<string, unknown>;
 const body = async (r: Response) => (await r.json()) as Json;
@@ -111,5 +111,29 @@ describe('explainPlan', () => {
     process.env.GEMINI_API_KEY = 'k';
     generateContent.mockRejectedValue(new Error('quota'));
     expect((await body(await explainPlan(post(payload)))).source).toBe('template');
+  });
+});
+
+describe('parseQuery', () => {
+  it('returns the sanitised query and the note', async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({ classes: ['sugar_beet', 'banana'], statuses: ['over'], region: 'ereğli', sort_by: 'excess_m3', limit: 20, note: 'Ereğli pilot alan dışında.' }),
+    });
+    const res = await parseQuery(post({ text: 'Ereğli tarafında bütçesini en çok aşan 20 pancar tarlası' }));
+    const result = await body(res);
+    expect(res.status).toBe(200);
+    expect(result.query).toMatchObject({ classes: ['sugar_beet'], statuses: ['over'], region: null, sort_by: 'excess_m3', limit: 20 });
+    expect(result.note).toBe('Ereğli pilot alan dışında.');
+  });
+
+  it('rejects empty and too long text without calling the model', async () => {
+    expect((await parseQuery(post({ text: '  ' }))).status).toBe(400);
+    expect((await parseQuery(post({ text: 'x'.repeat(301) }))).status).toBe(400);
+    expect(generateContent).not.toHaveBeenCalled();
+  });
+
+  it('503 without an API key', async () => {
+    delete process.env.GEMINI_API_KEY;
+    expect((await parseQuery(post({ text: 'pancar' }))).status).toBe(503);
   });
 });

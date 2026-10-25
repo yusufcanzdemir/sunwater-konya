@@ -17,7 +17,9 @@ Bu not yalnızca PLAN.md'de olmayan "şu an ne yapıyorduk" bilgisini tutar.
   `outputs/10_basin/gldas_monthly.parquet` önbelleğinde).
 - **Bitti:** Aşama 11 — `11_budget.py` + `lib/budget.py`; KK6 önerilen varsayılanlarla kapandı (D19).
 - **Bitti:** Aşama 12 — `12_export.py` → `pipeline/outputs/12_export/data/` ve `public/data/` (repoda,
-  Vercel statik). Sıradaki: Aşama 13 (kurum paneli; PMTiles için HTTP Range gerekir, Vite ve Vercel destekliyor).
+  Vercel statik).
+- **Bitti:** Aşama 13 — kurum paneli `src/panel/` (`/panel`), `/api/parse-query`. Sıradaki: Aşama 14
+  (Telegram çiftçi kanalı: sezon özeti + haftalık plan, uydu Kcb ile).
   Ky kaynağı (FAO/IAEA, Moutonnet, Tablo 1: https://www.fao.org/4/Y3655E/y3655e04.htm) Aşama 15'te
   DATA_SOURCES.md'ye taşınacak.
 - **Sırada:** Aşama 9'u bitirmek → **KK5** (kalibrasyon kararı) → Aşama 10 (GRACE havza) →
@@ -61,7 +63,7 @@ Bu not yalnızca PLAN.md'de olmayan "şu an ne yapıyorduk" bilgisini tutar.
 - Önceki proje dokümanındaki iddiaların kontrolü `docs/IDDIA_KONTROLU.md`'de (hangi rakam
   kullanılabilir / kullanılamaz). Aşama 11 ve 15'te bakılacak.
 - Ürün sınıflarının doğruluğu ölçülmedi (D14, D15); panelde böyle gösterilecek.
-- React uygulamasının `/web` klasörüne taşınması Aşama 13'e bırakıldı.
+- React uygulaması `/web` klasörüne taşınmadı (D21); panel `/panel` sayfası.
 
 ## Kullanıcının çalışma tercihi
 - Commit'leri kullanıcı atar; Claude yalnızca komut önerir, ara sıra (aşama sonlarında).

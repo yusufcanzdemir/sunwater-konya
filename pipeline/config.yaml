@@ -241,6 +241,7 @@ export:
   # Stage 12: web data under outputs/12_export/data/
   min_zoom: 9                   # pilot area (~30 km) fills the screen around zoom 10-11
   max_zoom: 15                  # MapLibre overzooms beyond this
+  simplify_m: 8                 # map tiles only: removes the 10 m pixel staircase of SAM edges
   player_step_days: 7           # whole-map season player resolution
   publish_dir: ../public/data   # relative to pipeline/; served statically by Vite / Vercel (D20)
   publish_skip: ["*.parquet"]   # analysis copies only, the web app does not read them
