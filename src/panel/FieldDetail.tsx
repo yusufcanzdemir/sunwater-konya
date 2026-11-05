@@ -4,6 +4,7 @@ import { AlertTriangle, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { fmt } from '../components/ui';
+import { lang, monthDay, pc, t } from '../i18n';
 import {
   STATUS_COLORS,
   STATUS_NAMES,
@@ -28,7 +29,7 @@ const addDays = (iso: string, n: number) => {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 };
-const shortDate = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`;
+const shortDate = (iso: string) => (lang === 'en' ? monthDay(iso) : `${iso.slice(8, 10)}.${iso.slice(5, 7)}`);
 
 export function StatusChip({ status }: { status: keyof typeof STATUS_NAMES }) {
   return (
@@ -103,7 +104,7 @@ export default function FieldDetail({
   useEffect(() => {
     setDetail(null);
     setError(null);
-    loadFieldDetail(field.field_id).then(setDetail, () => setError('Tarla ayrıntısı yüklenemedi.'));
+    loadFieldDetail(field.field_id).then(setDetail, () => setError(t('Tarla ayrıntısı yüklenemedi.', 'Field details could not be loaded.')));
   }, [field.field_id]);
 
   const names = manifest.classes;
@@ -129,15 +130,15 @@ export default function FieldDetail({
   const m3 = (mm: number | null) => (mm == null ? null : mm * field.area_ha * 10);
 
   return (
-    <aside className="flex h-full flex-col overflow-y-auto rounded-2xl border border-black/5 bg-white p-5 shadow-sm" aria-label={`Tarla ${field.field_id}`}>
+    <aside className="flex h-full flex-col overflow-y-auto rounded-2xl border border-black/5 bg-white p-5 shadow-sm" aria-label={`${t('Tarla', 'Field')} ${field.field_id}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-stone-900">{names[field.class] ?? field.class}</h2>
           <p className="text-sm text-stone-500">
-            Tarla {field.field_id} · {fmt(field.area_ha, 1)} ha
+            {t('Tarla', 'Field')} {field.field_id} · {fmt(field.area_ha, 1)} ha
           </p>
         </div>
-        <button onClick={onClose} className="rounded-full p-1.5 text-stone-500 hover:bg-stone-100" aria-label="Tarla panelini kapat">
+        <button onClick={onClose} className="rounded-full p-1.5 text-stone-500 hover:bg-stone-100" aria-label={t('Tarla panelini kapat', 'Close field panel')}>
           <X size={18} />
         </button>
       </div>
@@ -148,18 +149,18 @@ export default function FieldDetail({
 
       <dl className="mt-4 grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-stone-50 p-3">
-          <dt className="text-xs text-stone-500">Tüketim</dt>
+          <dt className="text-xs text-stone-500">{t('Tüketim', 'Use')}</dt>
           <dd className="text-lg font-bold text-stone-900">{fmt(field.blue_m3)} m³</dd>
         </div>
         <div className="rounded-xl bg-stone-50 p-3">
-          <dt className="text-xs text-stone-500">Hedef</dt>
+          <dt className="text-xs text-stone-500">{t('Hedef', 'Target')}</dt>
           <dd className="text-lg font-bold text-stone-900">{budget == null ? '–' : `${fmt(m3(budget) ?? 0)} m³`}</dd>
         </div>
         {field.assessed && excess != null && excess > 0 && (
           <div className="col-span-2 rounded-xl bg-rose-50 p-3">
-            <dt className="text-xs text-rose-700">Hedefin üzerinde</dt>
+            <dt className="text-xs text-rose-700">{t('Hedefin üzerinde', 'Above target')}</dt>
             <dd className="text-lg font-bold text-rose-800">
-              {fmt(excess)} m³{ratio != null && <span className="ml-1 text-sm font-semibold">(+%{fmt((ratio - 1) * 100)})</span>}
+              {fmt(excess)} m³{ratio != null && <span className="ml-1 text-sm font-semibold">(+{pc(fmt((ratio - 1) * 100))})</span>}
             </dd>
           </div>
         )}
@@ -167,7 +168,8 @@ export default function FieldDetail({
 
       {field.stress_flag && (
         <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-amber-800">
-          <AlertTriangle size={14} className="shrink-0" aria-hidden /> Bu sezon gelişimi benzer tarlalardan zayıf göründü.
+          <AlertTriangle size={14} className="shrink-0" aria-hidden />{' '}
+          {t('Bu sezon gelişimi benzer tarlalardan zayıf göründü.', 'Crop growth looked weaker than in similar fields this season.')}
         </p>
       )}
 
@@ -176,34 +178,36 @@ export default function FieldDetail({
       {s && (
         <>
           <Chart
-            title="Sezon boyunca tüketim (mm)"
+            title={t('Sezon boyunca tüketim (mm)', 'Use over the season (mm)')}
             data={series}
             unit="mm"
             lines={[
-              { key: 'blue', name: 'Tarla', color: SERIES_1 },
-              { key: 'budget', name: 'Hedef', color: SERIES_2, dashed: true },
+              { key: 'blue', name: t('Tarla', 'Field'), color: SERIES_1 },
+              { key: 'budget', name: t('Hedef', 'Target'), color: SERIES_2, dashed: true },
             ]}
           />
-          <Chart title="Bitki gelişimi (NDVI)" data={series} unit="" lines={[{ key: 'ndvi', name: 'NDVI', color: SERIES_1 }]} />
+          <Chart title={t('Bitki gelişimi (NDVI)', 'Crop growth (NDVI)')} data={series} unit="" lines={[{ key: 'ndvi', name: 'NDVI', color: SERIES_1 }]} />
         </>
       )}
 
       {field.assessed && (
         <section className="mt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500">Tasarruf seçenekleri</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500">{t('Tasarruf seçenekleri', 'Saving options')}</h3>
           <ul className="mt-2 divide-y divide-stone-100 text-sm">
             {field.lever_evap_mm != null && field.lever_evap_mm > 0 && (
               <li className="flex justify-between gap-2 py-2">
-                <span>Damla sulama</span>
+                <span>{t('Damla sulama', 'Drip irrigation')}</span>
                 <span className="font-semibold text-emerald-700">−{fmt(m3(field.lever_evap_mm) ?? 0)} m³</span>
               </li>
             )}
             {field.lever_deficit_mm != null && (
               <li className="flex justify-between gap-2 py-2">
                 <span>
-                  %{fmt(p.deficit_et_reduction * 100)} az sulama
+                  {t(`%${fmt(p.deficit_et_reduction * 100)} az sulama`, `${fmt(p.deficit_et_reduction * 100)}% less irrigation`)}
                   {field.lever_deficit_yield_loss != null && (
-                    <span className="block text-xs text-stone-500">verimde ≈ %{fmt(field.lever_deficit_yield_loss * 100)} düşüş</span>
+                    <span className="block text-xs text-stone-500">
+                      {t(`verimde ≈ %${fmt(field.lever_deficit_yield_loss * 100)} düşüş`, `≈ ${fmt(field.lever_deficit_yield_loss * 100)}% lower yield`)}
+                    </span>
                   )}
                 </span>
                 <span className="font-semibold text-emerald-700">−{fmt(m3(field.lever_deficit_mm) ?? 0)} m³</span>
@@ -211,7 +215,7 @@ export default function FieldDetail({
             )}
             {field.lever_switch_to && field.lever_switch_mm != null && field.lever_switch_mm > 0 && (
               <li className="flex justify-between gap-2 py-2">
-                <span>{names[field.lever_switch_to] ?? field.lever_switch_to} ekimi</span>
+                <span>{t(`${names[field.lever_switch_to] ?? field.lever_switch_to} ekimi`, `Grow ${names[field.lever_switch_to] ?? field.lever_switch_to}`)}</span>
                 <span className="font-semibold text-emerald-700">−{fmt(m3(field.lever_switch_mm) ?? 0)} m³</span>
               </li>
             )}
@@ -221,7 +225,7 @@ export default function FieldDetail({
 
       {field.assessed && (
         <p className="mt-3 text-sm text-stone-600">
-          Pompa enerjisi: <span className="font-semibold text-stone-900">{fmt(field.energy_kwh)} kWh</span>
+          {t('Pompa enerjisi', 'Pump energy')}: <span className="font-semibold text-stone-900">{fmt(field.energy_kwh)} kWh</span>
         </p>
       )}
     </aside>

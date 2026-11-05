@@ -4,16 +4,17 @@ import { ArrowLeft, CloudRain, Droplets, Leaf, Send, Sun, Zap } from 'lucide-rea
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { fmt } from '../components/ui';
-import { fetchForecast } from '../data/openMeteo';
-import { loadFieldDetail, type FieldDetailData, type Status } from '../panel/data';
+import { fetchArchive, fetchForecast } from '../data/openMeteo';
+import { locale, monthDay, t } from '../i18n';
+import { loadDemoWeather, loadFieldDetail, type FieldDetailData, type Status } from '../panel/data';
 import type { PilotField } from './pilot';
-import { PAST_DAYS, buildWeek, type PilotManifest, type WeekView } from './weekPlan';
+import { PAST_DAYS, buildWeek, demoDay, demoWeather, type DemoWeatherPoint, type PilotManifest, type WeekView } from './weekPlan';
 
 export const FARMER_STATUS: Record<Status, { label: string; tone: string; dot: string }> = {
-  within: { label: 'Verimli sulama', tone: 'bg-emerald-50 text-emerald-800', dot: 'bg-emerald-500' },
-  borderline: { label: 'Biraz fazla', tone: 'bg-amber-50 text-amber-800', dot: 'bg-amber-400' },
-  over: { label: 'Fazla su', tone: 'bg-rose-50 text-rose-800', dot: 'bg-rose-500' },
-  not_assessed: { label: 'Yağmurla yetişiyor', tone: 'bg-stone-100 text-stone-700', dot: 'bg-stone-400' },
+  within: { label: t('Verimli sulama', 'Efficient irrigation'), tone: 'bg-emerald-50 text-emerald-800', dot: 'bg-emerald-500' },
+  borderline: { label: t('Biraz fazla', 'Slightly over'), tone: 'bg-amber-50 text-amber-800', dot: 'bg-amber-400' },
+  over: { label: t('Fazla su', 'Too much water'), tone: 'bg-rose-50 text-rose-800', dot: 'bg-rose-500' },
+  not_assessed: { label: t('Yağmurla yetişiyor', 'Rain-fed'), tone: 'bg-stone-100 text-stone-700', dot: 'bg-stone-400' },
 };
 
 const todayIstanbul = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
@@ -22,8 +23,6 @@ const addDays = (iso: string, n: number) => {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 };
-const MONTHS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-const monthDay = (iso: string) => `${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]}`;
 
 function Card({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
   return (
@@ -39,35 +38,57 @@ function Card({ title, icon, children }: { title: string; icon?: ReactNode; chil
 
 type WeekState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; view: WeekView | null };
 
-function useWeek(field: PilotField, manifest: PilotManifest): [WeekState, () => void] {
+/** This week from the forecast, or with `demoDate` the demo week from that week's archived weather (bundled file first). */
+function useWeek(field: PilotField, manifest: PilotManifest, demoDate: string | null): [WeekState, () => void] {
   const [state, setState] = useState<WeekState>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let live = true;
     setState({ status: 'loading' });
-    fetchForecast(field.lat, field.lon, fetch, PAST_DAYS).then(
-      (fc) => live && setState({ status: 'ready', view: buildWeek(field, manifest, fc, todayIstanbul()) }),
+    let weather;
+    if (demoDate) {
+      const [from, to] = [addDays(demoDate, -PAST_DAYS), addDays(demoDate, 15)];
+      weather = loadDemoWeather<DemoWeatherPoint[]>(Number(demoDate.slice(0, 4))).then(
+        (points) => demoWeather(points, field.lat, field.lon, from, to),
+        () => fetchArchive(field.lat, field.lon, from, to),
+      );
+    } else weather = fetchForecast(field.lat, field.lon, fetch, PAST_DAYS);
+    weather.then(
+      (w) => live && setState({ status: 'ready', view: buildWeek(field, manifest, w, demoDate ?? todayIstanbul(), !demoDate) }),
       () => live && setState({ status: 'error' }),
     );
     return () => {
       live = false;
     };
-  }, [field.field_id, attempt]);
+  }, [field.field_id, attempt, demoDate]);
   return [state, () => setAttempt((a) => a + 1)];
 }
 
-function WeekCard({ state, retry, rainfed }: { state: WeekState; retry: () => void; rainfed: boolean }) {
+function WeekCard({
+  state,
+  retry,
+  rainfed,
+  demoDate,
+  onDemo,
+}: {
+  state: WeekState;
+  retry: () => void;
+  rainfed: boolean;
+  demoDate: string | null;
+  onDemo: (on: boolean) => void;
+}) {
+  const title = demoDate ? t('Örnek hafta', 'Sample week') : t('Bu hafta', 'This week');
   if (rainfed) {
     return (
-      <Card title="Bu hafta" icon={<Droplets size={14} />}>
-        <p className="text-2xl font-bold text-stone-900">Sulama gerekmiyor</p>
-        <p className="mt-1 text-sm text-stone-600">Bu tarla yağmurla yetişiyor.</p>
+      <Card title={title} icon={<Droplets size={14} />}>
+        <p className="text-2xl font-bold text-stone-900">{t('Sulama gerekmiyor', 'No irrigation needed')}</p>
+        <p className="mt-1 text-sm text-stone-600">{t('Bu tarla yağmurla yetişiyor.', 'This field grows on rainfall.')}</p>
       </Card>
     );
   }
   if (state.status === 'loading') {
     return (
-      <Card title="Bu hafta" icon={<Droplets size={14} />}>
+      <Card title={title} icon={<Droplets size={14} />}>
         <div className="h-8 w-2/3 animate-pulse rounded-lg bg-stone-100" />
         <div className="mt-4 grid grid-cols-7 gap-1.5">
           {Array.from({ length: 7 }, (_, i) => (
@@ -79,10 +100,12 @@ function WeekCard({ state, retry, rainfed }: { state: WeekState; retry: () => vo
   }
   if (state.status === 'error') {
     return (
-      <Card title="Bu hafta" icon={<Droplets size={14} />}>
-        <p className="text-sm text-stone-600">Hava tahmini şu an alınamadı.</p>
+      <Card title={title} icon={<Droplets size={14} />}>
+        <p className="text-sm text-stone-600">{demoDate
+            ? t('Geçmiş hava verisi şu an alınamadı.', 'Past weather data is not available right now.')
+            : t('Hava tahmini şu an alınamadı.', 'The weather forecast is not available right now.')}</p>
         <button onClick={retry} className="mt-2 text-sm font-semibold text-emerald-800 hover:underline">
-          Tekrar dene
+          {t('Tekrar dene', 'Try again')}
         </button>
       </Card>
     );
@@ -90,43 +113,59 @@ function WeekCard({ state, retry, rainfed }: { state: WeekState; retry: () => vo
   const view = state.view;
   if (!view) {
     return (
-      <Card title="Bu hafta" icon={<Droplets size={14} />}>
-        <p className="text-lg font-semibold text-stone-900">Bu ürün için haftalık plan yakında</p>
+      <Card title={title} icon={<Droplets size={14} />}>
+        <p className="text-lg font-semibold text-stone-900">{t('Bu ürün için haftalık plan yakında', 'Weekly plan for this crop coming soon')}</p>
       </Card>
     );
   }
   if (view.kind === 'off_season') {
     return (
-      <Card title="Bu hafta" icon={<Droplets size={14} />}>
-        <p className="text-2xl font-bold text-stone-900">Sezon tamamlandı</p>
-        <p className="mt-1 text-sm text-stone-600">Yeni sezonun planı ekimle birlikte başlar.</p>
+      <Card title={title} icon={<Droplets size={14} />}>
+        <p className="text-2xl font-bold text-stone-900">{t('Sezon tamamlandı', 'Season finished')}</p>
+        <p className="mt-1 text-sm text-stone-600">{t('Yeni sezonun planı ekimle birlikte başlar.', 'The plan for the new season starts at sowing.')}</p>
+        <button onClick={() => onDemo(true)} className="mt-3 text-sm font-semibold text-emerald-800 hover:underline">
+          {t('Geçen sezondan örnek bir hafta göster →', 'Show a sample week from last season →')}
+        </button>
       </Card>
     );
   }
 
   const rainy = view.days.find((d) => d.rainMm > 0);
   return (
-    <Card title="Bu hafta" icon={<Droplets size={14} />}>
+    <Card title={title} icon={<Droplets size={14} />}>
+      {demoDate && (
+        <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          {t(
+            `Örnek: ${demoDate.slice(0, 4)} sezonunda ${monthDay(demoDate)} haftası, o haftanın gerçek hava verisiyle. Ürün takvimi tarlanın uydu verisinden.`,
+            `Sample: the week of ${monthDay(demoDate)} ${demoDate.slice(0, 4)}, with that week's real weather. Crop calendar from the field's satellite data.`,
+          )}{' '}
+          <button onClick={() => onDemo(false)} className="font-semibold underline">
+            {t('Bugüne dön', 'Back to today')}
+          </button>
+        </p>
+      )}
       {view.next ? (
         <>
-          <p className="text-sm font-medium text-stone-500">Sıradaki sulama</p>
+          <p className="text-sm font-medium text-stone-500">{t('Sıradaki sulama', 'Next irrigation')}</p>
           <p className="text-2xl font-bold text-stone-900">
-            {view.next.label}, {view.next.windows.join(' ve ')}
+            {view.next.label}, {view.next.windows.join(t(' ve ', ' and '))}
           </p>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-600">
-            <span>{fmt(view.next.hours, 1)} saat pompa</span>
+            <span>{t(`${fmt(view.next.hours, 1)} saat pompa`, `${fmt(view.next.hours, 1)} h of pumping`)}</span>
             {view.solarShare != null && (
               <span className="inline-flex items-center gap-1 font-medium text-amber-700">
-                <Sun size={14} /> enerjinin %{fmt(view.solarShare * 100)}'i güneşten
+                <Sun size={14} /> {t(`enerjinin %${fmt(view.solarShare * 100)}'i güneşten`, `${fmt(view.solarShare * 100)}% of the energy from solar`)}
               </span>
             )}
           </p>
         </>
       ) : (
         <>
-          <p className="text-2xl font-bold text-stone-900">Bu hafta sulama yapma</p>
+          <p className="text-2xl font-bold text-stone-900">{t('Bu hafta sulama yapma', 'No irrigation this week')}</p>
           <p className="mt-1 text-sm text-stone-600">
-            {rainy ? `${rainy.label} yağmur bekleniyor; toprakta yeterli su var.` : 'Toprakta yeterli su var, pompa kapalı kalsın.'}
+            {rainy
+              ? t(`${rainy.label} yağmur bekleniyor; toprakta yeterli su var.`, `${rainy.label}: rain expected; the soil has enough water.`)
+              : t('Toprakta yeterli su var, pompa kapalı kalsın.', 'The soil has enough water; keep the pump off.')}
           </p>
         </>
       )}
@@ -143,7 +182,7 @@ function WeekCard({ state, retry, rainfed }: { state: WeekState; retry: () => vo
             >
               <span className="text-[11px] font-semibold">{d.short}</span>
               {pump ? <Droplets size={16} /> : d.rainMm > 0 ? <CloudRain size={16} /> : <span className="h-4 text-stone-300">–</span>}
-              <span className="text-[10px] tabular-nums">{pump ? `${fmt(d.hours, 0)} sa` : d.rainMm > 0 ? `${fmt(d.rainMm, 0)} mm` : ' '}</span>
+              <span className="text-[10px] tabular-nums">{pump ? `${fmt(d.hours, 0)} ${t('sa', 'h')}` : d.rainMm > 0 ? `${fmt(d.rainMm, 0)} mm` : ' '}</span>
             </li>
           );
         })}
@@ -185,7 +224,7 @@ function SeasonCurve({ detail, season }: { detail: FieldDetailData | null; seaso
           <XAxis dataKey="date" tickFormatter={monthDay} tick={{ fontSize: 10, fill: '#78716c' }} axisLine={false} tickLine={false} minTickGap={40} />
           <Tooltip
             labelFormatter={(d) => monthDay(String(d))}
-            formatter={(v, name) => [`${fmt(Number(v))} mm`, name === 'blue' ? 'Senin tarlan' : 'Verimli sulama']}
+            formatter={(v, name) => [`${fmt(Number(v))} mm`, name === 'blue' ? t('Senin tarlan', 'Your field') : t('Verimli sulama', 'Efficient irrigation')]}
             contentStyle={{ fontSize: 12, borderRadius: 10 }}
           />
           <Line dataKey="ref" stroke="#a8a29e" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
@@ -203,6 +242,8 @@ export default function FieldCard({
   manifest,
   classNames,
   telegramUrl,
+  demo,
+  onDemo,
   onBack,
 }: {
   field: PilotField;
@@ -211,9 +252,12 @@ export default function FieldCard({
   manifest: PilotManifest;
   classNames: Record<string, string>;
   telegramUrl: string | null;
+  demo: boolean;
+  onDemo: (on: boolean) => void;
   onBack: () => void;
 }) {
-  const [week, retry] = useWeek(field, manifest);
+  const demoDate = demo ? demoDay(field, manifest, season) : null;
+  const [week, retry] = useWeek(field, manifest, demoDate);
   const [detail, setDetail] = useState<FieldDetailData | null>(null);
   useEffect(() => {
     setDetail(null);
@@ -231,30 +275,41 @@ export default function FieldCard({
 
   const levers: { title: string; sub?: string; m3: number }[] = [];
   if (field.lever_evap_mm != null && field.lever_evap_mm > 0) {
-    levers.push({ title: 'Damla sulamaya geç', sub: 'Toprak daha az ıslanır, buharlaşma azalır', m3: toM3(field.lever_evap_mm) });
+    levers.push({
+      title: t('Damla sulamaya geç', 'Switch to drip irrigation'),
+      sub: t('Toprak daha az ıslanır, buharlaşma azalır', 'Less wet soil, less evaporation'),
+      m3: toM3(field.lever_evap_mm),
+    });
   }
   if (field.lever_deficit_mm != null && field.lever_deficit_mm > 0) {
     levers.push({
-      title: '%10 daha az sula',
-      sub: field.lever_deficit_yield_loss != null ? `Verimde yaklaşık %${fmt(field.lever_deficit_yield_loss * 100)} düşüş` : undefined,
+      title: t('%10 daha az sula', 'Irrigate 10% less'),
+      sub:
+        field.lever_deficit_yield_loss != null
+          ? t(`Verimde yaklaşık %${fmt(field.lever_deficit_yield_loss * 100)} düşüş`, `About ${fmt(field.lever_deficit_yield_loss * 100)}% lower yield`)
+          : undefined,
       m3: toM3(field.lever_deficit_mm),
     });
   }
   if (field.lever_switch_to && field.lever_switch_mm != null && field.lever_switch_mm > 0) {
-    levers.push({ title: 'Ürünü değiştir', sub: `Gelecek sezon: ${classNames[field.lever_switch_to] ?? field.lever_switch_to}`, m3: toM3(field.lever_switch_mm) });
+    levers.push({
+      title: t('Ürünü değiştir', 'Change the crop'),
+      sub: `${t('Gelecek sezon', 'Next season')}: ${classNames[field.lever_switch_to] ?? field.lever_switch_to}`,
+      m3: toM3(field.lever_switch_mm),
+    });
   }
 
   return (
     <div className="space-y-3">
       <button onClick={onBack} className="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-900">
-        <ArrowLeft size={16} /> Tüm tarlalar
+        <ArrowLeft size={16} /> {t('Tüm tarlalar', 'All fields')}
       </button>
 
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-stone-900">{crop}</h2>
           <p className="text-sm text-stone-500">
-            Tarla {field.field_id} · {fmt(field.area_ha * 10)} dekar
+            {t('Tarla', 'Field')} {field.field_id} · {t(`${fmt(field.area_ha * 10)} dekar`, `${fmt(field.area_ha, 1)} ha`)}
           </p>
         </div>
         <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${status.tone}`}>
@@ -263,7 +318,7 @@ export default function FieldCard({
         </span>
       </div>
 
-      <WeekCard state={week} retry={retry} rainfed={!field.assessed} />
+      <WeekCard state={week} retry={retry} rainfed={!field.assessed} demoDate={demoDate} onDemo={onDemo} />
 
       {telegramUrl && (
         <a
@@ -272,26 +327,29 @@ export default function FieldCard({
           rel="noreferrer"
           className="flex items-center justify-center gap-2 rounded-2xl bg-sky-500 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-sky-600"
         >
-          <Send size={18} /> Planı her sabah Telegram'dan al
+          <Send size={18} /> {t("Planı her sabah Telegram'dan al", 'Get the plan on Telegram every morning')}
         </a>
       )}
 
       {field.assessed && (
-        <Card title={`${season} sezonu`} icon={<Leaf size={14} />}>
+        <Card title={t(`${season} sezonu`, `${season} season`)} icon={<Leaf size={14} />}>
           <p className="text-3xl font-bold tracking-tight text-stone-900">{fmt(field.blue_m3)} m³</p>
           <p className="text-sm text-stone-500">
-            yeraltı suyu kullandın
+            {t('yeraltı suyu kullandın', 'of groundwater used')}
             {overPct != null && overPct > 0 && (
               <>
                 {' '}
-                · verimli sulamadan <span className="font-semibold text-rose-700">%{fmt(overPct)} fazla</span>
+                ·{' '}
+                <span className="font-semibold text-rose-700">
+                  {t(`verimli sulamadan %${fmt(overPct)} fazla`, `${fmt(overPct)}% more than efficient irrigation`)}
+                </span>
               </>
             )}
           </p>
           <div className="mt-4 space-y-3">
-            <Bar label="Senin tarlan" value={field.blue_m3} max={max} color="#0284c7" strong />
-            {peerM3 != null && <Bar label={`Komşu ${crop.toLocaleLowerCase('tr-TR')} tarlaları`} value={peerM3} max={max} color="#a8a29e" />}
-            {efficientM3 != null && <Bar label="Verimli sulamayla" value={efficientM3} max={max} color="#10b981" />}
+            <Bar label={t('Senin tarlan', 'Your field')} value={field.blue_m3} max={max} color="#0284c7" strong />
+            {peerM3 != null && <Bar label={t(`Komşu ${crop.toLocaleLowerCase(locale)} tarlaları`, `Nearby ${crop.toLocaleLowerCase(locale)} fields`)} value={peerM3} max={max} color="#a8a29e" />}
+            {efficientM3 != null && <Bar label={t('Verimli sulamayla', 'With efficient irrigation')} value={efficientM3} max={max} color="#10b981" />}
           </div>
           <div className="mt-4">
             <SeasonCurve detail={detail} season={season} />
@@ -300,7 +358,7 @@ export default function FieldCard({
       )}
 
       {levers.length > 0 && (
-        <Card title="Su tasarrufu" icon={<Zap size={14} />}>
+        <Card title={t('Su tasarrufu', 'Water savings')} icon={<Zap size={14} />}>
           <ul className="divide-y divide-stone-100">
             {levers.map((l) => (
               <li key={l.title} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">

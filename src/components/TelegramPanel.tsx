@@ -89,8 +89,8 @@ export function TelegramPanel({ input, geo, assumptions }: Props) {
             <a href={link.startUrl} target="_blank" rel="noreferrer" className="font-semibold text-water-600 underline">
               @{link.botUsername}
             </a>{' '}
-            botunu açıp "Başlat"a basın. Her sabah 07:00'de bu tarlanın planı gelir; "Suladım" ve "Yağmur yağdı"
-            butonlarıyla hesabı güncellersiniz.
+            botunu açıp "Başlat"a basın. Her sabah 07:00'de bu tarlanın planı gelir; sulayınca "Suladım"
+            butonuyla hesabı güncellersiniz (yağmuru hava verisinden takip ediyoruz).
           </span>
         </p>
         <button

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppSwitch } from '../components/AppSwitch';
 import { PanelCredits } from '../components/attribution';
 import { fmt } from '../components/ui';
+import { pc, t } from '../i18n';
 import BasinView from './BasinView';
 import { FilterBar, Legend, MapPlayer, QueryBox, SummaryCards } from './Controls';
 import FieldDetail, { StatusChip } from './FieldDetail';
@@ -15,15 +16,15 @@ import { fieldsCsv, summarize } from './summary';
 
 type Tab = 'map' | 'basin' | 'method';
 const TABS: [Tab, string][] = [
-  ['map', 'Harita'],
-  ['basin', 'Havza'],
-  ['method', 'Yöntem'],
+  ['map', t('Harita', 'Map')],
+  ['basin', t('Havza', 'Basin')],
+  ['method', t('Yöntem', 'Method')],
 ];
 
 const LIST_LIMIT = 50;
 
-/** Ratio to the target as "+%18" / "−%5". */
-const overText = (r: number | null) => (r == null ? '' : `${r >= 1 ? '+' : '−'}%${fmt(Math.abs(r - 1) * 100)}`);
+/** Ratio to the target as "+%18" / "−%5" ("+18%" in English). */
+const overText = (r: number | null) => (r == null ? '' : `${r >= 1 ? '+' : '−'}${pc(fmt(Math.abs(r - 1) * 100))}`);
 
 function download(name: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
@@ -47,20 +48,20 @@ export default function PanelApp() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = 'SunWater · Kurumlar';
+    document.title = t('SunWater · Kurumlar', 'SunWater · Institutions');
     loadManifest().then(
       (m) => {
         setManifest(m);
         setSeason(m.seasons[0]);
       },
-      () => setError('Veri bulunamadı (public/data). Önce pipeline/12_export.py çalıştırılmalı.'),
+      () => setError(t('Veri bulunamadı (public/data). Önce pipeline/12_export.py çalıştırılmalı.', 'No data found (public/data). Run pipeline/12_export.py first.')),
     );
   }, []);
 
   useEffect(() => {
     if (season == null) return;
     setRows(null);
-    loadFields(season).then(setRows, () => setError('Tarla tablosu yüklenemedi.'));
+    loadFields(season).then(setRows, () => setError(t('Tarla tablosu yüklenemedi.', 'The field table could not be loaded.')));
   }, [season]);
 
   const filtered = useMemo(() => (rows ? applyQuery(rows, query, scenario) : []), [rows, query, scenario]);
@@ -75,27 +76,27 @@ export default function PanelApp() {
   }, [filtered, query.sort_by, scenario]);
 
   if (error) return <p className="p-6 text-red-700">{error}</p>;
-  if (!manifest || season == null) return <p className="p-6 text-soil-500">Yükleniyor…</p>;
+  if (!manifest || season == null) return <p className="p-6 text-soil-500">{t('Yükleniyor…', 'Loading…')}</p>;
   const classNames = manifest.classes;
 
   return (
     <div className="min-h-screen bg-stone-50">
       <AppSwitch current="/panel">
-          <select aria-label="Sezon" className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium" value={season} onChange={(e) => { setSeason(Number(e.target.value)); setSelectedId(null); }}>
+          <select aria-label={t('Sezon', 'Season')} className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium" value={season} onChange={(e) => { setSeason(Number(e.target.value)); setSelectedId(null); }}>
               {manifest.seasons.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
               ))}
           </select>
-          <select aria-label="Hedef" className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium" value={scenario} onChange={(e) => setScenario(e.target.value as Scenario)}>
+          <select aria-label={t('Hedef', 'Target')} className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium" value={scenario} onChange={(e) => setScenario(e.target.value as Scenario)}>
               {(['s1', 's2'] as Scenario[]).map((s) => (
                 <option key={s} value={s}>
                   {SCENARIO_NAMES[s]}
                 </option>
               ))}
           </select>
-          <nav className="flex gap-1 rounded-full bg-stone-100 p-1" aria-label="Sekmeler">
+          <nav className="flex gap-1 rounded-full bg-stone-100 p-1" aria-label={t('Sekmeler', 'Tabs')}>
             {TABS.map(([id, name]) => (
               <button
                 key={id}
@@ -117,9 +118,9 @@ export default function PanelApp() {
               <QueryBox classNames={classNames} onQuery={setQuery} />
             </div>
             {!rows ? (
-              <p className="text-sm text-soil-500">Tarlalar yükleniyor…</p>
+              <p className="text-sm text-soil-500">{t('Tarlalar yükleniyor…', 'Loading fields…')}</p>
             ) : (
-              <SummaryCards summary={summary} scenario={scenario} classNames={classNames} onCsv={() => download(`tarlalar_${season}_${scenario}.csv`, fieldsCsv(filtered))} />
+              <SummaryCards summary={summary} scenario={scenario} classNames={classNames} onCsv={() => download(`${t('tarlalar', 'fields')}_${season}_${scenario}.csv`, fieldsCsv(filtered))} />
             )}
             <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
               <div className="relative h-[68vh] min-h-[420px]">
@@ -145,7 +146,10 @@ export default function PanelApp() {
                 ) : (
                   <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
                     <p className="border-b border-stone-100 px-4 py-3 text-sm font-semibold text-stone-800">
-                      En çok su kullanan tarlalar <span className="font-normal text-stone-500">· {fmt(filtered.length)} tarla</span>
+                      {t('En çok su kullanan tarlalar', 'Fields using the most water')}{' '}
+                      <span className="font-normal text-stone-500">
+                        · {fmt(filtered.length)} {t('tarla', 'fields')}
+                      </span>
                     </p>
                     <ul className="flex-1 overflow-y-auto">
                       {list.map((f) => (
@@ -176,7 +180,7 @@ export default function PanelApp() {
       </main>
       <footer className="mx-auto max-w-screen-2xl px-4 pb-6">
         <details className="text-xs text-stone-500">
-          <summary className="cursor-pointer">Veri kaynakları</summary>
+          <summary className="cursor-pointer">{t('Veri kaynakları', 'Data sources')}</summary>
           <PanelCredits />
         </details>
       </footer>

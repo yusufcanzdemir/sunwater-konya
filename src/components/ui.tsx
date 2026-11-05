@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { locale } from '../i18n';
 import { parseNumber } from '../state/farm';
 
 export const fmt = (n: number, digits = 0) =>
-  n.toLocaleString('tr-TR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  n.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 export function Field({
   label,

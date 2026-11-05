@@ -95,6 +95,22 @@ export function imageryUrl([w, s, e, n]: [number, number, number, number], size 
   return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?${p}`;
 }
 
+const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+
+/** The field's outline as an SVG the size of the `imageryUrl` snapshot (Web Mercator pixels). */
+export function fieldOutlineSvg(rings: [number, number][][], [w, s, e, n]: [number, number, number, number], size = 512): string {
+  const px = ([lon, lat]: [number, number]) =>
+    `${(((lon - w) / (e - w)) * size).toFixed(1)},${(((mercY(n) - mercY(lat)) / (mercY(n) - mercY(s))) * size).toFixed(1)}`;
+  const d = rings.map((r) => `M${r.map(px).join('L')}Z`).join('');
+  // A dark halo under a bright line stays visible on both dark crops and bare soil
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">` +
+    `<path d="${d}" fill="none" stroke="#000" stroke-opacity="0.55" stroke-width="7" stroke-linejoin="round"/>` +
+    `<path d="${d}" fill="#facc15" fill-opacity="0.12" fill-rule="evenodd" stroke="#facc15" stroke-width="3" stroke-linejoin="round"/>` +
+    `</svg>`
+  );
+}
+
 const MIN_STAGE_DAYS = 10;
 
 /**

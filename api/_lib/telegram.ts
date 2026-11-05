@@ -1,18 +1,18 @@
-// Telegram bot: linking chats to fields, alerts, and the "Suladım / Yağmur yağdı" feedback loop.
+// Telegram bot: linking chats to fields, alerts, and the "Suladım" feedback loop (rain comes from the weather data).
 // Every number comes from the engine; Gemini only rewords the alert (and is checked).
 
 import { dayName } from '../../src/ai/explain.js';
 import { buildTelegramPayload, planChangeNote, planSignature, type TelegramPayload } from '../../src/ai/telegram.js';
 import { fetchArchive, fetchForecast } from '../../src/data/openMeteo.js';
-import { addDays } from '../../src/engine/dates.js';
+import { addDays, addYears } from '../../src/engine/dates.js';
 import { analyzeSeason, type SeasonAnalysis } from '../../src/engine/plan.js';
 import { dailyPumping, formatWindow } from '../../src/engine/schedule.js';
-import { archiveSeasonWindow } from '../../src/engine/season.js';
+import { archiveSeasonWindow, seasonWindow } from '../../src/engine/season.js';
 import { fieldStatus } from '../../src/engine/status.js';
 import type { FieldRecord } from '../../src/engine/waterBalance.js';
 import { defaultAssumptions, modelSettings, type Assumptions } from '../../src/state/assumptions.js';
 import { demoForm, toFarmParams, validateFarmForm, type FarmInput } from '../../src/state/farm.js';
-import { buildSummaryPayload, fieldBbox, findFields, imageryUrl, templateSummary } from '../../src/farmer/pilot.js';
+import { buildSummaryPayload, fieldBbox, fieldOutlineSvg, findFields, imageryUrl, templateSummary } from '../../src/farmer/pilot.js';
 import { explain } from './handlers.js';
 import { PILOT_PREFIX, isPilotId, loadPilot, pilotFarm, pilotField } from './pilotData.js';
 import { getStore } from './store.js';
@@ -33,8 +33,6 @@ interface ChatState {
   awaitingHoursFor: string | null;
 }
 
-/** Rain buttons → mm (assumption, shown to the farmer). */
-export const RAIN_LEVELS = { az: 5, orta: 15, cok: 30 } as const;
 const PAST_DAYS = 7;
 const KARAPINAR = { latitude: 37.716, longitude: 33.551, name: 'Karapınar' };
 
@@ -45,16 +43,18 @@ const tr = (n: number, digits = 0) => n.toLocaleString('tr-TR', { maximumFractio
 
 type Keyboard = { text: string; callback_data: string }[][];
 
-export const MAIN_KEYBOARD: Keyboard = [
-  [
-    { text: '✅ Suladım', callback_data: 'irrigated' },
-    { text: '🌧 Yağmur yağdı', callback_data: 'rain' },
-  ],
-  [
-    { text: '📅 Haftalık plan', callback_data: 'weekly' },
-    { text: '📊 Tarlamın durumu', callback_data: 'status' },
-  ],
+const INFO_ROW = [
+  { text: '📅 Haftalık plan', callback_data: 'weekly' },
+  { text: '📊 Tarlamın durumu', callback_data: 'status' },
 ];
+
+/**
+ * In season. There is no rain button: the plan already takes measured and forecast rain from Open-Meteo,
+ * and a farmer's "az / orta / çok" guess would only replace a measurement.
+ */
+export const MAIN_KEYBOARD: Keyboard = [[{ text: '✅ Suladım', callback_data: 'irrigated' }], INFO_ROW];
+/** Out of season (and for fields without a plan): nothing to record. */
+export const OFF_SEASON_KEYBOARD: Keyboard = [INFO_ROW];
 
 const LOCATION_KEYBOARD = {
   keyboard: [[{ text: '📍 Konumumu paylaş', request_location: true }]],
@@ -62,34 +62,73 @@ const LOCATION_KEYBOARD = {
   one_time_keyboard: true,
 };
 
-const RAIN_KEYBOARD: Keyboard = [
-  [
-    { text: `Az (≈${RAIN_LEVELS.az} mm)`, callback_data: 'rain:az' },
-    { text: `Orta (≈${RAIN_LEVELS.orta} mm)`, callback_data: 'rain:orta' },
-    { text: `Çok (≈${RAIN_LEVELS.cok} mm)`, callback_data: 'rain:cok' },
-  ],
-];
-
 export class TelegramError extends Error {}
 
-export async function tg<T = unknown>(method: string, body: Record<string, unknown> = {}): Promise<T> {
+/** Bot API call; a FormData body is sent as multipart (file uploads). */
+export async function tg<T = unknown>(method: string, body: Record<string, unknown> | FormData = {}): Promise<T> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) throw new TelegramError('TELEGRAM_BOT_TOKEN tanımlı değil.');
-  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  const res = await fetch(
+    `https://api.telegram.org/bot${token}/${method}`,
+    body instanceof FormData
+      ? { method: 'POST', body }
+      : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) },
+  );
   const data = (await res.json().catch(() => ({}))) as { ok?: boolean; result?: T; description?: string };
   if (!data.ok) throw new TelegramError(data.description ?? `Telegram ${method} başarısız (${res.status}).`);
   return data.result as T;
 }
 
+const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+
+/** The field's season (planting to harvest) contains `date`; no weather needed. */
+function inSeason(farm: StoredFarm, date = today()): boolean {
+  const w = seasonWindow(farm.input.plantingDate, farm.assumptions.crops[farm.input.crop]);
+  return date >= w.start && date <= w.end;
+}
+
+const keyboardFor = (farm: StoredFarm | null) => (farm && inSeason(farm) ? MAIN_KEYBOARD : OFF_SEASON_KEYBOARD);
+
+/** "Nisan" for the next planting month (this year's if still ahead, else next year's). */
+function nextPlantingMonth(farm: StoredFarm, date = today()): string {
+  const planting = date <= farm.input.plantingDate ? farm.input.plantingDate : addYears(farm.input.plantingDate, 1);
+  return MONTHS[Number(planting.slice(5, 7)) - 1];
+}
+
 const send = (chatId: string, text: string, keyboard?: Keyboard) =>
   tg('sendMessage', { chat_id: chatId, text, ...(keyboard ? { reply_markup: { inline_keyboard: keyboard } } : {}) });
 
-const sendPhoto = (chatId: string, photo: string, caption: string, keyboard: Keyboard) =>
-  tg('sendPhoto', { chat_id: chatId, photo, caption, reply_markup: { inline_keyboard: keyboard } });
+/** `photo` is a URL Telegram fetches itself, or an image uploaded as a file. */
+function sendPhoto(chatId: string, photo: string | Blob, caption: string, keyboard: Keyboard) {
+  if (typeof photo === 'string') return tg('sendPhoto', { chat_id: chatId, photo, caption, reply_markup: { inline_keyboard: keyboard } });
+  const form = new FormData();
+  form.set('chat_id', chatId);
+  form.set('caption', caption);
+  form.set('reply_markup', JSON.stringify({ inline_keyboard: keyboard }));
+  form.set('photo', photo, 'tarla.jpg');
+  return tg('sendPhoto', form);
+}
+
+const IMAGERY_TIMEOUT_MS = 8000;
+
+/** Esri snapshot with the field outline drawn on it; null when the image or the drawing fails. */
+export async function outlinedFieldPhoto(rings: [number, number][][]): Promise<Blob | null> {
+  const bbox = fieldBbox(rings);
+  try {
+    const res = await fetch(imageryUrl(bbox), { signal: AbortSignal.timeout(IMAGERY_TIMEOUT_MS) });
+    if (!res.ok) return null;
+    // Loaded here so that a missing native binary only costs the outline, not the bot
+    const { default: sharp } = await import('sharp');
+    const jpg = await sharp(Buffer.from(await res.arrayBuffer()))
+      .resize(512, 512, { fit: 'fill' })
+      .composite([{ input: Buffer.from(fieldOutlineSvg(rings, bbox)) }])
+      .jpeg({ quality: 85 })
+      .toBuffer();
+    return new Blob([new Uint8Array(jpg)], { type: 'image/jpeg' });
+  } catch {
+    return null;
+  }
+}
 
 let cachedUsername: string | null = null;
 export async function botUsername(): Promise<string> {
@@ -126,7 +165,7 @@ async function noPlan(chatId: string, chat: ChatState): Promise<void> {
   const f = await pilotField(chat.farmId);
   const { manifest } = await loadPilot();
   const crop = f ? (manifest.classes[f.class] ?? f.class) : 'bu tarla';
-  await send(chatId, `📅 ${crop} için haftalık sulama planı hesaplamıyoruz. Sezon özetiniz için "📊 Tarlamın durumu"na basın.`, MAIN_KEYBOARD);
+  await send(chatId, `📅 ${crop} için haftalık sulama planı hesaplamıyoruz. Sezon özetiniz için "📊 Tarlamın durumu"na basın.`, OFF_SEASON_KEYBOARD);
 }
 
 async function getChat(chatId: string): Promise<ChatState | null> {
@@ -174,8 +213,10 @@ async function putRecord(farmId: string, record: FieldRecord): Promise<FieldReco
 const place = (farm: StoredFarm) => (farm.geo.name === 'Haritada çizilen tarla' ? farm.input.locationText : farm.geo.name);
 const cropName = (farm: StoredFarm) => farm.assumptions.crops[farm.input.crop].name;
 
-async function evaluate(farm: StoredFarm, records: FieldRecord[], withRetro: boolean) {
+async function evaluate(farm: StoredFarm, allRecords: FieldRecord[], withRetro: boolean) {
   const a = farm.assumptions;
+  // Rain records from the old "Yağmur yağdı" button would override measured rain: irrigation only
+  const records = allRecords.filter((r) => r.kind === 'irrigation');
   const params = toFarmParams(farm.input, a);
   const forecast = await fetchForecast(farm.geo.latitude, farm.geo.longitude, fetch, PAST_DAYS);
   const week = analyzeSeason(forecast, farm.input.plantingDate, params, modelSettings(a, a.forecastInitialDepletionMm), records);
@@ -226,7 +267,7 @@ export async function composeAlert(farm: StoredFarm): Promise<Alert> {
 export async function sendSummary(chatId: string, farmId: string): Promise<void> {
   const f = await pilotField(farmId);
   if (!f) {
-    await send(chatId, '📊 Bu sohbet uydu verisi olan bir pilot tarlaya bağlı değil. Konumunuzu paylaşmak için /start yazın.', MAIN_KEYBOARD);
+    await send(chatId, '📊 Bu sohbet uydu verisi olan bir pilot tarlaya bağlı değil. Konumunuzu paylaşmak için /start yazın.', OFF_SEASON_KEYBOARD);
     return;
   }
   const { rows, season, manifest } = await loadPilot();
@@ -235,7 +276,7 @@ export async function sendSummary(chatId: string, farmId: string): Promise<void>
   const { text } = payload.degerlendirildi ? await explain(payload, 'summary') : { text: templateSummary(payload) };
   const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, '');
   const link = base ? `\n🗺 Haritada: ${base}/panel?field=${f.field_id}` : '';
-  await send(chatId, text + link, MAIN_KEYBOARD);
+  await send(chatId, text + link, keyboardFor(await loadFarm(farmId)));
 }
 
 /**
@@ -253,7 +294,7 @@ export async function sendAlert(chatId: string, farm: StoredFarm, opts: { cron?:
   }
   const note = opts.cron ? planChangeNote(chat.lastSignature, alert.signature, alert.payload) : null;
   if (note) await send(chatId, note);
-  await send(chatId, alert.text, MAIN_KEYBOARD);
+  await send(chatId, alert.text, keyboardFor(farm));
   await saveChat({ ...chat, farmId: farm.id, lastSignature: alert.signature });
   return 'sent';
 }
@@ -272,6 +313,11 @@ function weeklyText(week: SeasonAnalysis, date: string): string {
         : `▫️ ${dayName(d)}: sulama yok${rain}`,
     );
   }
+  const rainSum = (from: string, to: string) =>
+    week.balance.days.filter((b) => b.date >= from && b.date <= to).reduce((s, b) => s + b.precipitation, 0);
+  lines.push(
+    `🌧 Yağış: son 7 günde ${tr(rainSum(addDays(date, -7), addDays(date, -1)))} mm ölçüldü, önümüzdeki 7 günde ${tr(rainSum(date, addDays(date, 6)))} mm bekleniyor (Open-Meteo). Plan bunu hesaba katıyor.`,
+  );
   return lines.join('\n');
 }
 
@@ -307,7 +353,7 @@ async function linkFarm(chatId: string, farm: StoredFarm): Promise<void> {
   await ensureChat(chatId, farm.id);
   await send(
     chatId,
-    `Merhaba! 👋 Bu sohbet "${place(farm)} – ${cropName(farm)}, ${tr(farm.input.areaDecare, 1)} dekar" tarlasına bağlandı.\nHer sabah 07:00'de sulama planınızı gönderirim. Suladığınızda veya yağmur yağdığında aşağıdaki butonlarla bana haber verin.`,
+    `Merhaba! 👋 Bu sohbet "${place(farm)} – ${cropName(farm)}, ${tr(farm.input.areaDecare, 1)} dekar" tarlasına bağlandı.\nHer sabah 07:00'de sulama planınızı gönderirim. Suladığınızda “✅ Suladım” butonuyla haber verin; yağmuru hava verisinden ben takip ediyorum.`,
   );
   await sendAlert(chatId, farm);
 }
@@ -331,9 +377,20 @@ async function offerField(chatId: string, ids: string[]): Promise<void> {
   if (!f || !rings) return;
   const keyboard: Keyboard = [[{ text: '✅ Evet, bu tarla', callback_data: `link:${id}` }]];
   if (rest.length) keyboard.push([{ text: '➡️ Başka tarla', callback_data: `alt:${rest.join(',')}` }]);
-  const caption = `${id} – ${manifest.classes[f.class] ?? f.class}, ${tr(f.area_ha * 10, 1)} dekar (uydu görüntüsünün ortasında).\nBu sizin tarlanız mı?
+  const plainUrl = imageryUrl(fieldBbox(rings));
+  const caption = (where: string) =>
+    `${id} – ${manifest.classes[f.class] ?? f.class}, ${tr(f.area_ha * 10, 1)} dekar (${where}).\nBu sizin tarlanız mı?
 Görüntü: Esri, Vantor, Earthstar Geographics`;
-  await sendPhoto(chatId, imageryUrl(fieldBbox(rings)), caption, keyboard);
+  const outlined = await outlinedFieldPhoto(rings);
+  if (outlined) {
+    try {
+      await sendPhoto(chatId, outlined, caption('sarı çizgiyle işaretli'), keyboard);
+      return;
+    } catch {
+      // upload refused: fall back to the plain snapshot below
+    }
+  }
+  await sendPhoto(chatId, plainUrl, caption('uydu görüntüsünün ortasında'), keyboard);
 }
 
 async function handleLocation(chatId: string, lat: number, lon: number): Promise<void> {
@@ -396,17 +453,17 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
     const records = await putRecord(farm.id, { date: chat.awaitingHoursFor, kind: 'irrigation', netMm });
     await saveChat({ ...chat, awaitingHoursFor: null });
     const ev = await evaluate(farm, records, false);
-    await send(chatId, `✅ ${tr(h, 1)} saatlik sulama kaydedildi (yaklaşık ${tr(netMm)} mm). ${statusLine(ev.week, ev.today)}`, MAIN_KEYBOARD);
+    await send(chatId, `✅ ${tr(h, 1)} saatlik sulama kaydedildi (yaklaşık ${tr(netMm)} mm). ${statusLine(ev.week, ev.today)}`, keyboardFor(farm));
     return;
   }
 
   if (text === '/plan' || text === '/hafta') {
     const ev = await evaluate(farm, await getRecords(farm.id), false);
-    await send(chatId, weeklyText(ev.week, ev.today), MAIN_KEYBOARD);
+    await send(chatId, weeklyText(ev.week, ev.today), keyboardFor(farm));
     return;
   }
 
-  await send(chatId, 'Aşağıdaki butonları kullanabilir ya da tarlanızı yeniden bağlamak için /start yazabilirsiniz.', MAIN_KEYBOARD);
+  await send(chatId, 'Aşağıdaki butonları kullanabilir ya da tarlanızı yeniden bağlamak için /start yazabilirsiniz.', keyboardFor(farm));
 }
 
 async function handleCallback(cq: NonNullable<TgUpdate['callback_query']>): Promise<void> {
@@ -423,20 +480,28 @@ async function handleCallback(cq: NonNullable<TgUpdate['callback_query']>): Prom
   const farm = await farmFor(chat);
   if (!farm) return noPlan(chatId, chat);
 
-  if (data === 'rain') {
-    await send(chatId, 'Ne kadar yağdı?', RAIN_KEYBOARD);
+  // Buttons of older messages: the rain button was removed, "Suladım" is hidden out of season
+  if (data === 'rain' || data.startsWith('rain:')) {
+    await send(
+      chatId,
+      '🌧 Yağmuru artık hava verisinden ben takip ediyorum (son günlerin ölçümü ve önümüzdeki günlerin tahmini); bir şey girmenize gerek yok. Haftalık planda yağış da yazıyor.',
+      keyboardFor(farm),
+    );
+    return;
+  }
+  if (data === 'irrigated' && !inSeason(farm)) {
+    await send(
+      chatId,
+      `🗓 Şu an sulama sezonu dışındayız, bu yüzden sulama kaydı tutmuyorum. Plan ve "Suladım" kayıtları ${nextPlantingMonth(farm)} ayında ekimle yeniden başlayacak. Geçen sezonun özeti için "📊 Tarlamın durumu"na basın.`,
+      OFF_SEASON_KEYBOARD,
+    );
     return;
   }
 
   const ev = await evaluate(farm, await getRecords(farm.id), false);
 
   if (data === 'weekly') {
-    await send(chatId, weeklyText(ev.week, ev.today), MAIN_KEYBOARD);
-    return;
-  }
-
-  if (!ev.week.balance.days.some((d) => d.date === ev.today)) {
-    await send(chatId, 'Sulama sezonu dışında olduğumuz için kayıt eklemedim.');
+    await send(chatId, weeklyText(ev.week, ev.today), keyboardFor(farm));
     return;
   }
 
@@ -451,17 +516,5 @@ async function handleCallback(cq: NonNullable<TgUpdate['callback_query']>): Prom
       MAIN_KEYBOARD,
     );
     return;
-  }
-
-  const level = data.startsWith('rain:') ? (data.slice(5) as keyof typeof RAIN_LEVELS) : null;
-  if (level && level in RAIN_LEVELS) {
-    const mm = RAIN_LEVELS[level];
-    const records = await putRecord(farm.id, { date: ev.today, kind: 'rain', mm });
-    const after = await evaluate(farm, records, false);
-    await send(
-      chatId,
-      `🌧 Bugün yaklaşık ${mm} mm yağmur kaydedildi (varsayım: az 5, orta 15, çok 30 mm). ${statusLine(after.week, after.today)}`,
-      MAIN_KEYBOARD,
-    );
   }
 }

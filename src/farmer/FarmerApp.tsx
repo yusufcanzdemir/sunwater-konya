@@ -4,14 +4,18 @@ import { LocateFixed, Search, Send, Sprout, SunMedium } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { AppSwitch } from '../components/AppSwitch';
 import { fmt } from '../components/ui';
+import { lang, t } from '../i18n';
 import FieldsMap from '../panel/FieldsMap';
 import { loadFields, loadManifest, loadShapes, type Manifest } from '../panel/data';
 import FieldCard, { FARMER_STATUS } from './FieldCard';
 import { findFields, type PilotField } from './pilot';
 import type { PilotManifest } from './weekPlan';
 
-/** A sugar beet field near Karapınar used for "Örnek tarla". */
-const EXAMPLE_FIELD = 'F01412';
+/**
+ * "Örnek tarla": a 34-decare sugar beet field over its efficient-irrigation budget, small enough for the
+ * assumed pump to irrigate on sunny hours in its demo week (a large field needs the pump day and night).
+ */
+const EXAMPLE_FIELD = 'F03053';
 
 type Notice = { text: string; planLink?: boolean } | null;
 
@@ -46,14 +50,19 @@ function Home({
     <div className="space-y-6">
       <div>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Karapınar · {fmt(fields)} tarla uydudan izleniyor
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Karapınar · {fmt(fields)} {t('tarla uydudan izleniyor', 'fields monitored by satellite')}
         </span>
         <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-stone-900 sm:text-4xl">
-          Tarlanı seç,
+          {t('Tarlanı seç,', 'Pick your field,')}
           <br />
-          ne zaman sulayacağını öğren.
+          {t('ne zaman sulayacağını öğren.', 'learn when to irrigate.')}
         </h1>
-        <p className="mt-3 text-stone-600">Uydu tarlanın ne kadar su kullandığını ölçer, plan güneşli saatlere göre hazırlanır.</p>
+        <p className="mt-3 text-stone-600">
+          {t(
+            'Uydu tarlanın ne kadar su kullandığını ölçer, plan güneşli saatlere göre hazırlanır.',
+            'Satellites measure how much water your field uses; the plan follows the sunny hours.',
+          )}
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -62,25 +71,25 @@ function Home({
           disabled={locating}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-900 px-4 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-950 disabled:opacity-70"
         >
-          <LocateFixed size={20} /> {locating ? 'Konum alınıyor…' : 'Konumumla tarlamı bul'}
+          <LocateFixed size={20} /> {locating ? t('Konum alınıyor…', 'Getting location…') : t('Konumumla tarlamı bul', 'Find my field by location')}
         </button>
         <button
           onClick={onExample}
           className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-base font-semibold text-stone-800 transition hover:border-stone-300 hover:bg-stone-50"
         >
-          Örnek tarlayı aç
+          {t('Örnek tarlayı aç', 'Open the example field')}
         </button>
         <form onSubmit={submit} className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white px-3 py-2 focus-within:border-emerald-700">
           <Search size={18} className="text-stone-400" />
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Tarla numarası (ör. F01412)"
+            placeholder={t('Tarla numarası (ör. F03053)', 'Field number (e.g. F03053)')}
             className="min-w-0 flex-1 bg-transparent py-1 text-sm outline-none placeholder:text-stone-400"
-            aria-label="Tarla numarası"
+            aria-label={t('Tarla numarası', 'Field number')}
           />
         </form>
-        <p className="text-center text-xs text-stone-500">ya da haritada tarlana dokun</p>
+        <p className="text-center text-xs text-stone-500">{t('ya da haritada tarlana dokun', 'or tap your field on the map')}</p>
       </div>
 
       {notice && (
@@ -88,7 +97,7 @@ function Home({
           {notice.text}
           {notice.planLink && (
             <a href="/planla" className="mt-1 block font-semibold underline">
-              Tarlanı çizerek plan al →
+              {t('Tarlanı çizerek plan al →', 'Draw your field to get a plan (Turkish) →')}
             </a>
           )}
         </div>
@@ -96,9 +105,9 @@ function Home({
 
       <ol className="grid grid-cols-3 gap-2 text-center text-xs text-stone-600">
         {[
-          { Icon: Sprout, text: 'Tarlanı seç' },
-          { Icon: SunMedium, text: 'Haftalık planı gör' },
-          { Icon: Send, text: "Telegram'dan al" },
+          { Icon: Sprout, text: t('Tarlanı seç', 'Pick your field') },
+          { Icon: SunMedium, text: t('Haftalık planı gör', 'See the weekly plan') },
+          { Icon: Send, text: t("Telegram'dan al", 'Get it on Telegram') },
         ].map(({ Icon, text: label }, i) => (
           <li key={label} className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5">
             <Icon size={20} className="mx-auto text-emerald-800" />
@@ -124,13 +133,15 @@ export default function FarmerApp() {
   const [manifest, setManifest] = useState<(Manifest & PilotManifest) | null>(null);
   const [rows, setRows] = useState<PilotField[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('field'));
+  // Off-season sample week (?demo=1), kept while moving between fields
+  const [demo, setDemo] = useState(() => new URLSearchParams(window.location.search).get('demo') === '1');
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [telegramUrl, setTelegramUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    document.title = 'SunWater · Tarlam';
+    document.title = t('SunWater · Tarlam', 'SunWater · My field');
     loadManifest()
       .then(async (m) => {
         setManifest(m as Manifest & PilotManifest);
@@ -152,11 +163,15 @@ export default function FarmerApp() {
     return new Map([...byClass].map(([c, xs]) => [c, median(xs)]));
   }, [rows]);
 
-  // Keep the address shareable: /?field=F01234
+  // Keep the address shareable: /?field=F01234 (&demo=1&lang=en)
   useEffect(() => {
-    const url = selectedId ? `/?field=${selectedId}` : '/';
+    const params = new URLSearchParams();
+    if (selectedId) params.set('field', selectedId);
+    if (demo) params.set('demo', '1');
+    if (lang === 'en') params.set('lang', 'en');
+    const url = params.toString() ? `/?${params}` : '/';
     if (window.location.pathname + window.location.search !== url) window.history.replaceState(null, '', url);
-  }, [selectedId]);
+  }, [selectedId, demo]);
 
   useEffect(() => {
     setTelegramUrl(null);
@@ -180,12 +195,17 @@ export default function FarmerApp() {
     const id = text.toUpperCase().replace(/^F?/, 'F');
     const padded = /^F\d+$/.test(id) ? `F${id.slice(1).padStart(5, '0')}` : id;
     if (byId.has(padded)) select(padded);
-    else setNotice({ text: `${text} numaralı bir tarla bulamadık.` });
+    else setNotice({ text: t(`${text} numaralı bir tarla bulamadık.`, `No field numbered ${text}.`) });
   };
 
   const locate = () => {
     if (!navigator.geolocation) {
-      setNotice({ text: 'Tarayıcın konum paylaşmayı desteklemiyor. Haritada tarlana dokunabilirsin.' });
+      setNotice({
+        text: t(
+          'Tarayıcın konum paylaşmayı desteklemiyor. Haritada tarlana dokunabilirsin.',
+          'Your browser cannot share its location. Tap your field on the map instead.',
+        ),
+      });
       return;
     }
     setLocating(true);
@@ -196,16 +216,16 @@ export default function FarmerApp() {
           const shapes = await loadShapes();
           const [id] = findFields(shapes, rows ?? [], coords.longitude, coords.latitude);
           if (id) select(id);
-          else setNotice({ text: 'Bulunduğun yerde kayıtlı bir tarla yok.', planLink: true });
+          else setNotice({ text: t('Bulunduğun yerde kayıtlı bir tarla yok.', 'There is no pilot field where you are.'), planLink: true });
         } catch {
-          setNotice({ text: 'Tarlalar yüklenemedi, haritada tarlana dokunabilirsin.' });
+          setNotice({ text: t('Tarlalar yüklenemedi, haritada tarlana dokunabilirsin.', 'Fields could not be loaded; tap your field on the map.') });
         } finally {
           setLocating(false);
         }
       },
       () => {
         setLocating(false);
-        setNotice({ text: 'Konum alınamadı. Haritada tarlana dokunabilirsin.' });
+        setNotice({ text: t('Konum alınamadı. Haritada tarlana dokunabilirsin.', 'Could not get your location. Tap your field on the map.') });
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
@@ -215,7 +235,7 @@ export default function FarmerApp() {
     <div className="flex h-dvh flex-col bg-stone-50">
       <AppSwitch current="/" />
       {error ? (
-        <p className="p-6 text-stone-600">Veriler yüklenemedi. Sayfayı yenileyin.</p>
+        <p className="p-6 text-stone-600">{t('Veriler yüklenemedi. Sayfayı yenileyin.', 'Data could not be loaded. Please reload the page.')}</p>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           <aside className="order-2 overflow-y-auto p-5 lg:order-1 lg:w-[440px] lg:shrink-0 lg:p-6">
@@ -233,6 +253,8 @@ export default function FarmerApp() {
                 manifest={manifest}
                 classNames={manifest.classes}
                 telegramUrl={telegramUrl}
+                demo={demo}
+                onDemo={setDemo}
                 onBack={() => select(null)}
               />
             ) : (

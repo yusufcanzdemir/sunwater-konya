@@ -1,15 +1,17 @@
 // Panel data: shapes of the files written by pipeline/12_export.py (served from /data/) and their loaders.
 
+import { localClassNames, t } from '../i18n.js';
+
 export type Status = 'within' | 'borderline' | 'over' | 'not_assessed';
 export type Scenario = 's1' | 's2';
 
 export const STATUSES: Status[] = ['within', 'borderline', 'over', 'not_assessed'];
 
 export const STATUS_NAMES: Record<Status, string> = {
-  within: 'Hedef içinde',
-  borderline: 'Sınırda',
-  over: 'Hedef üstü',
-  not_assessed: 'Yağışa dayalı',
+  within: t('Hedef içinde', 'Within target'),
+  borderline: t('Sınırda', 'Borderline'),
+  over: t('Hedef üstü', 'Over target'),
+  not_assessed: t('Yağışa dayalı', 'Rain-fed'),
 };
 
 /** Fixed status palette (good / warning / critical), never reused for series; always shown with a label. */
@@ -21,8 +23,8 @@ export const STATUS_COLORS: Record<Status, string> = {
 };
 
 export const SCENARIO_NAMES: Record<Scenario, string> = {
-  s1: 'Verimli sulama hedefi',
-  s2: '%20 azaltım hedefi',
+  s1: t('Verimli sulama hedefi', 'Efficient irrigation target'),
+  s2: t('%20 azaltım hedefi', '20% reduction target'),
 };
 
 export interface FieldRow {
@@ -164,11 +166,13 @@ async function getJson<T>(path: string): Promise<T> {
   }
 }
 
-export const loadManifest = () => getJson<Manifest>('manifest.json');
+export const loadManifest = () => getJson<Manifest>('manifest.json').then((m) => ({ ...m, classes: localClassNames(m.classes) }));
 export const loadFields = async (season: number) => parseTable(await getJson<Table>(`fields_${season}.json`));
 export const loadSeasonPlayer = (season: number) => getJson<SeasonPlayerData>(`season_${season}.json`);
 export const loadFieldDetail = (id: string) => getJson<FieldDetailData>(`field/${encodeURIComponent(id)}.json`);
 export const loadBasin = () => getJson<BasinData>('basin.json');
+/** Archived weather for the farmer app's off-season demo week (Open-Meteo, a few points over the pilot). */
+export const loadDemoWeather = <T>(season: number) => getJson<T>(`demo_weather_${season}.json`);
 export const loadMetrics = () => getJson<Metrics>('metrics.json');
 /** Field id → outer rings (field_shapes.json, ~2 MB: loaded only when a location is shared). */
 export const loadShapes = () => getJson<Record<string, [number, number][][]>>('field_shapes.json');

@@ -74,6 +74,14 @@ npm run build                # type check + production build
 
 `npm run dev` also serves the `/api/*` functions through a Vite middleware, so no Vercel CLI is needed locally. The panel reads `public/data/`, which is committed.
 
+Out of season the farmer app can show a sample week (`/?field=F03053&demo=1`, or the button on the weekly card): the plan for the middle of the field's 2025 crop calendar, run on that week's archived weather. The weather comes from `public/data/demo_weather_2025.json` (Open-Meteo archive, six points over the pilot), so the demo works without the archive API; to rebuild it:
+
+```powershell
+Invoke-WebRequest -TimeoutSec 300 -OutFile public\data\demo_weather_2025.json -Uri "https://archive-api.open-meteo.com/v1/archive?latitude=37.75,37.75,37.75,37.85,37.85,37.85&longitude=33.35,33.45,33.55,33.35,33.45,33.55&start_date=2025-03-01&end_date=2025-11-30&daily=et0_fao_evapotranspiration,precipitation_sum&hourly=global_tilted_irradiance&tilt=30&azimuth=0&timezone=Europe%2FIstanbul"
+```
+
+For pilot fields the pump and solar values are the planner's demo values (60 m³/h, 50 kWp) whatever the field size; in midsummer they cover about 40 decares on sunny hours, larger fields get day-and-night pumping.
+
 ### Environment variables
 
 All server-only (never prefix with `VITE_`); see `.env.example`.
@@ -135,7 +143,7 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/deleteWebhook"
 
 ## Telegram bot
 
-- `/start` asks for the farmer's location; the bot finds the pilot field under it and asks for confirmation with a satellite snapshot ("✅ Evet, bu tarla" / "➡️ Başka tarla"). `/start field_F01234` links a field directly; `/demo` links the demo field.
+- `/start` asks for the farmer's location; the bot finds the pilot field under it and asks for confirmation with a satellite snapshot with the field outline drawn on it (`sharp`; the plain snapshot if drawing fails) ("✅ Evet, bu tarla" / "➡️ Başka tarla"). `/start field_F01234` links a field directly; `/demo` links the demo field.
 - **📊 Tarlamın durumu** (`/durum`): satellite season summary – blue water with its range, the median of similar fields, the efficient-irrigation reference. Out of season this is the default message.
 - **📅 Haftalık plan**: 7-day solar pumping plan from the FAO-56 engine, with the crop calendar calibrated from the field's satellite season (sugar beet, maize, sunflower, irrigated wheat; other crops get the summary only).
 - **✅ Suladım / 🌧 Yağmur yağdı**: written into the water balance as observed records, so the next plan starts from the real field state.
@@ -149,7 +157,7 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/deleteWebhook"
 | `GET /api/send-alert` | Daily cron; silent out of season, adds a "Plan değişti" note when the plan moved |
 | `POST /api/parse-query` | Panel natural-language query → filter JSON |
 
-A bot cannot write first: open it in Telegram and press **Start** once. Locally, `npm run dev` long-polls Telegram (skipped when a webhook is set; only one process may poll a bot at a time). Without Redis/KV, chats and records live in memory and are lost on serverless cold starts.
+A bot cannot write first: open it in Telegram and press **Start** once. Locally, `npm run dev` long-polls Telegram (skipped when a webhook is set; only one process may poll a bot at a time). Telegram delivers a bot's updates either to its webhook or to polling, never both, so use two bots: the production bot (`@ciftci_sulama_kanali_ai_bot`, webhook on Vercel, token only in the Vercel settings) and a test bot (`@sunwater_konya_test_bot`, no webhook, token in `.env.local`). Never set a webhook on the test bot or put the production token in `.env.local`. Without Redis/KV, chats and records live in memory and are lost on serverless cold starts.
 
 Assumptions used by the bot: rain buttons "az / orta / çok" = 5 / 15 / 30 mm; a typed duration ("6 saat") becomes `Q × hours / area × efficiency` mm; for pilot fields the irrigation method, soil, pump and solar values are the demo assumptions (sprinkler, 120 m head, pump efficiency 0.50).
 

@@ -7,6 +7,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { Protocol } from 'pmtiles';
 import { useEffect, useRef } from 'react';
 import { ESRI_ATTRIBUTION, SENTINEL_ATTRIBUTION } from '../components/attribution';
+import { t } from '../i18n';
 import { PILOT_BBOX } from './query';
 import { STATUS_COLORS, STATUS_NAMES, type FieldRow, type Scenario, type Status } from './data';
 
@@ -215,5 +216,5 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
     });
   }, [selected?.field_id]);
 
-  return <div ref={container} className={className ?? 'h-full min-h-[420px] w-full overflow-hidden rounded-lg'} aria-label="Tarla haritası" />;
+  return <div ref={container} className={className ?? 'h-full min-h-[420px] w-full overflow-hidden rounded-lg'} aria-label={t('Tarla haritası', 'Field map')} />;
 }
