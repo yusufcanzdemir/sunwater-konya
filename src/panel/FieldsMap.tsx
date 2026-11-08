@@ -61,9 +61,14 @@ interface Props {
   classNames: Record<string, string>;
   player: PlayerFrame | null;
   className?: string;
+  /** Farmer view: every field is drawn neutral and only the selected field shows its status colour. */
+  neutral?: boolean;
 }
 
-export default function FieldsMap({ season, scenario, visibleIds, selected, onSelect, classNames, player, className }: Props) {
+/** Neutral fill for the farmer view: no field is publicly coloured by its water use. */
+const NEUTRAL_FILL = '#ffffff';
+
+export default function FieldsMap({ season, scenario, visibleIds, selected, onSelect, classNames, player, className, neutral = false }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibre | null>(null);
   const ready = useRef(false);
@@ -74,6 +79,8 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
   namesRef.current = classNames;
   const scenarioRef = useRef(scenario);
   scenarioRef.current = scenario;
+  const neutralRef = useRef(neutral);
+  neutralRef.current = neutral;
 
   useEffect(() => {
     ensureProtocol();
@@ -95,7 +102,15 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
             type: 'fill',
             source: 'fields',
             'source-layer': 'fields',
-            paint: { 'fill-color': statusColor(scenario), 'fill-opacity': 0.6 },
+            paint: neutral ? { 'fill-color': NEUTRAL_FILL, 'fill-opacity': 0.12 } : { 'fill-color': statusColor(scenario), 'fill-opacity': 0.6 },
+          },
+          {
+            id: 'fields-selected-fill',
+            type: 'fill',
+            source: 'fields',
+            'source-layer': 'fields',
+            filter: ['==', ['get', 'field_id'], ''],
+            paint: { 'fill-color': statusColor(scenario), 'fill-opacity': 0.75 },
           },
           {
             id: 'fields-line',
@@ -138,9 +153,13 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
       const value = document.createElement('div');
       value.className = 'font-semibold';
       value.textContent = `${namesRef.current[String(p.class)] ?? String(p.class)} · ${String(p.field_id)}`;
-      const label = document.createElement('div');
-      label.textContent = STATUS_NAMES[status] ?? '';
-      box.append(value, label);
+      box.append(value);
+      // The farmer view never shows another field's water use
+      if (!neutralRef.current) {
+        const label = document.createElement('div');
+        label.textContent = STATUS_NAMES[status] ?? '';
+        box.append(label);
+      }
       popup.setLngLat(e.lngLat).setDOMContent(box).addTo(map);
     });
     map.on('mouseleave', 'fields-fill', () => {
@@ -183,9 +202,12 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
   }, [season]);
 
   useEffect(() => {
-    whenReady((map) => map.setPaintProperty('fields-fill', 'fill-color', player ? playerColor : statusColor(scenario)));
-    whenReady((map) => map.setPaintProperty('fields-fill', 'fill-opacity', player ? 0.85 : 0.6));
-  }, [scenario, player != null]);
+    whenReady((map) => {
+      map.setPaintProperty('fields-fill', 'fill-color', player ? playerColor : neutral ? NEUTRAL_FILL : statusColor(scenario));
+      map.setPaintProperty('fields-fill', 'fill-opacity', player ? 0.85 : neutral ? 0.12 : 0.6);
+      map.setPaintProperty('fields-selected-fill', 'fill-color', statusColor(scenario));
+    });
+  }, [scenario, player != null, neutral]);
 
   useEffect(() => {
     if (!player) return;
@@ -212,6 +234,7 @@ export default function FieldsMap({ season, scenario, visibleIds, selected, onSe
   useEffect(() => {
     whenReady((map) => {
       map.setFilter('fields-selected', ['==', ['get', 'field_id'], selected?.field_id ?? '']);
+      map.setFilter('fields-selected-fill', ['==', ['get', 'field_id'], selected?.field_id ?? '']);
       if (selected) map.easeTo({ center: [selected.lon, selected.lat], zoom: Math.max(map.getZoom(), 13.5), duration: 600 });
     });
   }, [selected?.field_id]);

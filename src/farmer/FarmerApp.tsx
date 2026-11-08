@@ -1,14 +1,15 @@
 // Farmer app (/): pick your field on the map or by location, see this week's irrigation and your season.
 
-import { LocateFixed, Search, Send, Sprout, SunMedium } from 'lucide-react';
+import { ChevronDown, LocateFixed, Search, ShieldCheck, TrendingDown, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { AppSwitch } from '../components/AppSwitch';
 import { fmt } from '../components/ui';
 import { lang, t } from '../i18n';
 import FieldsMap from '../panel/FieldsMap';
 import { loadFields, loadManifest, loadShapes, type Manifest } from '../panel/data';
-import FieldCard, { FARMER_STATUS } from './FieldCard';
+import FieldCard from './FieldCard';
 import { findFields, type PilotField } from './pilot';
+import TelegramBox from './TelegramBox';
 import type { PilotManifest } from './weekPlan';
 
 /**
@@ -58,10 +59,7 @@ function Home({
           {t('ne zaman sulayacağını öğren.', 'learn when to irrigate.')}
         </h1>
         <p className="mt-3 text-stone-600">
-          {t(
-            'Uydu tarlanın ne kadar su kullandığını ölçer, plan güneşli saatlere göre hazırlanır.',
-            'Satellites measure how much water your field uses; the plan follows the sunny hours.',
-          )}
+          {t('Uydu tarlanın suyunu ölçer. Plan güneşli saatlere göre.', 'Satellites measure your field’s water. The plan follows the sun.')}
         </p>
       </div>
 
@@ -103,31 +101,65 @@ function Home({
         </div>
       )}
 
-      <ol className="grid grid-cols-3 gap-2 text-center text-xs text-stone-600">
-        {[
-          { Icon: Sprout, text: t('Tarlanı seç', 'Pick your field') },
-          { Icon: SunMedium, text: t('Haftalık planı gör', 'See the weekly plan') },
-          { Icon: Send, text: t("Telegram'dan al", 'Get it on Telegram') },
-        ].map(({ Icon, text: label }, i) => (
-          <li key={label} className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5">
-            <Icon size={20} className="mx-auto text-emerald-800" />
-            <span className="mt-1.5 block font-medium">
-              {i + 1}. {label}
-            </span>
+      <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+        <h3 className="font-semibold text-stone-900">{t('Neden önemli?', 'Why it matters')}</h3>
+        <ul className="mt-3 space-y-2.5 text-sm text-stone-700">
+          <li className="flex items-start gap-2.5">
+            <TrendingDown size={18} className="mt-0.5 shrink-0 text-orange-600" />
+            <span>{t('Konya’da kuyular her yıl yaklaşık 1 metre derinleşiyor.', 'Wells in Konya get about 1 metre deeper every year.')}</span>
           </li>
-        ))}
-      </ol>
+          <li className="flex items-start gap-2.5">
+            <Zap size={18} className="mt-0.5 shrink-0 text-orange-600" />
+            <span>{t('Gereksiz her pompa saati boşa elektrik ve kuyundan eksilen su.', 'Every unneeded pump hour is wasted power and water gone from your well.')}</span>
+          </li>
+          <li className="flex items-start gap-2.5">
+            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-700" />
+            <span>{t('Ceza değil, plan: SunWater bir denetim aracı değil.', 'A plan, not a penalty: SunWater is not an inspection tool.')}</span>
+          </li>
+        </ul>
+      </section>
 
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-600">
-        {(['within', 'borderline', 'over'] as const).map((s) => (
-          <li key={s} className="flex items-center gap-1.5">
-            <span className={`h-2.5 w-2.5 rounded-sm ${FARMER_STATUS[s].dot}`} /> {FARMER_STATUS[s].label}
-          </li>
-        ))}
-      </ul>
+      <TelegramBox />
+
+      <section>
+        <h3 className="mb-2 font-semibold text-stone-900">{t('Sık sorulanlar', 'Questions')}</h3>
+        <div className="divide-y divide-stone-200 rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+          {FAQ.map(([q, a]) => (
+            <details key={q} className="group px-4 py-3">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-stone-800">
+                {q}
+                <ChevronDown size={16} className="shrink-0 text-stone-400 transition group-open:rotate-180" />
+              </summary>
+              <p className="mt-2 text-sm text-stone-600">{a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
+
+const FAQ: [string, string][] = [
+  [t('Ücretli mi?', 'Does it cost anything?'), t('Hayır, ücretsiz.', 'No, it is free.')],
+  [
+    t('Tarlama cihaz takmam gerekir mi?', 'Do I need a sensor in my field?'),
+    t('Hayır. Su tüketimi uydu görüntüsü ve hava verisiyle hesaplanır.', 'No. Water use is calculated from satellite images and weather data.'),
+  ],
+  [
+    t('Hangi ürünler için plan var?', 'Which crops get a plan?'),
+    t(
+      'Haftalık plan: şeker pancarı, mısır, ayçiçeği ve sulu buğday. Diğer ürünlerde sezon özeti gösterilir.',
+      'Weekly plan: sugar beet, maize, sunflower and irrigated wheat. Other crops get the season summary.',
+    ),
+  ],
+  [
+    t('Tarlam haritada yok', 'My field is not on the map'),
+    t(
+      'Şimdilik pilot alan Karapınar’ın kuzeyi. Başka yerdeysen “Tarla çiz” sayfasında tarlanı çizip plan alabilirsin.',
+      'For now the pilot covers north of Karapınar. Elsewhere, draw your field on the “Draw a field” page to get a plan.',
+    ),
+  ],
+];
 
 export default function FarmerApp() {
   const [manifest, setManifest] = useState<(Manifest & PilotManifest) | null>(null);
@@ -238,7 +270,8 @@ export default function FarmerApp() {
         <p className="p-6 text-stone-600">{t('Veriler yüklenemedi. Sayfayı yenileyin.', 'Data could not be loaded. Please reload the page.')}</p>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <aside className="order-2 overflow-y-auto p-5 lg:order-1 lg:w-[440px] lg:shrink-0 lg:p-6">
+          {/* Phone: the plan first and a small map below; desktop: side panel and a large map */}
+          <aside className="order-1 min-h-0 flex-1 overflow-y-auto p-5 lg:w-[440px] lg:flex-none lg:shrink-0 lg:p-6">
             {!manifest || !rows ? (
               <div className="space-y-3">
                 <div className="h-6 w-1/2 animate-pulse rounded bg-stone-200" />
@@ -268,7 +301,7 @@ export default function FarmerApp() {
               />
             )}
           </aside>
-          <div className="order-1 h-[42vh] shrink-0 p-2 lg:order-2 lg:h-auto lg:flex-1 lg:p-3 lg:pl-0">
+          <div className="order-2 h-[32vh] shrink-0 p-2 lg:h-auto lg:flex-1 lg:p-3 lg:pl-0">
             {manifest && (
               <FieldsMap
                 season={season}
@@ -278,6 +311,7 @@ export default function FarmerApp() {
                 onSelect={select}
                 classNames={manifest.classes}
                 player={null}
+                neutral
                 className="h-full w-full overflow-hidden rounded-2xl"
               />
             )}

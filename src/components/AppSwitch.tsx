@@ -1,4 +1,5 @@
-// Product top bar shared by the farmer app (/), the field planner (/planla) and the institutional panel (/panel).
+// Product top bar shared by the farmer app (/), the field planner (/planla) and the institutional panel
+// (/panel, reachable by its address only).
 
 import type { ReactNode } from 'react';
 import { lang, setLang, t } from '../i18n';
@@ -30,7 +31,8 @@ export function AppSwitch({ current, children }: { current: Page; children?: Rea
           <span className="hidden text-lg font-bold tracking-tight text-emerald-950 sm:inline">SunWater</span>
         </a>
         <nav aria-label={t('Sayfalar', 'Pages')} className="flex items-center gap-1 text-sm">
-          {PAGES.map(({ href, label }) => (
+          {/* The product is for farmers: the institutional panel stays at /panel but is not in the menu */}
+          {PAGES.filter((p) => p.href !== '/panel' || current === '/panel').map(({ href, label }) => (
             <a
               key={href}
               href={href}

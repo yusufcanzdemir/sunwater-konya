@@ -1,6 +1,6 @@
 // One pilot field for the farmer: this week's action first, then the season and what saves water.
 
-import { ArrowLeft, CloudRain, Droplets, Leaf, Send, Sun, Zap } from 'lucide-react';
+import { ArrowLeft, CloudRain, Droplets, Leaf, Sun, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { fmt } from '../components/ui';
@@ -8,6 +8,7 @@ import { fetchArchive, fetchForecast } from '../data/openMeteo';
 import { locale, monthDay, t } from '../i18n';
 import { loadDemoWeather, loadFieldDetail, type FieldDetailData, type Status } from '../panel/data';
 import type { PilotField } from './pilot';
+import TelegramBox from './TelegramBox';
 import { PAST_DAYS, buildWeek, demoDay, demoWeather, type DemoWeatherPoint, type PilotManifest, type WeekView } from './weekPlan';
 
 export const FARMER_STATUS: Record<Status, { label: string; tone: string; dot: string }> = {
@@ -134,12 +135,12 @@ function WeekCard({
   return (
     <Card title={title} icon={<Droplets size={14} />}>
       {demoDate && (
-        <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          {t(
-            `Örnek: ${demoDate.slice(0, 4)} sezonunda ${monthDay(demoDate)} haftası, o haftanın gerçek hava verisiyle. Ürün takvimi tarlanın uydu verisinden.`,
-            `Sample: the week of ${monthDay(demoDate)} ${demoDate.slice(0, 4)}, with that week's real weather. Crop calendar from the field's satellite data.`,
-          )}{' '}
-          <button onClick={() => onDemo(false)} className="font-semibold underline">
+        <p
+          className="mb-3 flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-1.5 text-xs text-amber-900"
+          title={t('O haftanın gerçek hava verisiyle; ürün takvimi tarlanın uydu verisinden.', "With that week's real weather; crop calendar from the field's satellite data.")}
+        >
+          <span>{t(`Geçen sezondan örnek: ${monthDay(demoDate)} ${demoDate.slice(0, 4)}`, `Sample from last season: ${monthDay(demoDate)} ${demoDate.slice(0, 4)}`)}</span>
+          <button onClick={() => onDemo(false)} className="shrink-0 font-semibold underline">
             {t('Bugüne dön', 'Back to today')}
           </button>
         </p>
@@ -320,16 +321,7 @@ export default function FieldCard({
 
       <WeekCard state={week} retry={retry} rainfed={!field.assessed} demoDate={demoDate} onDemo={onDemo} />
 
-      {telegramUrl && (
-        <a
-          href={telegramUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center justify-center gap-2 rounded-2xl bg-sky-500 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-sky-600"
-        >
-          <Send size={18} /> {t("Planı her sabah Telegram'dan al", 'Get the plan on Telegram every morning')}
-        </a>
-      )}
+      {telegramUrl && <TelegramBox url={telegramUrl} />}
 
       {field.assessed && (
         <Card title={t(`${season} sezonu`, `${season} season`)} icon={<Leaf size={14} />}>
