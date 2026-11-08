@@ -6,7 +6,7 @@ import type { CropId, CropParams } from '../engine/crops.js';
 import { addDays } from '../engine/dates.js';
 import { STATUS_NAMES, type FieldRow } from '../panel/data.js';
 import { defaultAssumptions, type Assumptions } from '../state/assumptions.js';
-import { demoForm, validateFarmForm, type FarmInput } from '../state/farm.js';
+import { demoForm, validateFarmForm, type FarmForm, type FarmInput } from '../state/farm.js';
 
 /** Satellite crop calendar columns exported with the field table (day offsets from the season start). */
 export interface PilotField extends FieldRow {
@@ -144,11 +144,13 @@ export function calibratedCrop(
  * Engine farm for a pilot field: crop and calendar from the satellite season, area from the field
  * polygon; method, soil, pump and solar values are the demo defaults (not observed per field, same
  * defaults as the budget, PLAN.md D19). Null when the engine has no parameters for the crop.
+ * `profile`: the farmer's own pump and method (farmer app), replacing those defaults.
  */
 export function pilotEngineFarm(
   f: PilotField,
   manifest: { season_start_mmdd: string; kcb_max: Record<string, number> },
   year: number,
+  profile?: Partial<FarmForm>,
 ): { input: FarmInput; assumptions: Assumptions } | null {
   const crop = ENGINE_CROP[f.class];
   if (!crop) return null;
@@ -163,6 +165,7 @@ export function pilotEngineFarm(
     plantingDate: cal.plantingDate,
     areaDecare: String(Math.round(f.area_ha * 100) / 10).replace('.', ','),
     irrigationMethod: 'sprinkler',
+    ...profile,
   });
   return input ? { input, assumptions } : null;
 }

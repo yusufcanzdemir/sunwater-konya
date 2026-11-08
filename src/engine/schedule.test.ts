@@ -110,6 +110,17 @@ describe('scheduleIrrigations', () => {
     const one = scheduleIrrigations({ events: [{ date: '2025-07-01', volumeM3: 60 }], pv: day, pumpKw: 30, flowM3h: 60 });
     expect(one.totals.surplusPvKwh).toBeCloseTo(totalPv - 30);
   });
+
+  it('without solar, electricity pumps from the 22:00 night tariff and diesel from 06:00, spread over the days', () => {
+    const dark = [...pvDay('2025-07-01', 0), ...pvDay('2025-07-02', 0), ...pvDay('2025-07-03', 0)];
+    const event = [{ date: '2025-07-01', volumeM3: 120 }]; // 2 h at 60 m³/h: one hour on each of the first two days
+    const grid = dailyPumping(scheduleIrrigations({ events: event, pv: dark, pumpKw: 30, flowM3h: 60 }).irrigations[0].hours);
+    expect(grid.map((d) => [d.date, d.hours])).toEqual([['2025-07-01', 1], ['2025-07-02', 1]]);
+    expect(formatWindow(grid[0].windows[0], '2025-07-01')).toBe('22:00–23:00');
+    const diesel = dailyPumping(scheduleIrrigations({ events: event, pv: dark, pumpKw: 30, flowM3h: 60, firstHour: 6 }).irrigations[0].hours);
+    expect(diesel.map((d) => [d.date, d.hours])).toEqual([['2025-07-01', 1], ['2025-07-02', 1]]);
+    expect(formatWindow(diesel[0].windows[0], '2025-07-01')).toBe('06:00–07:00');
+  });
 });
 
 describe('dailyPumping / formatWindow', () => {

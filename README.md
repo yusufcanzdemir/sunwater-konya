@@ -95,7 +95,7 @@ All server-only (never prefix with `VITE_`); see `.env.example`.
 | `TELEGRAM_POLLING=0` | Turns off local long-polling |
 | `CRON_SECRET` | Protects the daily cron endpoint |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_*`) | Persistent bot storage (memory otherwise) |
-| `PUBLIC_BASE_URL` | Optional: the Telegram summary links to `/panel?field=<id>` |
+| `PUBLIC_BASE_URL` | Optional, `https://…`: the bot's "Tarlamı aç" button and the chat menu button open the farmer home screen `/?field=<id>` inside Telegram (Mini App) |
 
 ### Processing pipeline
 

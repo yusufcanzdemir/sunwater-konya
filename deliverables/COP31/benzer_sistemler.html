@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<title>SunWater Konya – Benzer Sistemler ve Hedef Kitle</title>
+<style>
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-Regular.ttf") format("truetype"); font-weight: 400; }
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-SemiBold.ttf") format("truetype"); font-weight: 600; }
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-Bold.ttf") format("truetype"); font-weight: 700; }
+  @page { size: A4; margin: 13mm 14mm 13mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Noto Sans Doc", sans-serif; font-size: 9.6pt; line-height: 1.35; color: #1f1a14; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1.5pt solid #865a11; padding-bottom: 2mm; margin-bottom: 3mm; }
+  header .project { font-size: 13pt; font-weight: 700; color: #5c3d15; line-height: 1.2; }
+  header .task { font-size: 10pt; font-weight: 700; }
+  header .student { font-size: 8.5pt; color: #5a432c; text-align: right; }
+  h2 { font-size: 11pt; font-weight: 700; margin: 4mm 0 1.2mm; color: #33241a; break-after: avoid; }
+  h2 .n { color: #865a11; margin-right: 1.5mm; }
+  h3 { font-size: 9.8pt; font-weight: 700; margin: 2.5mm 0 0.8mm; color: #5c3d15; break-after: avoid; }
+  p { margin: 0 0 1.4mm; }
+  ul { margin: 0 0 1.5mm; padding-left: 5mm; }
+  li { margin-bottom: 0.6mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.6pt; line-height: 1.28; margin: 1mm 0 2mm; }
+  th, td { text-align: left; vertical-align: top; padding: 1mm 1.5mm; border-bottom: 0.5pt solid #d9cdb8; }
+  th { background: #f4ecdc; font-weight: 700; }
+  tr { break-inside: avoid; }
+  td.name { font-weight: 700; color: #33241a; white-space: nowrap; }
+  .plus { color: #2e6b2e; }
+  .minus { color: #8a2c1c; }
+  .note { font-size: 9pt; color: #46331f; background: #fbf6ea; border-left: 2pt solid #c9941c; padding: 1.2mm 2.5mm; margin: 1.5mm 0 2mm; break-inside: avoid; }
+  .key { background: #fbf6ea; border: 0.5pt solid #e5d8c5; border-radius: 1.2mm; padding: 1.5mm 2.5mm; margin: 1.5mm 0 2mm; break-inside: avoid; }
+  .key b { color: #865a11; }
+  .chain { display: flex; flex-wrap: wrap; gap: 1.2mm; align-items: center; margin: 1.5mm 0 2mm; font-size: 8.8pt; }
+  .chain span.box { background: #f4ecdc; border: 0.5pt solid #d9cdb8; border-radius: 1mm; padding: 0.8mm 2mm; }
+  .chain span.arr { color: #865a11; font-weight: 700; }
+  .small { font-size: 8.3pt; color: #5a432c; }
+  footer.refs { border-top: 0.5pt solid #d9cdb8; margin-top: 4mm; padding-top: 1.5mm; font-size: 7.4pt; line-height: 1.3; color: #5a432c; }
+  footer.refs b { color: #33241a; }
+  footer.refs ol { margin: 0; padding-left: 5mm; }
+  footer.refs a { color: #5a432c; text-decoration: none; word-break: break-all; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="project">SunWater Konya</div>
+    <div class="task">Dünyadaki benzer sistemler, Türkiye'de denetim ve hedef kitle</div>
+  </div>
+  <div class="student">Öğrenci: Yusuf – Selçuk Üniversitesi<br />Kasım 2026</div>
+</header>
+
+<h2><span class="n">1</span>Problem: kuyu her yıl daha derine iniyor</h2>
+<p>Çiftçi bu sezon suyu 20 metreden çekiyor. Ertesi yıl aynı derinlikte su bulamıyor; pompayı aşağı indiriyor ya da kuyuyu derinleştiriyor. Bunun nedeni, havzadan her yıl beslenmeden (yağışla geri gelen sudan) daha fazla su çekilmesi.</p>
+<table>
+  <tr><th style="width:42%">Gösterge</th><th>Değer</th><th style="width:22%">Kaynak</th></tr>
+  <tr><td>Konya Ovası'nda yeraltı suyu seviyesi</td><td>Son 30 yılda yaklaşık 30 m düştü; ortalama yılda yaklaşık 1 m</td><td>Konya Ovası Projesi yetkilisi [1]</td></tr>
+  <tr><td>Çumra çevresi gözlem kuyuları</td><td>1960'larda yılda santimetreler, 2000'lerden sonra 0,5–1 m, 2010'lardan sonra 1,5–2 m düşüm; 2021'de bazı kuyularda 20 m'yi aşan düşüm</td><td>Akademik çalışma [2]</td></tr>
+  <tr><td>Havza su dengesi</td><td>Kullanılabilir yeraltı suyu yılda yaklaşık 2,4 milyar m³; gerçek kullanım 4–4,5 milyar m³</td><td>KOSKİ sunumu [3]</td></tr>
+  <tr><td>GRACE uydusu, havza depolaması (bizim ölçümümüz)</td><td>2018–2024: yılda 2,7 cm (1,6 km³/yıl) azalma; 2003–2017'de anlamlı eğilim yok</td><td>SunWater Konya, docs/VALIDATION.md</td></tr>
+  <tr><td>Obruklar</td><td>Haberlerde sayının 600'den 2.000'e çıktığı bildiriliyor (resmi envanterle doğrulanmadı)</td><td>Milliyet [4]</td></tr>
+</table>
+<p class="small">Not: [1] ve [2] farklı kuyular ve dönemler için verilmiş rakamlar; tek bir havza ortalaması gibi birleştirilmemeli.</p>
+
+<h3>Çiftçi için ne demek?</h3>
+<p>Pompanın suyu yukarı kaldırmak için harcadığı enerji, suyun çekildiği derinlikle doğru orantılı. Örnek hesap (pompa+motor verimi %50 varsayımıyla, 1.000 m³ su için):</p>
+<ul>
+  <li>20 m'den çekim: yaklaşık <b>109 kWh</b></li>
+  <li>30 m'den çekim: yaklaşık <b>164 kWh</b> (aynı su için %50 daha fazla enerji)</li>
+</ul>
+<p>Yani su seviyesi düştükçe aynı sulama her yıl daha pahalı oluyor, sonunda kuyu derinleştirme masrafı geliyor. Güneş enerjisi bu maliyeti görünmez hâle getirdiğinde ise çiftçinin tasarruf etme nedeni ortadan kalkıyor.</p>
+<div class="chain">
+  <span class="box">Beslenmeden fazla çekim</span><span class="arr">→</span>
+  <span class="box">Su seviyesi düşer</span><span class="arr">→</span>
+  <span class="box">Pompa daha derinden çeker, maliyet artar</span><span class="arr">→</span>
+  <span class="box">Güneş enerjisi maliyeti sıfırlar</span><span class="arr">→</span>
+  <span class="box">Ölçüm yoksa çekim daha da artar</span>
+</div>
+<div class="key"><b>SunWater Konya'nın bu döngüdeki yeri:</b> Kuyuyu değil tarlayı ölçer. Her tarlanın sezonda gerçekte tükettiği suyu (mavi su) uydudan hesaplar, bunu havzanın su bütçesine bağlar ve çiftçiye güneş saatlerine göre ne kadar sulaması gerektiğini söyler. Böylece güneş enerjisi “bedava su” değil, “ölçülü ve ucuz su” olur.</div>
+
+<h2><span class="n">2</span>Dünyada benzer işi yapan sistemler</h2>
+<table>
+  <tr><th style="width:15%">Sistem</th><th style="width:30%">Ne yapıyor, nasıl</th><th style="width:27%">Bize göre artısı</th><th style="width:28%">Bize göre eksisi</th></tr>
+  <tr><td class="name">OpenET<br /><span class="small">ABD (NASA, DRI, Google vd.)</span></td>
+      <td>Landsat ile tarla bazında evapotranspirasyon (ET) hesaplıyor; 6 farklı modelin ortalamasını alıyor. Ücretsiz.</td>
+      <td class="plus">Çok daha olgun. Sayaçla farkı Nevada'da %7, Oregon'da %17 [5].</td>
+      <td class="minus">Çiftçiye “ne zaman sula” veya güneşe göre plan vermiyor. Türkiye'yi kapsamıyor.</td></tr>
+  <tr><td class="name">La Mancha Oriental (JCRMO)<br /><span class="small">İspanya, sulayıcı birliği</span></td>
+      <td>Uydu ile sulanan alanı ve ürünü belirliyor; kuyu su hakkı tahsisini buna göre yapıyor.</td>
+      <td class="plus">Bize en yakın örnek. Uydu sınıflandırması 2012'de İspanya Yüksek Mahkemesi'nde delil olarak kabul edildi [6].</td>
+      <td class="minus">Daha çok alan ve ürün tespiti; tarla bazında tüketilen su miktarını hesaplamıyor.</td></tr>
+  <tr><td class="name">NRAR<br /><span class="small">Avustralya, NSW su denetim kurumu</span></td>
+      <td>Sentinel görüntülerinden arazi kullanımı ve gölet doluluğunu çıkarıp yağış ve akımla karşılaştırıyor; şüpheli çiftlikleri işaretleyip sahaya gidiyor.</td>
+      <td class="plus">Uydu kanıtıyla mahkûmiyet alındı. Ceza bireyler için 1,1 milyon AUD'ye kadar [7].</td>
+      <td class="minus">Saf denetim aracı; çiftçiye hiçbir fayda sunmuyor.</td></tr>
+  <tr><td class="name">IrriWatch (Hydrosat)<br /><span class="small">Hollanda/ABD, ticari</span></td>
+      <td>Termal uydu verisiyle her sabah tarla bazında sulama tavsiyesi; abonelikle satılıyor.</td>
+      <td class="plus">Çiftçi tarafı bizden olgun; termal veri sayesinde ET ölçümü daha doğrudan [8].</td>
+      <td class="minus">Ücretli. Su bütçesi, havza veya kurum bakışı yok.</td></tr>
+  <tr><td class="name">FAO WaPOR<br /><span class="small">FAO, tüm dünya</span></td>
+      <td>Açık ET ve su verimliliği verisi; 80'den fazla kayıtlı uygulama (Mısır, Ürdün, Lübnan sulama uygulamaları vb.).</td>
+      <td class="plus">Ücretsiz altyapı; bizim için de veri kaynağı olabilir [9].</td>
+      <td class="minus">Çözünürlük kaba; kendisi bir ürün değil, başkalarına veri sağlıyor.</td></tr>
+  <tr><td class="name">Doñana<br /><span class="small">İspanya, WWF ve havza idaresi</span></td>
+      <td>Landsat ve Sentinel ile kaçak sulanan alanları ve kuyuları buluyor.</td>
+      <td class="plus">Uydunun kaçak kuyu tespitinde işe yaradığını gösteriyor [10].</td>
+      <td class="minus">1.000'den fazla kaçak kuyu tespit edildi, kapatılan yaklaşık 300. Tespit tek başına yetmiyor.</td></tr>
+  <tr><td class="name">PM-KUSUM<br /><span class="small">Hindistan, devlet programı</span></td>
+      <td>Güneş enerjili sulama pompalarını sübvanse ediyor.</td>
+      <td class="plus">Bizim tezimizi destekliyor: ölçüm olmadan güneş pompası çekimi artırıyor [11].</td>
+      <td class="minus">Uzmanlar “sıkı izleme olmadan güneş pompası verilmesin” diyor; programda izleme zorunlu değil.</td></tr>
+</table>
+
+<h3>Benzerlikler</h3>
+<ul>
+  <li>Hepsi saha sayacı yerine (veya yanında) uydu kullanıyor; çoğu Sentinel ve Landsat gibi ücretsiz verilere dayanıyor.</li>
+  <li>Tüketimi ET (bitkinin buharlaştırdığı su) üzerinden hesaplayanlar (OpenET, IrriWatch, WaPOR) bizimle aynı mantıkta: tüketilen su = ET − etkili yağış.</li>
+  <li>Denetimde uydu her yerde “şüpheliyi işaretleme” aracı; kesin karar saha denetiminden sonra veriliyor. Bizim panelin “bütçe üstü / sınırda” sınıflaması da bu mantıkta.</li>
+</ul>
+<h3>Bizim farkımız</h3>
+<p>Bulunan sistemlerin hiçbiri şu üç işi birlikte yapmıyor: (1) tarla bazında tüketilen suyu ölçmek, (2) bunu havza su bütçesine ve GRACE verisine bağlamak, (3) aynı veriyle çiftçiye Telegram üzerinden güneş saatlerine göre sulama planı göndermek.</p>
+<h3>Bizim eksiklerimiz</h3>
+<ul>
+  <li>Saha sayacıyla doğrulama yok. Bağımsız SEBAL modeli bizim değerlerin yaklaşık 2/3'ünü veriyor.</li>
+  <li>Pilot alan küçük: 586 km², 3.448 tarla.</li>
+  <li>Termal veri kullanılmıyor; ET bitki örtüsü indeksinden (NDVI-Kc) hesaplanıyor.</li>
+  <li>Hukuki geçerliliği yok.</li>
+</ul>
+
+<h2><span class="n">3</span>Neden duymadık, neden yayılmadı?</h2>
+<p>Aslında yayılıyor, ama sessizce ve kurumların içinde kalıyor. Ortak engeller:</p>
+<ol style="margin:0 0 1.5mm; padding-left:5mm">
+  <li><b>Çiftçi direnci.</b> Kaliforniya'da ilk tepki “Benim suyumu sen mi ölçeceksin?” oldu; Madera County'de ceza planı bu yüzden ertelendi [12].</li>
+  <li><b>Hukuki delil sorunu.</b> Uydu tahmininin mahkemede geçip geçmeyeceği tartışılıyor. İspanya ve Avustralya kabul etti, ABD'de tartışma sürüyor.</li>
+  <li><b>Doğruluk.</b> Tek tarla düzeyinde hata %10–20 civarında; ceza kesmek için fazla, önceliklendirmek için yeterli.</li>
+  <li><b>Gecikme.</b> Görüntüler 1–6 hafta gecikmeli geliyor; anlık müdahaleye yetmiyor.</li>
+  <li><b>Siyasi maliyet.</b> Konya'da hektar başına yılda 2.000 m³ kota önerildiğinde tarım gelirinin %35 düşeceği savunuldu [13]. Bu yükü kimse üstlenmek istemiyor.</li>
+  <li><b>Görünürlük.</b> Bunlar devlet kurumlarına satılan ürünler; basına ve tüketiciye pek yansımıyor, Türkçe kaynak da neredeyse yok.</li>
+</ol>
+
+<h2><span class="n">4</span>Türkiye'de yeraltı suyunu kim denetliyor, nasıl?</h2>
+<ul>
+  <li><b>Yetkili kurum: DSİ</b> (Tarım ve Orman Bakanlığı'na bağlı; Konya için DSİ 4. Bölge Müdürlüğü).</li>
+  <li><b>167 sayılı Yeraltı Suları Kanunu:</b> kuyu açmak için arama belgesi, kullanmak için kullanma belgesi gerekiyor. 2011'de eklenen kurala göre ölçüm sistemi takılmadan kullanma belgesi verilemez [14].</li>
+  <li><b>Yeraltı Suyu Ölçüm Sistemleri Yönetmeliği (2011):</b> yıllık kota ön ödemeli karta yükleniyor; kullanılmayan kota devretmiyor; sayaç verileri DSİ'ye otomatik aktarılabilmeli; kota pompa debisine bölünerek yıllık çalışma saatine çevriliyor. Konya için öneri: elektrik hattı olan kuyularda otomatik sayaç okuma, olmayanlarda ön yüklemeli sayaç [15].</li>
+  <li><b>Gözlem ağı:</b> 2020'de DSİ ve KOP iş birliğiyle 122 gözlem kuyusuna sensör takıldı; su seviyesi, sıcaklık ve iletkenlik anlık gönderiliyor [16]. Bu sistem havzanın genel durumunu izliyor, tek tek kuyuları denetlemiyor.</li>
+  <li><b>Tarım ve Orman Bakanlığı / SYGM:</b> havza yönetim planlarını hazırlıyor. Bakanlık birimleri ÇKS beyanlarını Sentinel ile doğrulamaya çalışıyor (yaklaşık %91 ürün sınıflandırma doğruluğu) [17]; ama bu çalışmalar ürün desenini tespit ediyor, su miktarını ölçmüyor.</li>
+</ul>
+<div class="note"><b>Asıl boşluk: kaçak kuyular.</b> 2007 verisine göre havzada yaklaşık 27 bin ruhsatlı, 67 bin ruhsatsız kuyu vardı [13]; bir KOSKİ sunumu yaklaşık 115 bin kaçak kuyudan söz ediyor [3]. Sayaç sistemi yalnızca belgeli kuyuyu görür. SunWater Konya kuyuyu değil tarlayı ölçtüğü için kaçak kuyunun suladığı tarlayı da görür. Güncel (2025–26) kuyu ve sayaç sayıları resmi kaynaktan doğrulanamadı; DSİ 4. Bölge'ye bilgi edinme başvurusu yapılabilir.</div>
+
+<h2><span class="n">5</span>Hedef kitle: kurum mu, çiftçi mi?</h2>
+<div class="key"><b>Öneri: müşteri kurum, kullanıcı çiftçi.</b></div>
+<ul>
+  <li><b>Parayı ve yetkiyi kurum tutuyor.</b> Su bütçesi, kota ve kaçak tespiti DSİ, SYGM ve KOP'un işi; bu sorunu çözen araca bütçe ayıracak olan da onlar. Çiftçi, tüketimini ölçen bir sisteme kendi parasını vermez (Kaliforniya örneği).</li>
+  <li><b>Sadece denetim aracı olursa çiftçi karşı çıkar.</b> NRAR tipi saf denetim Türkiye'de siyasi olarak zor. Çiftçi tarafı (güneş saatlerine göre sulama planı, enerji ve su tasarrufu, kuyu derinleşmesini yavaşlatma) kabullenmeyi sağlıyor. JCRMO bu yüzden çalışıyor: sistemi sulayıcıların kendi birliği kullanıyor.</li>
+  <li><b>Konumlandırma:</b> “DSİ, KOP ve sulama birlikleri için tarla bazında su muhasebesi; çiftçi için ücretsiz güneş enerjili sulama asistanı.” Kurum, sayaçsız ve kaçak kuyuların suladığı tarlaları görüp saha denetimini önceliklendirir; çiftçi kendisine fayda sağlayan bir tavsiye alır. Sulama kooperatifleri ve birlikleri hem müşteri hem kullanıcı olabilecek bir ara yol.</li>
+</ul>
+
+<footer class="refs">
+  <b>Kaynaklar</b>
+  <ol>
+    <li>Son Dakika / Haber7, “Konya Ovası'nda obruk sayısı artıyor”: https://www.haber7.com/bilim/haber/2843916-konya-ovasinda-obruk-sayisi-artiyor</li>
+    <li>KTÜN, Ürünlü (Çumra) çevresinde yeraltısuyu seviye değişimleri ve obruk oluşumları: https://gcris.ktun.edu.tr/handle/20.500.13091/6010</li>
+    <li>KOSKİ sunumu: https://www.koski.gov.tr/uploads/bloglar_v/ek/ek-ahmet-demir.pdf</li>
+    <li>Milliyet, “Konya'daki obruk sayısı 600'den 2 bine yükseldi”: https://www.milliyet.com.tr/galeri/konyadaki-obruk-sayisi-600den-2-bine-yukseldi-6656619</li>
+    <li>DRI, OpenET ile yeraltı suyu kullanımı izleme: https://dri.edu/groundwater-use-can-be-accurately-monitoredwith-satellites-using-openet</li>
+    <li>Eurisy, La Mancha Oriental: https://www.eurisy.eu/stories/the-central-irrigation-board-of-la-mancha-oriental-uses-satellite-imagery-to-monitor-irrigation-water-consumption_23/</li>
+    <li>NRAR: https://www.nrar.nsw.gov.au/news/nrar-uses-satellites-to-watch-for-illegal-floodplain-harvesting ve https://www.nrar.nsw.gov.au/about-us/compliance</li>
+    <li>Hydrosat / IrriWatch: https://payloadspace.com/hydrosat-acquires-irriwatch ve https://spinoff.nasa.gov/node/11489</li>
+    <li>FAO WaPOR: https://www.fao.org/newsroom/detail/fao-broadens-scope-of-innovative-water-monitoring-tool-to-include-the-whole-world/en</li>
+    <li>FreshPlaza, Doñana: https://www.freshplaza.com/europe/article/9877963/spain-tackles-illegal-water-extraction-in-fruit-growing-region/</li>
+    <li>Mongabay India: https://india.mongabay.com/2025/06/running-on-sunshine-but-running-out-of-water ve Down To Earth (CSE): https://www.downtoearth.org.in/news/india/pm-kusum-not-a-solution-for-india-s-irrigation-needs-cse-66096</li>
+    <li>KQED: https://www.kqed.org/news/11892939/satellites-are-becoming-a-part-of-californias-water-conservation-effort</li>
+    <li>TBMM genel kurul konuşmaları: https://tbmm.gov.tr/Milletvekili/UyeGenelKurulKonusmalariDetay?eid=10623 ve eid=10657</li>
+    <li>167 sayılı Yeraltı Suları Hakkında Kanun, 10. madde (6111 sayılı Kanun ile değişik)</li>
+    <li>DSİ Yeraltı Suyu Ölçüm Sistemleri Yönetmeliği: https://www.lexpera.com.tr/mevzuat/yonetmelikler/devlet-su-isleri-genel-mudurlugu-yeralti-suyu-olcum-sistemleri-yonetmeligi</li>
+    <li>Tarım ve Orman Bakanlığı, “Konya Kapalı Havzası'nda Yeraltı Suyuna Yakın Takip” (2020): https://www.tarimorman.gov.tr/Haber/4437/Konya-Kapali-Havzasinda-Yeralti-Suyuna-Yakin-Takip</li>
+    <li>DergiPark, Sentinel-2 ile ürün sınıflandırması: https://dergipark.org.tr/en/download/article-file/2273006</li>
+  </ol>
+</footer>
+
+</body>
+</html>

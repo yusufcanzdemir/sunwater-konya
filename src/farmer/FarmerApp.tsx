@@ -1,15 +1,15 @@
-// Farmer app (/): pick your field on the map or by location, see this week's irrigation and your season.
+// Farmer app (/): enter with your field (code, location or map), then a simple home screen for that field.
+// The chosen field is remembered in the browser, so the next visit opens the home screen directly.
+// This is a convenience, not an account: field codes are not secret.
 
-import { ChevronDown, LocateFixed, Search, ShieldCheck, TrendingDown, Zap } from 'lucide-react';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AppSwitch } from '../components/AppSwitch';
-import { fmt } from '../components/ui';
 import { lang, t } from '../i18n';
-import FieldsMap from '../panel/FieldsMap';
 import { loadFields, loadManifest, loadShapes, type Manifest } from '../panel/data';
 import FieldCard from './FieldCard';
-import { findFields, type PilotField } from './pilot';
-import TelegramBox from './TelegramBox';
+import Landing from './Landing';
+import Login, { normaliseCode, type Notice } from './Login';
+import { findFields, type FieldShapes, type PilotField } from './pilot';
 import type { PilotManifest } from './weekPlan';
 
 /**
@@ -17,8 +17,7 @@ import type { PilotManifest } from './weekPlan';
  * assumed pump to irrigate on sunny hours in its demo week (a large field needs the pump day and night).
  */
 const EXAMPLE_FIELD = 'F03053';
-
-type Notice = { text: string; planLink?: boolean } | null;
+const FIELD_KEY = 'sunwater.field';
 
 const median = (xs: number[]) => {
   if (!xs.length) return null;
@@ -27,149 +26,37 @@ const median = (xs: number[]) => {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
-function Home({
-  fields,
-  locating,
-  notice,
-  onLocate,
-  onExample,
-  onSearch,
-}: {
-  fields: number;
-  locating: boolean;
-  notice: Notice;
-  onLocate: () => void;
-  onExample: () => void;
-  onSearch: (id: string) => void;
-}) {
-  const [text, setText] = useState('');
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    if (text.trim()) onSearch(text.trim());
-  };
-  return (
-    <div className="space-y-6">
-      <div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Karapınar · {fmt(fields)} {t('tarla uydudan izleniyor', 'fields monitored by satellite')}
-        </span>
-        <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-stone-900 sm:text-4xl">
-          {t('Tarlanı seç,', 'Pick your field,')}
-          <br />
-          {t('ne zaman sulayacağını öğren.', 'learn when to irrigate.')}
-        </h1>
-        <p className="mt-3 text-stone-600">
-          {t('Uydu tarlanın suyunu ölçer. Plan güneşli saatlere göre.', 'Satellites measure your field’s water. The plan follows the sun.')}
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <button
-          onClick={onLocate}
-          disabled={locating}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-900 px-4 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-950 disabled:opacity-70"
-        >
-          <LocateFixed size={20} /> {locating ? t('Konum alınıyor…', 'Getting location…') : t('Konumumla tarlamı bul', 'Find my field by location')}
-        </button>
-        <button
-          onClick={onExample}
-          className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-base font-semibold text-stone-800 transition hover:border-stone-300 hover:bg-stone-50"
-        >
-          {t('Örnek tarlayı aç', 'Open the example field')}
-        </button>
-        <form onSubmit={submit} className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white px-3 py-2 focus-within:border-emerald-700">
-          <Search size={18} className="text-stone-400" />
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={t('Tarla numarası (ör. F03053)', 'Field number (e.g. F03053)')}
-            className="min-w-0 flex-1 bg-transparent py-1 text-sm outline-none placeholder:text-stone-400"
-            aria-label={t('Tarla numarası', 'Field number')}
-          />
-        </form>
-        <p className="text-center text-xs text-stone-500">{t('ya da haritada tarlana dokun', 'or tap your field on the map')}</p>
-      </div>
-
-      {notice && (
-        <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
-          {notice.text}
-          {notice.planLink && (
-            <a href="/planla" className="mt-1 block font-semibold underline">
-              {t('Tarlanı çizerek plan al →', 'Draw your field to get a plan (Turkish) →')}
-            </a>
-          )}
-        </div>
-      )}
-
-      <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <h3 className="font-semibold text-stone-900">{t('Neden önemli?', 'Why it matters')}</h3>
-        <ul className="mt-3 space-y-2.5 text-sm text-stone-700">
-          <li className="flex items-start gap-2.5">
-            <TrendingDown size={18} className="mt-0.5 shrink-0 text-orange-600" />
-            <span>{t('Konya’da kuyular her yıl yaklaşık 1 metre derinleşiyor.', 'Wells in Konya get about 1 metre deeper every year.')}</span>
-          </li>
-          <li className="flex items-start gap-2.5">
-            <Zap size={18} className="mt-0.5 shrink-0 text-orange-600" />
-            <span>{t('Gereksiz her pompa saati boşa elektrik ve kuyundan eksilen su.', 'Every unneeded pump hour is wasted power and water gone from your well.')}</span>
-          </li>
-          <li className="flex items-start gap-2.5">
-            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-700" />
-            <span>{t('Ceza değil, plan: SunWater bir denetim aracı değil.', 'A plan, not a penalty: SunWater is not an inspection tool.')}</span>
-          </li>
-        </ul>
-      </section>
-
-      <TelegramBox />
-
-      <section>
-        <h3 className="mb-2 font-semibold text-stone-900">{t('Sık sorulanlar', 'Questions')}</h3>
-        <div className="divide-y divide-stone-200 rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-          {FAQ.map(([q, a]) => (
-            <details key={q} className="group px-4 py-3">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-stone-800">
-                {q}
-                <ChevronDown size={16} className="shrink-0 text-stone-400 transition group-open:rotate-180" />
-              </summary>
-              <p className="mt-2 text-sm text-stone-600">{a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
+function rememberedField(): string | null {
+  const fromUrl = new URLSearchParams(window.location.search).get('field');
+  if (fromUrl) return fromUrl;
+  try {
+    return window.localStorage.getItem(FIELD_KEY);
+  } catch {
+    return null;
+  }
 }
 
-const FAQ: [string, string][] = [
-  [t('Ücretli mi?', 'Does it cost anything?'), t('Hayır, ücretsiz.', 'No, it is free.')],
-  [
-    t('Tarlama cihaz takmam gerekir mi?', 'Do I need a sensor in my field?'),
-    t('Hayır. Su tüketimi uydu görüntüsü ve hava verisiyle hesaplanır.', 'No. Water use is calculated from satellite images and weather data.'),
-  ],
-  [
-    t('Hangi ürünler için plan var?', 'Which crops get a plan?'),
-    t(
-      'Haftalık plan: şeker pancarı, mısır, ayçiçeği ve sulu buğday. Diğer ürünlerde sezon özeti gösterilir.',
-      'Weekly plan: sugar beet, maize, sunflower and irrigated wheat. Other crops get the season summary.',
-    ),
-  ],
-  [
-    t('Tarlam haritada yok', 'My field is not on the map'),
-    t(
-      'Şimdilik pilot alan Karapınar’ın kuzeyi. Başka yerdeysen “Tarla çiz” sayfasında tarlanı çizip plan alabilirsin.',
-      'For now the pilot covers north of Karapınar. Elsewhere, draw your field on the “Draw a field” page to get a plan.',
-    ),
-  ],
-];
+function remember(id: string | null) {
+  try {
+    if (id) window.localStorage.setItem(FIELD_KEY, id);
+    else window.localStorage.removeItem(FIELD_KEY);
+  } catch {
+    // private mode: the field stays in the address instead
+  }
+}
 
 export default function FarmerApp() {
   const [manifest, setManifest] = useState<(Manifest & PilotManifest) | null>(null);
   const [rows, setRows] = useState<PilotField[] | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('field'));
+  const [shapes, setShapes] = useState<FieldShapes | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(rememberedField);
   // Off-season sample week (?demo=1), kept while moving between fields
   const [demo, setDemo] = useState(() => new URLSearchParams(window.location.search).get('demo') === '1');
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [telegramUrl, setTelegramUrl] = useState<string | null>(null);
+  /** The bot itself (product page "Telegram'dan başla"); null when the bot is not configured. */
+  const [botUrl, setBotUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -185,6 +72,24 @@ export default function FarmerApp() {
   const season = manifest?.seasons[0] ?? 0;
   const byId = useMemo(() => new Map((rows ?? []).map((r) => [r.field_id, r])), [rows]);
   const selected = selectedId ? (byId.get(selectedId) ?? null) : null;
+
+  // A valid field is remembered however it was opened (code, map, or a /?field= link from Telegram);
+  // a remembered or linked code that is not a pilot field goes back to the entry screen
+  useEffect(() => {
+    if (!rows || !selectedId) return;
+    if (byId.has(selectedId)) {
+      remember(selectedId);
+      return;
+    }
+    setNotice({ text: t(`${selectedId} numaralı bir tarla bulamadık.`, `No field numbered ${selectedId}.`) });
+    setSelectedId(null);
+    remember(null);
+  }, [rows, selectedId, byId]);
+
+  // The outline for the field photo (and for "Konumumla bul")
+  useEffect(() => {
+    if (selected && !shapes) loadShapes().then(setShapes, () => undefined);
+  }, [selected, shapes]);
 
   const peerMedian = useMemo(() => {
     const byClass = new Map<string, number[]>();
@@ -218,26 +123,33 @@ export default function FarmerApp() {
     };
   }, [selectedId]);
 
-  const select = (id: string | null) => {
+  useEffect(() => {
+    fetch(`/api/telegram-link?field=${EXAMPLE_FIELD}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { botUsername?: string } | null) => setBotUrl(j?.botUsername ? `https://t.me/${j.botUsername}` : null))
+      .catch(() => undefined);
+  }, []);
+
+  const enter = (id: string) => {
     setNotice(null);
     setSelectedId(id);
+    remember(id);
   };
 
-  const search = (text: string) => {
-    const id = text.toUpperCase().replace(/^F?/, 'F');
-    const padded = /^F\d+$/.test(id) ? `F${id.slice(1).padStart(5, '0')}` : id;
-    if (byId.has(padded)) select(padded);
-    else setNotice({ text: t(`${text} numaralı bir tarla bulamadık.`, `No field numbered ${text}.`) });
+  const leave = () => {
+    setSelectedId(null);
+    remember(null);
+  };
+
+  const enterCode = (text: string) => {
+    const id = normaliseCode(text);
+    if (byId.has(id)) enter(id);
+    else setNotice({ text: t(`${text.trim()} numaralı bir tarla bulamadık.`, `No field numbered ${text.trim()}.`) });
   };
 
   const locate = () => {
     if (!navigator.geolocation) {
-      setNotice({
-        text: t(
-          'Tarayıcın konum paylaşmayı desteklemiyor. Haritada tarlana dokunabilirsin.',
-          'Your browser cannot share its location. Tap your field on the map instead.',
-        ),
-      });
+      setNotice({ text: t('Tarayıcın konum paylaşmayı desteklemiyor. Haritadan seçebilirsin.', 'Your browser cannot share its location. Pick on the map instead.') });
       return;
     }
     setLocating(true);
@@ -245,78 +157,86 @@ export default function FarmerApp() {
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         try {
-          const shapes = await loadShapes();
-          const [id] = findFields(shapes, rows ?? [], coords.longitude, coords.latitude);
-          if (id) select(id);
+          const all = shapes ?? (await loadShapes());
+          setShapes(all);
+          const [id] = findFields(all, rows ?? [], coords.longitude, coords.latitude);
+          if (id) enter(id);
           else setNotice({ text: t('Bulunduğun yerde kayıtlı bir tarla yok.', 'There is no pilot field where you are.'), planLink: true });
         } catch {
-          setNotice({ text: t('Tarlalar yüklenemedi, haritada tarlana dokunabilirsin.', 'Fields could not be loaded; tap your field on the map.') });
+          setNotice({ text: t('Tarlalar yüklenemedi, haritadan seçebilirsin.', 'Fields could not be loaded; pick on the map.') });
         } finally {
           setLocating(false);
         }
       },
       () => {
         setLocating(false);
-        setNotice({ text: t('Konum alınamadı. Haritada tarlana dokunabilirsin.', 'Could not get your location. Tap your field on the map.') });
+        setNotice({ text: t('Konum alınamadı. Haritadan seçebilirsin.', 'Could not get your location. Pick on the map.') });
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
   };
 
+  const loading = !manifest || !rows;
+
   return (
     <div className="flex h-dvh flex-col bg-stone-50">
-      <AppSwitch current="/" />
+      <AppSwitch current="/">
+        {!selected && (
+          <button
+            onClick={() => document.getElementById('tarlan')?.scrollIntoView({ behavior: 'smooth' })}
+            className="rounded-full bg-emerald-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-950"
+          >
+            {t('Tarlama gir', 'Open my field')}
+          </button>
+        )}
+        {selected && (
+          <button
+            onClick={leave}
+            className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-semibold text-stone-700 hover:bg-stone-100"
+          >
+            {t('Tarla değiştir', 'Change field')}
+          </button>
+        )}
+      </AppSwitch>
       {error ? (
         <p className="p-6 text-stone-600">{t('Veriler yüklenemedi. Sayfayı yenileyin.', 'Data could not be loaded. Please reload the page.')}</p>
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          {/* Phone: the plan first and a small map below; desktop: side panel and a large map */}
-          <aside className="order-1 min-h-0 flex-1 overflow-y-auto p-5 lg:w-[440px] lg:flex-none lg:shrink-0 lg:p-6">
-            {!manifest || !rows ? (
-              <div className="space-y-3">
-                <div className="h-6 w-1/2 animate-pulse rounded bg-stone-200" />
-                <div className="h-24 animate-pulse rounded-2xl bg-stone-200" />
-              </div>
-            ) : selected ? (
-              <FieldCard
-                key={selected.field_id}
-                field={selected}
-                peerMedianMm={peerMedian.get(selected.class) ?? null}
-                season={season}
-                manifest={manifest}
-                classNames={manifest.classes}
-                telegramUrl={telegramUrl}
-                demo={demo}
-                onDemo={setDemo}
-                onBack={() => select(null)}
-              />
-            ) : (
-              <Home
-                fields={rows.length}
-                locating={locating}
-                notice={notice}
-                onLocate={locate}
-                onExample={() => select(EXAMPLE_FIELD)}
-                onSearch={search}
-              />
-            )}
-          </aside>
-          <div className="order-2 h-[32vh] shrink-0 p-2 lg:h-auto lg:flex-1 lg:p-3 lg:pl-0">
-            {manifest && (
-              <FieldsMap
-                season={season}
-                scenario="s1"
-                visibleIds={null}
-                selected={selected}
-                onSelect={select}
-                classNames={manifest.classes}
-                player={null}
-                neutral
-                className="h-full w-full overflow-hidden rounded-2xl"
-              />
-            )}
-          </div>
+      ) : loading ? (
+        <div className="mx-auto w-full max-w-md space-y-3 p-5">
+          <div className="aspect-square animate-pulse rounded-3xl bg-stone-200" />
+          <div className="h-24 animate-pulse rounded-2xl bg-stone-200" />
         </div>
+      ) : selected ? (
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-6xl px-4 py-5 lg:px-6">
+            <FieldCard
+              key={selected.field_id}
+              field={selected}
+              rings={shapes?.[selected.field_id] ?? null}
+              peerMedianMm={peerMedian.get(selected.class) ?? null}
+              season={season}
+              manifest={manifest}
+              classNames={manifest.classes}
+              telegramUrl={telegramUrl}
+              demo={demo}
+              onDemo={setDemo}
+            />
+          </div>
+        </main>
+      ) : (
+        <Landing botUrl={botUrl}>
+          <Login
+            embedded
+          season={season}
+          rows={byId}
+          classNames={manifest.classes}
+          notice={notice}
+          locating={locating}
+          onCode={enterCode}
+          onLocate={locate}
+          onPick={enter}
+          exampleId={EXAMPLE_FIELD}
+          />
+        </Landing>
       )}
     </div>
   );

@@ -10,8 +10,27 @@ const FEATURES = [
   { Icon: Leaf, text: t('Tarlanın sezon özeti tek dokunuşla', 'Your field’s season summary in one tap') },
 ];
 
-/** `url`: the bot link for a selected field; without it the box tells the farmer to pick a field first. */
-export default function TelegramBox({ url }: { url?: string | null }) {
+/**
+ * `url`: the bot link for a selected field; without it the box tells the farmer to pick a field first.
+ * `compact`: one button and one line, for the home screen of a field.
+ */
+export default function TelegramBox({ url, compact = false }: { url?: string | null; compact?: boolean }) {
+  if (compact && url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center gap-3 rounded-2xl bg-sky-500 px-4 py-3 text-white shadow-sm transition hover:bg-sky-600"
+      >
+        <Send size={22} className="shrink-0" />
+        <span>
+          <span className="block font-semibold">{t('Planı her sabah Telegram’dan al', 'Get the plan on Telegram every morning')}</span>
+          <span className="block text-xs text-sky-50">{t('“Suladım” kaydı · yağmur takibi · sezon özeti', '“Irrigated” log · rain tracking · season summary')}</span>
+        </span>
+      </a>
+    );
+  }
   return (
     <section className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4">
       <h3 className="flex items-center gap-2 font-semibold text-sky-950">

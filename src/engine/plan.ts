@@ -6,7 +6,7 @@ import type { CropParams } from './crops.js';
 import { computeImpact, type EnergySource, type ImpactFactors, type ImpactResult } from './impact.js';
 import { pumpPowerKw } from './pump.js';
 import { hourlyPvOutput, type HourlyIrradiance, type HourlyPv } from './pv.js';
-import { scheduleIrrigations, slotDate, type ScheduleResult } from './schedule.js';
+import { DIESEL_FIRST_HOUR, NIGHT_TARIFF_START, scheduleIrrigations, slotDate, type ScheduleResult } from './schedule.js';
 import type { SoilParams } from './soil.js';
 import {
   runWaterBalance,
@@ -86,6 +86,7 @@ export function analyzeSeason(
     pumpKw,
     flowM3h: farm.pumpFlowM3h,
     maxRotationDays: settings.maxRotationDays,
+    firstHour: farm.energySource === 'diesel' ? DIESEL_FIRST_HOUR : NIGHT_TARIFF_START,
   });
 
   let running = 0;

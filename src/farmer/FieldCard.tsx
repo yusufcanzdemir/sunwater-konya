@@ -1,6 +1,6 @@
-// One pilot field for the farmer: this week's action first, then the season and what saves water.
+// The farmer's home screen for their own field: photo, today's answer, the season in one card, more on demand.
 
-import { ArrowLeft, CloudRain, Droplets, Leaf, Sun, Zap } from 'lucide-react';
+import { ChevronDown, CloudRain, Droplets, Leaf, Sun, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { fmt } from '../components/ui';
@@ -8,7 +8,11 @@ import { fetchArchive, fetchForecast } from '../data/openMeteo';
 import { locale, monthDay, t } from '../i18n';
 import { loadDemoWeather, loadFieldDetail, type FieldDetailData, type Status } from '../panel/data';
 import type { PilotField } from './pilot';
+import type { FarmForm } from '../state/farm';
+import FieldPhoto from './FieldPhoto';
 import TelegramBox from './TelegramBox';
+import { BillCard, PumpCard, WellCard } from './ToolCards';
+import { loadProfile, loadWell, profileForm, saveProfile, saveWell, type PumpProfile, type WellReading } from './tools';
 import { PAST_DAYS, buildWeek, demoDay, demoWeather, type DemoWeatherPoint, type PilotManifest, type WeekView } from './weekPlan';
 
 export const FARMER_STATUS: Record<Status, { label: string; tone: string; dot: string }> = {
@@ -40,7 +44,8 @@ function Card({ title, icon, children }: { title: string; icon?: ReactNode; chil
 type WeekState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; view: WeekView | null };
 
 /** This week from the forecast, or with `demoDate` the demo week from that week's archived weather (bundled file first). */
-function useWeek(field: PilotField, manifest: PilotManifest, demoDate: string | null): [WeekState, () => void] {
+function useWeek(field: PilotField, manifest: PilotManifest, demoDate: string | null, profile: Partial<FarmForm> | undefined): [WeekState, () => void] {
+  const profileKey = JSON.stringify(profile ?? null);
   const [state, setState] = useState<WeekState>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -55,13 +60,15 @@ function useWeek(field: PilotField, manifest: PilotManifest, demoDate: string | 
       );
     } else weather = fetchForecast(field.lat, field.lon, fetch, PAST_DAYS);
     weather.then(
-      (w) => live && setState({ status: 'ready', view: buildWeek(field, manifest, w, demoDate ?? todayIstanbul(), !demoDate) }),
+      (w) => live && setState({ status: 'ready', view: buildWeek(field, manifest, w, demoDate ?? todayIstanbul(), !demoDate, profile) }),
       () => live && setState({ status: 'error' }),
     );
     return () => {
       live = false;
     };
-  }, [field.field_id, attempt, demoDate]);
+    // `profileKey` stands for `profile` (a new object on every render)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [field.field_id, attempt, demoDate, profileKey]);
   return [state, () => setAttempt((a) => a + 1)];
 }
 
@@ -153,7 +160,7 @@ function WeekCard({
           </p>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-600">
             <span>{t(`${fmt(view.next.hours, 1)} saat pompa`, `${fmt(view.next.hours, 1)} h of pumping`)}</span>
-            {view.solarShare != null && (
+            {view.solarShare != null && view.solarShare >= 0.01 && (
               <span className="inline-flex items-center gap-1 font-medium text-amber-700">
                 <Sun size={14} /> {t(`enerjinin %${fmt(view.solarShare * 100)}'i güneşten`, `${fmt(view.solarShare * 100)}% of the energy from solar`)}
               </span>
@@ -238,6 +245,7 @@ function SeasonCurve({ detail, season }: { detail: FieldDetailData | null; seaso
 
 export default function FieldCard({
   field,
+  rings,
   peerMedianMm,
   season,
   manifest,
@@ -245,9 +253,9 @@ export default function FieldCard({
   telegramUrl,
   demo,
   onDemo,
-  onBack,
 }: {
   field: PilotField;
+  rings: [number, number][][] | null;
   peerMedianMm: number | null;
   season: number;
   manifest: PilotManifest;
@@ -255,10 +263,20 @@ export default function FieldCard({
   telegramUrl: string | null;
   demo: boolean;
   onDemo: (on: boolean) => void;
-  onBack: () => void;
 }) {
   const demoDate = demo ? demoDay(field, manifest, season) : null;
-  const [week, retry] = useWeek(field, manifest, demoDate);
+  const [profile, setProfile] = useState<PumpProfile | null>(() => loadProfile(field.field_id));
+  const [well, setWell] = useState<WellReading[]>(() => loadWell(field.field_id));
+  const engineProfile = useMemo(() => (profile ? profileForm(profile) : undefined), [profile]);
+  const [week, retry] = useWeek(field, manifest, demoDate, engineProfile);
+  const saveMyProfile = (p: PumpProfile | null) => {
+    setProfile(p);
+    if (p) saveProfile(field.field_id, p);
+  };
+  const saveMyWell = (r: WellReading[]) => {
+    setWell(r);
+    saveWell(field.field_id, r);
+  };
   const [detail, setDetail] = useState<FieldDetailData | null>(null);
   useEffect(() => {
     setDetail(null);
@@ -266,13 +284,12 @@ export default function FieldCard({
   }, [field.field_id]);
 
   const crop = classNames[field.class] ?? field.class;
-  const status = FARMER_STATUS[field.status_s1];
   const toM3 = (mm: number) => mm * field.area_ha * 10;
   const kwhPerM3 = field.blue_m3 > 0 ? field.energy_kwh / field.blue_m3 : 0;
   const efficientM3 = field.budget_s1_mm != null ? toM3(field.budget_s1_mm) : null;
   const peerM3 = peerMedianMm != null ? toM3(peerMedianMm) : null;
   const max = Math.max(field.blue_m3, efficientM3 ?? 0, peerM3 ?? 0, 1);
-  const overPct = field.ratio_s1 != null ? Math.round((field.ratio_s1 - 1) * 100) : null;
+  const peerPct = peerM3 ? Math.round((field.blue_m3 / peerM3 - 1) * 100) : null;
 
   const levers: { title: string; sub?: string; m3: number }[] = [];
   if (field.lever_evap_mm != null && field.lever_evap_mm > 0) {
@@ -301,72 +318,83 @@ export default function FieldCard({
   }
 
   return (
-    <div className="space-y-3">
-      <button onClick={onBack} className="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-900">
-        <ArrowLeft size={16} /> {t('Tüm tarlalar', 'All fields')}
-      </button>
-
-      <div className="flex items-start justify-between gap-3">
+    // Phone: one column. Desktop: photo and Telegram on the left, the cards side by side on the right.
+    <div className="grid gap-5 lg:grid-cols-[minmax(300px,380px)_1fr] lg:items-start">
+      <div className="space-y-4 lg:sticky lg:top-0">
+        <FieldPhoto rings={rings} />
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-stone-900">{crop}</h2>
           <p className="text-sm text-stone-500">
-            {t('Tarla', 'Field')} {field.field_id} · {t(`${fmt(field.area_ha * 10)} dekar`, `${fmt(field.area_ha, 1)} ha`)}
+            {t(`${fmt(field.area_ha * 10)} dekar`, `${fmt(field.area_ha, 1)} ha`)} · {t('Tarla kodu', 'Field code')} {field.field_id}
           </p>
         </div>
-        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${status.tone}`}>
-          <span className={`h-2 w-2 rounded-full ${status.dot}`} />
-          {status.label}
-        </span>
+        {telegramUrl && <TelegramBox url={telegramUrl} compact />}
       </div>
 
-      <WeekCard state={week} retry={retry} rainfed={!field.assessed} demoDate={demoDate} onDemo={onDemo} />
-
-      {telegramUrl && <TelegramBox url={telegramUrl} />}
+      <div className="grid gap-4 md:grid-cols-2 md:items-start">
+      <div className="md:col-span-2">
+        <WeekCard state={week} retry={retry} rainfed={!field.assessed} demoDate={demoDate} onDemo={onDemo} />
+      </div>
 
       {field.assessed && (
         <Card title={t(`${season} sezonu`, `${season} season`)} icon={<Leaf size={14} />}>
           <p className="text-3xl font-bold tracking-tight text-stone-900">{fmt(field.blue_m3)} m³</p>
           <p className="text-sm text-stone-500">
             {t('yeraltı suyu kullandın', 'of groundwater used')}
-            {overPct != null && overPct > 0 && (
+            {peerPct != null && peerPct !== 0 && (
               <>
-                {' '}
-                ·{' '}
-                <span className="font-semibold text-rose-700">
-                  {t(`verimli sulamadan %${fmt(overPct)} fazla`, `${fmt(overPct)}% more than efficient irrigation`)}
+                {' · '}
+                <span className={`font-semibold ${peerPct > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                  {peerPct > 0
+                    ? t(`benzer tarlalardan %${fmt(peerPct)} fazla`, `${fmt(peerPct)}% more than similar fields`)
+                    : t(`benzer tarlalardan %${fmt(-peerPct)} az`, `${fmt(-peerPct)}% less than similar fields`)}
                 </span>
               </>
             )}
           </p>
           <div className="mt-4 space-y-3">
             <Bar label={t('Senin tarlan', 'Your field')} value={field.blue_m3} max={max} color="#0284c7" strong />
-            {peerM3 != null && <Bar label={t(`Komşu ${crop.toLocaleLowerCase(locale)} tarlaları`, `Nearby ${crop.toLocaleLowerCase(locale)} fields`)} value={peerM3} max={max} color="#a8a29e" />}
-            {efficientM3 != null && <Bar label={t('Verimli sulamayla', 'With efficient irrigation')} value={efficientM3} max={max} color="#10b981" />}
-          </div>
-          <div className="mt-4">
-            <SeasonCurve detail={detail} season={season} />
+            {peerM3 != null && <Bar label={t(`Benzer ${crop.toLocaleLowerCase(locale)} tarlaları`, `Similar ${crop.toLocaleLowerCase(locale)} fields`)} value={peerM3} max={max} color="#a8a29e" />}
+            {efficientM3 != null && <Bar label={t('Damla sulamayla yeterdi', 'Enough with drip irrigation')} value={efficientM3} max={max} color="#10b981" />}
           </div>
         </Card>
       )}
 
-      {levers.length > 0 && (
-        <Card title={t('Su tasarrufu', 'Water savings')} icon={<Zap size={14} />}>
-          <ul className="divide-y divide-stone-100">
-            {levers.map((l) => (
-              <li key={l.title} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                <div>
-                  <p className="font-semibold text-stone-900">{l.title}</p>
-                  {l.sub && <p className="text-xs text-stone-500">{l.sub}</p>}
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="whitespace-nowrap font-bold tabular-nums text-emerald-700">−{fmt(l.m3)} m³</p>
-                  {kwhPerM3 > 0 && <p className="text-xs tabular-nums text-stone-500">−{fmt(l.m3 * kwhPerM3)} kWh</p>}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
+      <PumpCard profile={profile} onSave={saveMyProfile} />
+      <BillCard field={field} detail={detail} season={season} profile={profile} />
+      <WellCard readings={well} onChange={saveMyWell} />
+
+      {field.assessed && (
+        <details className="group rounded-2xl border border-black/5 bg-white p-4 shadow-sm md:col-span-2">
+          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-stone-700">
+            {t('Daha fazla: sezon eğrisi ve tasarruf yolları', 'More: season curve and ways to save')}
+            <ChevronDown size={16} className="text-stone-400 transition group-open:rotate-180" />
+          </summary>
+          <div className="mt-4">
+            <SeasonCurve detail={detail} season={season} />
+          </div>
+          {levers.length > 0 && (
+            <ul className="mt-4 divide-y divide-stone-100">
+              {levers.map((l) => (
+                <li key={l.title} className="flex items-center justify-between gap-3 py-2.5">
+                  <div>
+                    <p className="flex items-center gap-1.5 font-semibold text-stone-900">
+                      <Zap size={14} className="text-emerald-700" />
+                      {l.title}
+                    </p>
+                    {l.sub && <p className="text-xs text-stone-500">{l.sub}</p>}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="whitespace-nowrap font-bold tabular-nums text-emerald-700">−{fmt(l.m3)} m³</p>
+                    {kwhPerM3 > 0 && <p className="text-xs tabular-nums text-stone-500">−{fmt(l.m3 * kwhPerM3)} kWh</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </details>
       )}
+      </div>
     </div>
   );
 }

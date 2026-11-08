@@ -58,19 +58,38 @@ export interface ScheduleInput {
   flowM3h: number;
   /** Longest round in days (assumption). */
   maxRotationDays?: number;
+  /**
+   * Hour from which the hours without sun are filled: 22 for electricity (the cheap night tariff,
+   * 22:00–06:00), 6 for diesel (no tariff; someone has to start the engine, so from the morning on).
+   */
+  firstHour?: number;
 }
 
 /** Default cap for one rotation round (assumption). */
 export const DEFAULT_MAX_ROTATION_DAYS = 14;
 
 const EPS = 1e-9;
+/** Start of the night electricity tariff (Türkiye, multi-time tariff: 22:00–06:00). */
+export const NIGHT_TARIFF_START = 22;
+/** Diesel pumps: hours from the morning on. */
+export const DIESEL_FIRST_HOUR = 6;
 
 const MS_PER_HOUR = 3_600_000;
 // Local time labels are handled as naive timestamps (no timezone conversion).
 const toMs = (time: string) => Date.parse(`${time}:00Z`);
 const fromMs = (ms: number) => new Date(ms).toISOString().slice(0, 16);
+/**
+ * Order of hour slots with equal PV (night, or farms without solar): from `firstHour` on, by hour
+ * of day – so the same hour of every day is used before the next hour, spreading pumping over the
+ * days instead of filling day one.
+ */
+const hourRank = (time: string, firstHour: number) => {
+  const start = (Number(time.slice(11, 13)) + 23) % 24; // the label marks the slot's end
+  return (start - firstHour + 24) % 24; // firstHour 22: 22:00 → 0, 05:00 → 7, 06:00 → 8 …
+};
+
 /** Day a slot starts on: the 00:00 label covers 23:00–24:00 of the previous day. */
-export const slotDate = (time: string) => fromMs(toMs(time) - MS_PER_HOUR).slice(0, 10);
+export const slotDate =(time: string) => fromMs(toMs(time) - MS_PER_HOUR).slice(0, 10);
 
 /**
  * Each round runs from its irrigation day up to the day before the next round (also capped by
@@ -84,6 +103,7 @@ export function scheduleIrrigations({
   pumpKw,
   flowM3h,
   maxRotationDays = DEFAULT_MAX_ROTATION_DAYS,
+  firstHour = NIGHT_TARIFF_START,
 }: ScheduleInput): ScheduleResult {
   const lastPvDate = pv.reduce((max, h) => (slotDate(h.time) > max ? slotDate(h.time) : max), '');
   const used = new Map<string, number>();
@@ -105,7 +125,7 @@ export function scheduleIrrigations({
         const date = slotDate(h.time);
         return date >= event.date && date <= windowEnd && (used.get(h.time) ?? 0) < 1 - EPS;
       })
-      .sort((a, b) => b.pvKw - a.pvKw || a.time.localeCompare(b.time));
+      .sort((a, b) => b.pvKw - a.pvKw || hourRank(a.time, firstHour) - hourRank(b.time, firstHour) || a.time.localeCompare(b.time));
 
     for (const h of candidates) {
       if (remaining <= EPS) break;

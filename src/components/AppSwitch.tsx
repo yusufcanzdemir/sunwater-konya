@@ -30,7 +30,8 @@ export function AppSwitch({ current, children }: { current: Page; children?: Rea
           <Logo />
           <span className="hidden text-lg font-bold tracking-tight text-emerald-950 sm:inline">SunWater</span>
         </a>
-        <nav aria-label={t('Sayfalar', 'Pages')} className="flex items-center gap-1 text-sm">
+        {/* On a phone the page tabs give way to the page's own actions (e.g. "Tarla değiştir") when there are any */}
+        <nav aria-label={t('Sayfalar', 'Pages')} className={`${children ? 'hidden sm:flex' : 'flex'} items-center gap-1 text-sm`}>
           {/* The product is for farmers: the institutional panel stays at /panel but is not in the menu */}
           {PAGES.filter((p) => p.href !== '/panel' || current === '/panel').map(({ href, label }) => (
             <a

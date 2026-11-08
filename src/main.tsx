@@ -23,6 +23,19 @@ const page = TOOLS[window.location.pathname.replace(/\/$/, '') || '/'] ?? <Farme
 
 document.documentElement.lang = lang;
 
+// Opened from the bot's "Tarlamı aç" button (Telegram Mini App): Telegram adds #tgWebAppData… to the
+// address. Only then is Telegram's script loaded, to open the page full height.
+if (window.location.hash.includes('tgWebApp')) {
+  const script = document.createElement('script');
+  script.src = 'https://telegram.org/js/telegram-web-app.js';
+  script.onload = () => {
+    const app = (window as { Telegram?: { WebApp?: { ready(): void; expand(): void } } }).Telegram?.WebApp;
+    app?.ready();
+    app?.expand();
+  };
+  document.head.append(script);
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Suspense fallback={null}>{page}</Suspense>

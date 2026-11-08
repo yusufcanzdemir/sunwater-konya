@@ -8,7 +8,7 @@ import { dailyPumping, formatWindow } from '../engine/schedule.js';
 import { windowSummary } from '../engine/window.js';
 import { t } from '../i18n.js';
 import { modelSettings } from '../state/assumptions.js';
-import { toFarmParams } from '../state/farm.js';
+import { toFarmParams, type FarmForm } from '../state/farm.js';
 import { pilotEngineFarm, type PilotField } from './pilot.js';
 
 const SHORT_DAYS = t('Paz Pzt Sal Çar Per Cum Cmt', 'Sun Mon Tue Wed Thu Fri Sat').split(' ');
@@ -81,8 +81,9 @@ export function buildWeek(
   forecast: WeatherSeries,
   today: string,
   relative = true,
+  profile?: Partial<FarmForm>,
 ): WeekView | null {
-  const farm = pilotEngineFarm(f, manifest, Number(today.slice(0, 4)));
+  const farm = pilotEngineFarm(f, manifest, Number(today.slice(0, 4)), profile);
   if (!farm) return null;
   const { input, assumptions: a } = farm;
   const week = analyzeSeason(forecast, input.plantingDate, toFarmParams(input, a), modelSettings(a, a.forecastInitialDepletionMm));

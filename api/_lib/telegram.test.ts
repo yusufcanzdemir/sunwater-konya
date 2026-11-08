@@ -73,7 +73,10 @@ const farm = {
   savedAt: today,
 };
 
-const messages = () => sent.filter((s) => s.method === 'sendMessage').map((s) => String(s.body.text));
+/** Messages and photo cards the farmer sees, in order. */
+const outgoing = () => sent.filter((s) => s.method === 'sendMessage' || s.method === 'sendPhoto');
+/** Text of each message, or the caption of a photo card. */
+const messages = () => outgoing().map((s) => String(s.method === 'sendPhoto' ? s.body.caption : s.body.text));
 const chat = { id: 42 };
 const tap = (data: string) => handleUpdate({ callback_query: { id: 'cb', data, message: { chat } } });
 
@@ -85,16 +88,36 @@ describe('telegram bot', () => {
     expect(texts[0]).toContain('"Karapınar – Şeker pancarı, 100 dekar" tarlasına bağlandı');
     expect(texts[1].split('\n')[0]).toBe('🌱 Karapınar – Şeker pancarı tarlası');
     expect(texts[1].split('\n').length).toBeLessThanOrEqual(5);
-    const alert = sent.filter((s) => s.method === 'sendMessage')[1];
+    // the bottom menu comes with the greeting, the plan is a picture card with "Suladım" under it
+    expect(JSON.stringify(outgoing()[0].body.reply_markup)).toContain('💧 Bugün');
+    const alert = outgoing()[1];
+    expect(alert.method).toBe('sendPhoto');
+    expect(alert.body.photo).toBeInstanceOf(Blob);
     expect(JSON.stringify(alert.body.reply_markup)).toContain('irrigated');
     // no rain button: rain comes from the weather data
     expect(JSON.stringify(alert.body.reply_markup)).not.toContain('rain');
   });
 
-  it('"Suladım" records the planned amount and reports the water left', async () => {
-    await tap('irrigated');
+  it('"Suladım" records the planned amount, turns the button into "Sulandı" and reports the water left', async () => {
+    await handleUpdate({ callback_query: { id: 'cb', data: 'irrigated', message: { chat, message_id: 5 } } });
     expect(sent[0].method).toBe('answerCallbackQuery');
+    const edit = sent.find((s) => s.method === 'editMessageReplyMarkup')!;
+    expect(edit.body.message_id).toBe(5);
+    expect(JSON.stringify(edit.body.reply_markup)).toContain('Sulandı');
     expect(messages()[0]).toMatch(/kaydedildi.*Toprağınızda (yaklaşık \d+|en az \d+) günlük su var/s);
+  });
+
+  it('the menu buttons need no "/" command: "Bugün" sends the plan card, "Bu hafta" the 7 days', async () => {
+    await handleUpdate({ message: { chat, text: '💧 Bugün' } });
+    expect(outgoing()[0].method).toBe('sendPhoto');
+    expect(messages()[0].split('\n')[0]).toBe('🌱 Karapınar – Şeker pancarı tarlası');
+    sent.length = 0;
+    await handleUpdate({ message: { chat, text: '📅 Bu hafta' } });
+    expect(messages()[0].split('\n')[0]).toBe('📅 7 günlük plan');
+    sent.length = 0;
+    await handleUpdate({ message: { chat, text: 'merhaba' } });
+    expect(messages()[0]).toContain('Aşağıdaki düğmelere');
+    expect(JSON.stringify(outgoing()[0].body.reply_markup)).toContain('📊 Tarlam');
   });
 
   it('a typed duration replaces the irrigation with Q × hours / area × efficiency', async () => {
@@ -123,7 +146,7 @@ describe('telegram bot', () => {
     await saveFarm(past);
     const offChat = { id: 43 };
     await handleUpdate({ message: { chat: offChat, text: '/start f-past' } });
-    const markups = sent.filter((s) => s.method === 'sendMessage' && s.body.reply_markup).map((s) => JSON.stringify(s.body.reply_markup));
+    const markups = outgoing().filter((s) => s.body.reply_markup).map((s) => JSON.stringify(s.body.reply_markup));
     expect(markups.length).toBeGreaterThan(0);
     for (const m of markups) expect(m).not.toContain('irrigated');
     sent.length = 0;
@@ -133,14 +156,14 @@ describe('telegram bot', () => {
 
   it('answers voice messages with the typing hint', async () => {
     await handleUpdate({ message: { chat, voice: {} } });
-    expect(messages()).toEqual(['Şimdilik lütfen yazarak anlatın.']);
+    expect(messages()).toEqual(['Sesli mesajı henüz anlayamıyorum 🙏 Aşağıdaki düğmeleri kullanabilirsiniz.']);
   });
 
   it('web "send alert" reaches the linked chat and the demo chat', async () => {
     const res = await sendAlertEndpoint(new Request('http://x/api/send-alert', { method: 'POST', body: JSON.stringify({ farmId: 'f1' }) }));
     const body = (await res.json()) as { sent: number };
     expect(body.sent).toBe(2);
-    const targets = sent.filter((s) => s.method === 'sendMessage').map((s) => s.body.chat_id);
+    const targets = outgoing().map((s) => s.body.chat_id);
     expect(new Set(targets)).toEqual(new Set(['42', '999']));
   });
 
