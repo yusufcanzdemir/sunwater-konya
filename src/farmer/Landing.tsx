@@ -63,22 +63,63 @@ function Feature({ kicker, title, children, image, alt, flip = false }: { kicker
   );
 }
 
+/** How it works, in the farmer's words (no sales questions). */
 const FAQ: [string, string][] = [
   [
-    t('Ücretli mi?', 'Does it cost anything?'),
-    t('Hayır. Şu an Karapınar’da ücretsiz bir pilot olarak çalışıyor. Telegram dışında bir şey indirmen gerekmez.', 'No. It is a free pilot in Karapınar; you only need Telegram.'),
+    t('Uydu tarlamın ne kadar su kullandığını nasıl biliyor?', 'How do satellites know how much water my field used?'),
+    t(
+      'Sentinel-2 uydusu birkaç günde bir tarlanın üstünden geçer ve bitkinin ne kadar yeşil olduğunu ölçer. Bitki ne kadar gürse o kadar çok su terler; bundan her gün tarladan buharlaşan su hesaplanır. Bu sudan yağmurla gelen kısım çıkınca geriye kuyudan çekilen su kalır.',
+      'The Sentinel-2 satellite passes over the field every few days and measures how green the crop is. The denser the crop, the more water it transpires; from that the daily water use is computed. Subtracting what rain supplied leaves the water taken from the well.',
+    ),
   ],
   [
-    t('Hangi tarlalar için çalışıyor?', 'Which fields are covered?'),
-    t('Karapınar’ın kuzeyindeki 3.448 tarla için. Bu alanın dışındaysan tarlanı haritada çizip yine plan alabilirsin.', 'The 3,448 fields north of Karapınar. Outside that area you can draw your field and still get a plan.'),
+    t('Sulama planı neye göre hesaplanıyor?', 'How is the irrigation plan worked out?'),
+    t(
+      'Her gün toprağındaki su takip edilir: bitki ne kadar harcadı, yağmur ne kadar getirdi. Toprak, bitkiyi zorlamayacak bir kuruluğa inmeden sulama günü gelir ve ne kadar su gerektiği yazılır. Bu hesap FAO’nun (BM Gıda ve Tarım Örgütü) dünyada kullanılan yöntemidir (FAO-56). Ekim tarihi ve bitkinin büyüme dönemleri, uydudan tarlanın kendi sezonuna göre ayarlanır.',
+      'The water in your soil is tracked day by day: what the crop used and what rain brought. Before the soil dries enough to stress the crop, an irrigation day comes with the amount needed. This is the FAO method used worldwide (FAO-56); planting date and growth stages follow your field’s own season seen from satellites.',
+    ),
   ],
   [
-    t('Az sularsam verimim düşmez mi?', 'Will less water hurt my yield?'),
-    t('Plan, bitkinin o hafta ihtiyacı olan suyu hesaplar ve onu verir. Kestiği şey ihtiyacın üstündeki fazla su.', 'The plan gives the water the crop needs that week. It only cuts the water above that need.'),
+    t('Yağmuru nereden biliyor? Ben bir şey girmem gerekiyor mu?', 'How does it know about rain? Do I need to enter anything?'),
+    t(
+      'Hayır. Son 7 günde ölçülen yağış ve önümüzdeki günlerin tahmini hava verisinden (Open-Meteo) alınır. Yağmur geliyorsa plan kendiliğinden kayar ya da sulama düşer.',
+      'No. Measured rain of the last 7 days and the forecast come from weather data (Open-Meteo). If rain is coming, the plan moves or drops the irrigation by itself.',
+    ),
   ],
   [
-    t('Bilgilerim nereye gidiyor?', 'Where does my data go?'),
-    t('Pompa, fatura ve kuyu bilgilerin yalnızca senin telefonunda kalır. SunWater denetim ya da ceza için kullanılmaz; çiftçinin kendi aracıdır.', 'Your pump, bill and well data stay on your phone. SunWater is never used for inspections or fines; it is the farmer’s own tool.'),
+    t('Sulama saatlerini neye göre seçiyor?', 'How does it choose the hours?'),
+    t(
+      'Pompanın enerjisine göre. Güneş paneli varsa güneşin en güçlü olduğu öğle saatleri, şebeke elektriğinde ucuz gece tarifesi (22:00–06:00), dizelde sabah 06:00’dan itibaren. Su miktarı aynıdır, sadece saatler değişir; sulama da tek güne yığılmaz, günlere yayılır.',
+      'By the pump’s energy: with solar panels the sunniest midday hours, on grid power the cheap night tariff (22:00–06:00), with diesel from 06:00 in the morning. The amount of water is the same; only the hours change, spread over the days.',
+    ),
+  ],
+  [
+    t('Pompamı tanıtmazsam ne olur?', 'What if I don’t enter my pump?'),
+    t(
+      'Plan ortalama bir pompayla hesaplanır: 120 m kuyu, saatte 60 m³ su, güneş paneli. Kuyu derinliğini ve pompa gücünü girersen saatler senin pompana göre çıkar.',
+      'The plan uses an average pump: 120 m well, 60 m³ per hour, solar panels. Enter your well depth and pump power and the hours fit your pump.',
+    ),
+  ],
+  [
+    t('Faturadaki kWh’den suyu nasıl buluyor?', 'How does it get water from the kWh on my bill?'),
+    t(
+      'Pompanın harcadığı elektrik, suyu kuyunun dibinden yukarı kaldırmaya gider. Kuyu ne kadar derinse 1 m³ su o kadar çok elektrik ister. kWh, kuyu derinliği ve pompa verimiyle (%50 alınır) kaç m³ su çektiğin hesaplanır. Kuyu derinliğini doğru yazarsan sonuç da o kadar doğru olur.',
+      'The pump’s electricity lifts water from the bottom of the well. The deeper the well, the more electricity 1 m³ needs. From the kWh, the well depth and the pump efficiency (taken as 50%) the pumped m³ is computed; the better your depth, the better the result.',
+    ),
+  ],
+  [
+    t('Hangi ürünler için sulama planı var?', 'Which crops get an irrigation plan?'),
+    t(
+      'Şeker pancarı, mısır, ayçiçeği ve sulanan buğday. Yonca ve diğer ürünler için şimdilik sezon özeti ve karşılaştırma var, günlük plan yok.',
+      'Sugar beet, maize, sunflower and irrigated wheat. Alfalfa and other crops get the season summary and comparison for now, without a daily plan.',
+    ),
+  ],
+  [
+    t('Bu sayılar ne kadar doğru?', 'How accurate are these numbers?'),
+    t(
+      'Uydu ölçümü tek bir sayı değil, bir aralıkla verilir ve ayrı bir uydu yöntemiyle (SEBAL) de karşılaştırıldı. Plan bir öneridir: toprağını ve bitkini en iyi sen tanırsın, gördüğün bir şey plana uymuyorsa kendi gözüne güven.',
+      'The satellite estimate comes with a range and was checked against a separate satellite method (SEBAL). The plan is advice: you know your soil and crop best, so trust your eyes when they disagree.',
+    ),
   ],
 ];
 
@@ -92,15 +133,15 @@ export default function Landing({ botUrl, children }: { botUrl: string | null; c
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-12 lg:grid-cols-[1fr_auto] lg:gap-20 lg:px-8 lg:py-20">
           <div>
             <p className="inline-flex rounded-full bg-emerald-900/5 px-3 py-1 text-sm font-semibold text-emerald-900">
-              {t('Karapınar çiftçileri için · Ücretsiz', 'For Karapınar farmers · Free')}
+              {t('Karapınar pilot alanı', 'Karapınar pilot area')}
             </p>
             <h1 className="mt-5 text-4xl font-extrabold leading-[1.1] tracking-tight text-stone-900 sm:text-5xl lg:text-6xl">
-              {t('Ne zaman, kaç saat sulayacağın her sabah telefonunda.', 'When to irrigate and for how long, on your phone every morning.')}
+              {t('Tarlan için günlük sulama planı', 'A daily irrigation plan for your field')}
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-stone-600 lg:text-xl">
               {t(
-                'SunWater tarlanı uydudan tanır, hava durumunu takip eder ve sana sade bir sulama planı gönderir. Fazla su da, fazla elektrik de cebinden çıkmasın.',
-                'SunWater knows your field from satellite images, follows the weather and sends you a simple irrigation plan. No water or electricity wasted.',
+                'Uydu görüntüsü ve hava durumuyla tarlanın su ihtiyacı hesaplanır. Hangi gün, hangi saatlerde, kaç saat sulaman gerektiği her sabah Telegram’dan gelir.',
+                'Your field’s water need is worked out from satellite images and the weather. Which day, which hours and how long to irrigate arrives on Telegram every morning.',
               )}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -162,7 +203,7 @@ export default function Landing({ botUrl, children }: { botUrl: string | null; c
 
       {/* FAQ */}
       <section className="mx-auto max-w-3xl px-5 py-16 lg:py-20">
-        <h2 className="text-3xl font-bold tracking-tight text-stone-900">{t('Sık sorulanlar', 'Questions')}</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-stone-900">{t('Nasıl çalışıyor?', 'How does it work?')}</h2>
         <div className="mt-6 divide-y divide-stone-200 border-y border-stone-200">
           {FAQ.map(([q, a]) => (
             <details key={q} className="group py-4">
