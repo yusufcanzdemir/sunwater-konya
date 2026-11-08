@@ -237,7 +237,7 @@ export async function explainPlan(request: Request): Promise<Response> {
 const MAX_QUERY_TEXT_LENGTH = 300;
 const MAX_QUERY_NOTE_LENGTH = 300;
 
-const QUERY_SYSTEM_INSTRUCTION = `Kurum panelindeki Türkçe tarla sorgusunu filtre JSON'una çevir. Yalnızca şemadaki değerleri kullan, uydurma.
+const QUERY_SYSTEM_INSTRUCTION = `Kurum panelindeki Türkçe veya İngilizce tarla sorgusunu filtre JSON'una çevir. Yalnızca şemadaki değerleri kullan, uydurma.
 Ürünler: şeker pancarı=sugar_beet, mısır=maize, ayçiçeği=sunflower, yonca=alfalfa, sulu buğday/arpa/tahıl=irrigated_winter_cereal, kuru buğday/tahıl=rainfed_winter_cereal, tahıl sonrası ikinci ürün=cereal_second_crop, nadas/boş=fallow, diğer=other. "Buğday" tek başına geçerse irrigated_winter_cereal ve rainfed_winter_cereal ikisini de seç.
 Durumlar: bütçe/hedef içinde=within, sınırda=borderline, bütçeyi/hedefi aşan, aşım, hedef üstü=over, değerlendirilmeyen/yağışa dayalı=not_assessed.
 "En çok aşan" → statuses [over], sort_by excess_m3, sort_desc true. "En çok su tüketen" → sort_by blue_m3. "Oran" → ratio.

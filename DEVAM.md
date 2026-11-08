@@ -1,8 +1,48 @@
-# Devam notu — 2026-10-24
+# Devam notu — 2026-10-24 (güncelleme 2026-11-05)
 
 Bu dosya, uzun bir oturumdan sonra yeni sohbette kaldığımız yerden devam etmek için yazıldı.
 Projenin tek doğruluk kaynağı yine **PLAN.md**'dir (Karar Kaydı D1–D16, İlerleme kaydı).
 Bu not yalnızca PLAN.md'de olmayan "şu an ne yapıyorduk" bilgisini tutar.
+
+## Sonra yapılacak: toprak su dengesini ekimden bugüne kesintisiz hesaplamak (~yarım gün)
+Kararlaştırıldı 2026-11-05, COP31 sunumundan sonra yapılacak.
+
+**Sorun:** Plan her çalıştığında "7 gün önce toprak tamamen doluydu" varsayımıyla başlıyor
+(`forecastInitialDepletionMm: 0`, `PAST_DAYS = 7`). Hem Telegram botunda (`api/_lib/telegram.ts` →
+`evaluate`) hem çiftçi uygulamasının demo haftasında (`src/farmer/FieldCard.tsx` → `useWeek`,
+`src/farmer/weekPlan.ts` → `buildWeek`) aynı durum var. Gerçek toprak durumu (geçen haftaların
+sulaması, yağmuru, kuruması) plana girmiyor.
+
+**Yapılacak:**
+1. Su dengesini ekim tarihinden bugüne gün gün yürüt: geçmiş günler Open-Meteo arşivinden (yaklaşık 5 gün
+   gecikmeli, `ARCHIVE_LAG_DAYS`), son günler ve önümüzdeki 16 gün tahmin servisinden (`past_days`), araya
+   çiftçinin "Suladım" kayıtları girer. Bot ve web aynı ortak fonksiyonu kullansın.
+2. Demo haftası için gerekli veri hazır: `public/data/demo_weather_2025.json` 1 Mart – 30 Kasım 2025'in
+   tamamını içeriyor. Demo haftası bu dosyadan ekimden itibaren hesaplanır.
+3. **Görünür kıl:** demo kartına "Toprakta yaklaşık N günlük su var" ve ekimden bu yana toprak nemi çizgisi
+   (sulama ve yağmur günleriyle). Sunum cümlesi: "Tarlanın suyunu ekimden bu yana her gün takip ediyoruz:
+   yağmuru hava verisinden, sulamayı çiftçinin 'Suladım'ından."
+4. **Kontrol:** örnek tarla F03053'ün demo haftası şu an "Çarşamba–Cumartesi 10:00–16:00, 6 saat, %92
+   güneş". Değişiklikten sonra tekrar bak; tablo bozulursa kullanıcıya söyle (gerekirse örnek tarla yeniden
+   seçilir, aday listesi: küçük, "fazla su" durumunda pancar tarlaları).
+
+**Aynı konuyla ilgili, daha küçük:**
+- Kış yağışıyla sezon başı toprak nemi: şu an her sezon dolu toprakla başlıyor (FAO'da standart kabul,
+  Konya'da kış yağışı genelde toprağı doldurur). İstenirse Ekim–Şubat yağışından arşivle hesaplanır;
+  çiftçiye sorulmaz.
+- Bilinen sınır: sulu kışlık tahıl sonbaharda ekilip Ekim–Kasım'da sulanabiliyor, pilot sezonu ise 1 Mart'ta
+  başlıyor; bu sulamalar modelde yok. Belgelere (METHODOLOGY / VALIDATION) sınır olarak eklenmeli.
+
+## COP31 öncesi açık işler (2026-11-05)
+- `en-ui` dalındaki değişiklikler commit'lenmedi (İngilizce dil, Telegram tarla sınırı, demo haftası, örnek
+  tarla F03053, yağmur butonunun kaldırılması, sezon dışı butonlar). Commit → push → Vercel önizleme →
+  `main`'e birleştirme kullanıcıda.
+- Vercel ayarları (kullanıcı): `CRON_SECRET`, `PUBLIC_BASE_URL`, `TELEGRAM_WEBHOOK_SECRET`. Sonuncusu
+  eklenince gerçek botun webhook'u şifreyle yeniden kurulmalı.
+- İki bot düzeni: gerçek bot `@ciftci_sulama_kanali_ai_bot` Vercel webhook'unda (2026-11-04'te kuruldu),
+  test botu `@sunwater_konya_test_bot` `.env.local`'de ve `npm run dev` ile dinleniyor (README, Telegram bot).
+- Yayından sonra canlı test: sarı sınırlı fotoğraf (`sharp` Vercel'de ilk kez), `/durum`, haftalık plan;
+  panelin Yöntem ve Havza sekmelerinin İngilizcesi.
 
 ## Kısa durum
 - **Bitti:** Aşama 0–8 (kurulum, çalışma alanı, uydu kompozitleri, SAM ile 3.448 tarla,
@@ -28,12 +68,11 @@ Bu not yalnızca PLAN.md'de olmayan "şu an ne yapıyorduk" bilgisini tutar.
 - Sulu kışlık tahılda NDVI-Kc ET Konya deneylerinin %16–29 üstünde (VALIDATION §8): olgunlaşmada ıslatma
   varsayımı ve ikinci ürünlü tarlaların kışlık tahıl sınıfına düşmesi incelenmeli.
 - Mısır (Kara & Sahin 2021) Tablo 3 değerleri bozuk PDF'ten okundu; atıf öncesi tekrar kontrol.
-- Telegram onay görüntüsüne tarla sınırı çizilmesi; gerçek botla uçtan uca deneme (deploy sonrası).
+- Gerçek botla uçtan uca deneme (deploy sonrası). (Onay görüntüsüne tarla sınırı 2026-11-03'te eklendi.)
 - Open-Meteo ücretsiz API ve Earth Engine yalnızca ticari olmayan kullanım içindir; ürünleşirse abonelik gerekir.
   Ky kaynağı (FAO/IAEA, Moutonnet, Tablo 1: https://www.fao.org/4/Y3655E/y3655e04.htm) Aşama 15'te
   DATA_SOURCES.md'ye taşınacak.
-- **Sırada:** Aşama 9'u bitirmek → **KK5** (kalibrasyon kararı) → Aşama 10 (GRACE havza) →
-  11 (bütçe, KK6) → 12 (dışa aktarım) → 13 (kurum paneli) → 14 (Telegram) → 15 (belgeler).
+- Aşama planı tamamlandı; sıradaki işler dosyanın başındaki iki bölümde.
 
 ## Aşama 9'a nasıl devam edilir
 1. `pipeline/09_sebal_validation.py` tekrar çalıştırılır; işlenmiş geçişler

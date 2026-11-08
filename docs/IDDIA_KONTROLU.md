@@ -13,7 +13,7 @@ Aşama 15'te kullanılan satırlar bağlantılarıyla `docs/DATA_SOURCES.md`'ye 
 | COP31, Antalya | Doğrulandı: 9–20 Kasım 2026 (UNFCCC) | Tarihe göre "düzenlenecek / düzenlendi" |
 | FAO-56 ile bitki su ihtiyacı | Yöntem doğru; ET₀ tek başına sulama ihtiyacı değil | Projede zaten Kc, etkili yağış ve (Aşama 11) sulama verimi kullanılıyor |
 | Fazla güneş elektriğini şebekeye satma | Koşullu (EPDK lisanssız üretim/mahsuplaşma; tesise bağlı) | Genel iddia olarak değil, "koşullara bağlı" notuyla |
-| Güneş pompaları aşırı çekimi artırabilir | Literatürde risk olarak destekleniyor; sonuç bağlama bağlı | Konya için araştırılacak risk olarak; Hindistan çalışmasının künyesi bulunmadan atıf yok |
+| Güneş pompaları aşırı çekimi artırabilir | Literatürde risk olarak destekleniyor; sonuç bağlama bağlı. Hindistan çalışmasının künyesi bulundu (2026-11-05): Alam vd. 2026, Energy Nexus (Gujarat; alüvyon akiferde şebekeye bağlı güneş pompalı çiftçiler sezonda ~556–608 mm daha az su kullanmış, sert kaya akiferinde fark yok) | Konya için araştırılacak risk olarak, "bazı akifer koşullarında" notuyla; künye ve sınırlar `docs/DATA_SOURCES.md`'de. Resmî atıftan önce cilt/makale no/DOI ScienceDirect'te kontrol edilmeli |
 | Şebeke emisyon faktörü 0,44–0,48 kg CO₂/kWh | **Doğrulanmadı.** ETKB'nin 0,6242 tCO₂/MWh değeri güneş/rüzgâr projeleri için birleşik marj, tüketim faktörü değil | Kullanılmaz; CO₂ hesabı yapılacaksa faktörün yılı, tanımı ve kaynağı önce netleşmeli |
 | Karapınar GES ~1,35 GWp | Doğrulandı: ETKB faaliyet raporu, 2022 sonu 1.350 MWp / 1.000 MWe | Kaynakla birlikte |
 | Konya obruk sayısı, yeraltı suyu seviyesi düşüşü, ruhsatsız kuyu sayısı | **Doğrulanmadı** | Kullanılmaz (PLAN kural 7) |

@@ -1,8 +1,9 @@
-// Browser calls to the serverless functions. Failures become Turkish messages or the template text.
+// Browser calls to the serverless functions. Failures become messages in the page language or the template text.
 
 import { templateExplanation, type ExplainPayload } from './explain';
 import { sanitizeParsedFarm, type ParsedFarm } from './parseFarm';
 import { sanitizeQuery, type FieldQuery } from '../panel/query';
+import { lang, t } from '../i18n';
 
 async function post(url: string, body: unknown): Promise<Response> {
   try {
@@ -12,7 +13,7 @@ async function post(url: string, body: unknown): Promise<Response> {
       body: JSON.stringify(body),
     });
   } catch {
-    throw new Error('Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.');
+    throw new Error(t('Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.', 'Could not reach the server. Check your internet connection.'));
   }
 }
 
@@ -44,6 +45,9 @@ export async function requestExplanation(payload: ExplainPayload): Promise<Expla
 export async function requestParseQuery(text: string): Promise<{ query: FieldQuery; note: string }> {
   const res = await post('/api/parse-query', { text });
   const body = (await res.json().catch(() => null)) as { error?: string; query?: unknown; note?: unknown } | null;
-  if (!res.ok || !body) throw new Error(body?.error ?? 'Sorgu şu an yorumlanamadı. Filtreleri elle seçebilirsiniz.');
+  if (!res.ok || !body) {
+    // Server messages are Turkish
+    throw new Error((lang === 'tr' && body?.error) || t('Sorgu şu an yorumlanamadı. Filtreleri elle seçebilirsiniz.', 'The query could not be read right now. You can pick the filters by hand.'));
+  }
   return { query: sanitizeQuery(body.query), note: typeof body.note === 'string' ? body.note : '' };
 }

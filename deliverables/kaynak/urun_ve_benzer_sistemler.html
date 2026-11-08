@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<title>SunWater Konya – Çiftçi Ürünü ve Benzer Sistemler</title>
+<style>
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-Regular.ttf") format("truetype"); font-weight: 400; }
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-SemiBold.ttf") format("truetype"); font-weight: 600; }
+  @font-face { font-family: "Noto Sans Doc"; src: url("fonts/NotoSans-Bold.ttf") format("truetype"); font-weight: 700; }
+  @page { size: A4; margin: 13mm 14mm 13mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Noto Sans Doc", sans-serif; font-size: 9.6pt; line-height: 1.35; color: #1f1a14; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1.5pt solid #865a11; padding-bottom: 2mm; margin-bottom: 3mm; }
+  header .project { font-size: 13pt; font-weight: 700; color: #5c3d15; line-height: 1.2; }
+  header .task { font-size: 10pt; font-weight: 700; }
+  header .student { font-size: 8.5pt; color: #5a432c; text-align: right; }
+  h2 { font-size: 11pt; font-weight: 700; margin: 4mm 0 1.2mm; color: #33241a; break-after: avoid; }
+  h2 .n { color: #865a11; margin-right: 1.5mm; }
+  h3 { font-size: 9.8pt; font-weight: 700; margin: 2.5mm 0 0.8mm; color: #5c3d15; break-after: avoid; }
+  p { margin: 0 0 1.4mm; }
+  ul, ol { margin: 0 0 1.5mm; padding-left: 5mm; }
+  li { margin-bottom: 0.6mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.4pt; line-height: 1.27; margin: 1mm 0 2mm; }
+  th, td { text-align: left; vertical-align: top; padding: 0.9mm 1.4mm; border-bottom: 0.5pt solid #d9cdb8; }
+  th { background: #f4ecdc; font-weight: 700; }
+  tr { break-inside: avoid; }
+  td.name { font-weight: 700; color: #33241a; }
+  .plus { color: #2e6b2e; }
+  .minus { color: #8a2c1c; }
+  .note { font-size: 9pt; color: #46331f; background: #fbf6ea; border-left: 2pt solid #c9941c; padding: 1.2mm 2.5mm; margin: 1.5mm 0 2mm; break-inside: avoid; }
+  .key { background: #fbf6ea; border: 0.5pt solid #e5d8c5; border-radius: 1.2mm; padding: 1.5mm 2.5mm; margin: 1.5mm 0 2mm; break-inside: avoid; }
+  .key b { color: #865a11; }
+  .chain { display: flex; flex-wrap: wrap; gap: 1.2mm; align-items: center; margin: 1.5mm 0 2mm; font-size: 8.6pt; }
+  .chain span.box { background: #f4ecdc; border: 0.5pt solid #d9cdb8; border-radius: 1mm; padding: 0.8mm 2mm; }
+  .chain span.arr { color: #865a11; font-weight: 700; }
+  .formulas { display: grid; grid-template-columns: 1fr 1fr; gap: 1mm 4mm; background: #fbf6ea; border: 0.5pt solid #e5d8c5; border-radius: 1.2mm; padding: 2mm 3mm; margin: 1.5mm 0 2mm; font-size: 8.6pt; break-inside: avoid; }
+  .formulas div b { color: #865a11; }
+  .formulas code { font-family: "Noto Sans Doc", sans-serif; font-weight: 600; color: #33241a; }
+  .small { font-size: 8.2pt; color: #5a432c; }
+  .tag { display: inline-block; font-size: 7.4pt; font-weight: 700; padding: 0 1.2mm; border-radius: 0.8mm; background: #e9dcc4; color: #5c3d15; }
+  footer.refs { border-top: 0.5pt solid #d9cdb8; margin-top: 4mm; padding-top: 1.5mm; font-size: 7.3pt; line-height: 1.3; color: #5a432c; }
+  footer.refs b { color: #33241a; }
+  footer.refs ol { margin: 0; padding-left: 5mm; }
+  footer.refs li { word-break: break-all; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="project">SunWater Konya</div>
+    <div class="task">Çiftçi ürünü: bileşenler, eksikler ve dünyadaki benzer uygulamalar</div>
+  </div>
+  <div class="student">Öğrenci: Yusuf – Selçuk Üniversitesi<br />Kasım 2026</div>
+</header>
+
+<div class="key"><b>Karar:</b> Hedef kitle çiftçi. SunWater Konya, çiftçinin kuyusunun her yıl daha derine inmesini ve sulama faturasının büyümesini yavaşlatan bir sulama asistanı olarak tasarlanıyor. Kurumlara kişi bazında denetim verisi verilmiyor; tarla verisi çiftçinindir.</div>
+
+<h2><span class="n">1</span>Sistem nasıl çalışıyor?</h2>
+<div class="chain">
+  <span class="box">Sentinel-2 uydu görüntüsü</span><span class="arr">→</span>
+  <span class="box">Tarla sınırı</span><span class="arr">→</span>
+  <span class="box">Ürün</span><span class="arr">→</span>
+  <span class="box">Günlük su tüketimi</span><span class="arr">→</span>
+  <span class="box">İhtiyaçla kıyas</span><span class="arr">→</span>
+  <span class="box">Haftalık güneş planı</span><span class="arr">→</span>
+  <span class="box">Çiftçinin telefonu (Telegram)</span>
+</div>
+
+<h2><span class="n">2</span>Her parça çiftçi ürününde ne işe yarıyor?</h2>
+<table>
+  <tr><th style="width:17%">Parça</th><th style="width:22%">Ne yapıyor</th><th style="width:33%">Çiftçi ürünündeki işi</th><th>Bugünkü zayıflığı</th></tr>
+  <tr><td class="name">Tarla sınırları<br /><span class="small">Segment Anything, Sentinel-2 (10 m)</span></td><td>Pilot alanda 3.448 tarlayı çiziyor (medyan 6,7 ha).</td><td>Çiftçi konum gönderince <b>tarlasını buluyor</b> (“Bu tarla mı?”). Tarlanın <b>alanı</b>, mm'yi m³'e ve pompa saatine çeviren çarpan.</td><td class="minus">Referans tarlaların yaklaşık 2/3'ü fazla parçalanmış (medyan IoU 0,80). Çiftçi parçaları birleştiremiyor.</td></tr>
+  <tr><td class="name">Ürün sınıflandırma<br /><span class="small">Yeşerme–sararma eğrisi</span></td><td>Mısır, şeker pancarı, hububat, yonca, ayçiçeği… ayırıyor.</td><td>Ürünün <b>su ihtiyacı eğrisi ve takvimi</b> buradan seçiliyor. “Senin gibi mısır ekenler” kıyası da buradan.</td><td class="minus">Doğruluk ölçülmedi; kör kontrolde 8 tarladan 5'i doğru.</td></tr>
+  <tr><td class="name">Su tüketimi (NDVI-Kc, FAO-56)</td><td>Her tarlanın günlük tükettiği suyu hesaplıyor.</td><td><b>Sezon karnesi</b> (“bu sezon şu kadar çektin”) ve haftalık planın <b>tarlanın gerçek gelişimine ayarlanması</b> (ekim, büyüme, hasat tarihleri uydudan).</td><td class="minus">Termal veri ve su stresi yok; bağımsız SEBAL ile yaklaşık %30 fark.</td></tr>
+  <tr><td class="name">Bütçe<br /><span class="small">Damla sulama referansı</span></td><td>Ürünün verimli sulamayla ihtiyacını çiziyor.</td><td>Karnedeki <b>“ihtiyaç” çizgisi</b>: “İhtiyacından %17 fazla suladın.”</td><td class="minus">Sabit varsayımlar (ıslatma oranı 0,35 vb.).</td></tr>
+  <tr><td class="name">Haftalık plan motoru</td><td>Toprak su dengesi + hava tahmini + güneş saatleri.</td><td>Botun <b>ana ürünü</b>: hangi gün, hangi saatte, kaç saat. “Suladım” kaydıyla plan gerçek durumdan devam ediyor.</td><td class="minus">Pilot tarlalarda pompa ve yöntem varsayım (yağmurlama, 120 m, verim 0,5); çiftçinin kendi pompası değil.</td></tr>
+  <tr><td class="name">Pompa enerjisi</td><td>Çekilen suyun kWh karşılığı.</td><td>Planlanan <b>fatura → su</b> özelliğinin temeli.</td><td class="minus">Arayüzde yok; aynı varsayımlar.</td></tr>
+  <tr><td class="name">GRACE / havza</td><td>Havzanın toplam su kaybı (2018–2024: yılda ≈1,6 km³).</td><td>Çiftçiye yalnızca <b>bağlam</b>: “Suyun neden düşüyor.”</td><td>Ürün açısından önemi düşük; güvenilirlik için.</td></tr>
+  <tr><td class="name">SEBAL</td><td>İkinci, bağımsız yöntem.</td><td>Yalnızca <b>iç doğrulama</b>; çiftçi görmez.</td><td>—</td></tr>
+</table>
+
+<h3>Kullanılan formüller</h3>
+<div class="formulas">
+  <div><b>Yeşillik:</b> <code>NDVI = (NIR − Kırmızı) / (NIR + Kırmızı)</code></div>
+  <div><b>Yaprak örtüsü:</b> <code>f = (NDVI − NDVI<sub>min</sub>) / (NDVI<sub>max</sub> − NDVI<sub>min</sub>)</code></div>
+  <div><b>Bitki katsayısı:</b> <code>Kcb = Kcb<sub>min</sub> + (Kcb<sub>max</sub> − Kcb<sub>min</sub>) · f</code></div>
+  <div><b>Günlük tüketim:</b> <code>ET = (Kcb + Ke) · ET₀</code> &nbsp;(ET₀: Penman–Monteith; sıcaklık, güneş, rüzgâr, nem)</div>
+  <div><b>Etkili yağış:</b> <code>P ≥ 5 mm ise Peff = 0,8 · P</code></div>
+  <div><b>Kuyudan gelen su:</b> <code>Mavi su = Σ max(0, ET − Peff)</code></div>
+  <div><b>Hacim:</b> <code>1 mm × 1 ha = 10 m³</code></div>
+  <div><b>Pompa enerjisi:</b> <code>E (kWh) = 9,81 · H · V / (3600 · η)</code></div>
+  <div style="grid-column:1/3"><b>Haftalık plan (toprak su dengesi, FAO-56):</b> <code>Açık<sub>bugün</sub> = Açık<sub>dün</sub> + ETc − yağış − sulama</code>; açık, kolay kullanılabilir su sınırına (RAW) ulaşınca “sula”.</div>
+</div>
+
+<h2><span class="n">3</span>Ürün olması için eklenmesi gerekenler</h2>
+<h3>Olmazsa olmaz</h3>
+<ol>
+  <li><b>Kurulumda tarla ve ürün onayı.</b> Çiftçi parçaları tek dokunuşla birleştirir, ürünü onaylar. Sınır hatası düzelir; sınıflandırma için gerçek etiket birikir.</li>
+  <li><b>Kuyu ve pompa profili.</b> Derinlik, pompa gücü, şebeke/güneş, damla/yağmurlama. Plan varsayımla değil çiftçinin kendi pompasıyla hesaplanır.</li>
+  <li><b>Fatura → su ve sezon başı bütçesi.</b> Çiftçinin kWh'si derinlik ve pompa verimiyle m³'e çevrilir: “Bu ay ihtiyacından 600 m³ fazla çektin, yaklaşık 1.200 TL.” Modelin ilk saha doğrulama verisini de üretir.</li>
+  <li><b>Botun kendiliğinden yazması.</b> Günlük görev (07:00) zaten var; çiftçi sormadan “bugün sula / yarın yağmur var, sulama” gelmeli.</li>
+  <li><b>Kalıcı veri ve KVKK.</b> Kalıcı depolama, açık rıza, “verilerimi sil” komutu; kişi bazında veri kuruma gitmez.</li>
+  <li><b>Pilot alan dışına çıkmak.</b> Çiftçinin tarlası, nerede olursa olsun, istek üzerine işlenmeli (<code>/planla</code> başlangıç noktası).</li>
+</ol>
+<h3>Değeri artıranlar</h3>
+<ul>
+  <li>Sezon sonu karnesi ve anonim köy kıyası; kuyu seviyesi kaydı ve derinleşme eğrisi (“bu hızla 3 yıl sonra pompan 26 m'de”).</li>
+  <li>Sade dil ve sesli mesaj; Landsat yüzey sıcaklığıyla su stresi uyarısı.</li>
+</ul>
+
+<h2><span class="n">4</span>Çiftçiye doğrudan sulama tavsiyesi veren uygulamalar</h2>
+<p>Yeni hedef kitle için ek araştırma: çiftçinin suyunu takip eden ve ona “ne zaman, ne kadar” diyen uygulamalar.</p>
+<table>
+  <tr><th style="width:15%">Uygulama</th><th style="width:31%">Ne yapıyor, nasıl</th><th style="width:27%">Bize göre artısı</th><th style="width:27%">Bize göre eksisi</th></tr>
+  <tr><td class="name">TAGEM-SuET<br /><span class="small">Türkiye, Tarım ve Orman Bakanlığı</span></td>
+      <td>259 meteoroloji istasyonu ve 86 ürün için su tüketimi ve sulama programı; “Tarım Cebimde” uygulamasının “Su” sekmesinde çiftçiye açık. FAO'dan teknik tanınırlık ödülü (Kasım 2025) [16].</td>
+      <td class="plus">En doğrudan yerli rakip. Devletin dağıtım kanalına sahip; Türkiye'nin tamamını kapsıyor.</td>
+      <td class="minus">İstasyon ve ürün bazlı; kaynaklarda tarlanın gerçek gelişimini uydudan izlediğine dair bilgi yok. Kuyu, güneş saati ve fatura tarafı yok.</td></tr>
+  <tr><td class="name">IrriSAT<br /><span class="small">Avustralya, CSIRO</span></td>
+      <td>Uydu NDVI → Kc, Kc × ET₀ = tüketim, sezon boyu toprak su açığı; tarla bazında ücretsiz web aracı, önceden SMS ile. 1.300'den fazla kullanıcı [14].</td>
+      <td class="plus">Yöntemi bizimkiyle neredeyse aynı; yaklaşımımızın sahada çalıştığının kanıtı.</td>
+      <td class="minus">Yöntem tek başına yenilik değil; farkımız birleşimde (bölüm 6). Islak koşullarda hassasiyet sorunu bildirilmiş.</td></tr>
+  <tr><td class="name">IRRINET / IRRIFRAME<br /><span class="small">İtalya, Emilia-Romagna, CER</span></td>
+      <td>Toprak–bitki–atmosfer su dengesiyle günlük “ne zaman, ne kadar”; web, SMS, tablet. Ücretsiz. 1984'ten beri [13].</td>
+      <td class="plus">En olgun örnek: 12–40 bin işletme (kaynaklar çelişkili), 2017'de 90 milyon m³'ün üzerinde tasarruf rapor edildi.</td>
+      <td class="minus">Uydu değil model ve toprak verisi; bölgedeki çiftçilerin çoğu hâlâ kullanmıyor (dijital uçurum, alışkanlık).</td></tr>
+  <tr><td class="name">Manna (Rivulis)<br /><span class="small">İsrail, Hindistan'da yaygın</span></td>
+      <td>Çiftçi konum, ürün, ekim tarihi girer; uydu (3–5 günde bir) + hava tahmini ile haftalık su miktarı. Hindi, Marathi [12].</td>
+      <td class="plus">Kurgusu bize en yakın ticari ürün; yerel dil ve küçük çiftçi odağı.</td>
+      <td class="minus">Ücretli (2019'da yılda 600 rupi); damla sulama şirketinin ürünü. Kuyu ve havza tarafı yok.</td></tr>
+  <tr><td class="name">SOWIT – SOWATER<br /><span class="small">Fas</span></td>
+      <td>Uydu + hava ile günlük ihtiyaç ve 6 günlük takvim; sulama sistemine göre ayarlanıyor [15].</td>
+      <td class="plus">Bize iklim ve yeraltı suyu baskısı en benzer ülke. Kuraklık yılında %20–25 su tasarrufu (şirket beyanı).</td>
+      <td class="minus">Hektar başı ücretli (2020'de yılda 10 €/ha); tasarruf bağımsız olarak doğrulanmamış.</td></tr>
+  <tr><td class="name">Tarlam Cepte, Doktar<br /><span class="small">Türkiye, özel sektör</span></td>
+      <td>Uydu haritasında tarla; meteorolojik risk uyarıları (Tarlam Cepte, ücretsiz); sensör + uydu ile tarla izleme (Doktar) [11][17].</td>
+      <td class="plus">Türk çiftçisinin tarla uygulamasına alışmaya başladığını gösteriyor.</td>
+      <td class="minus">Su miktarı, kuyu ve güneş saati odaklı değil.</td></tr>
+</table>
+
+<h2><span class="n">5</span>Bu uygulamalardan dersler</h2>
+<ul>
+  <li><b>Basitlik ve “zil çalması” kazanıyor.</b> Avustralya'daki SMS denemesinde (72 çiftçi) güçlü katılımın nedeni sadelik ve mesajın telefona kendiliğinden gelmesiydi. Karmaşık sistemler doğru olsalar bile, arayüz yüzünden tutmamış [18]. Botun kendiliğinden yazması (bölüm 3, madde 4) bu yüzden kritik.</li>
+  <li><b>Kanıt çoğunlukla küçük pilotlardan.</b> Tasarruf rakamları genelde şirket beyanı ya da küçük denemeler (%10–30). Büyük, kontrollü bir çalışma bulunamadı; biz de tasarrufu iddia etmeden önce ölçmeliyiz.</li>
+  <li><b>Dağıtım, teknolojiden zor.</b> IRRINET 40 yılda bile bölgenin tamamına ulaşamadı. TAGEM-SuET'in avantajı devlet uygulaması olması. Türkiye'de çiftçinin çoğu WhatsApp kullanıyor; Telegram ürünleşirken risk.</li>
+</ul>
+
+<h2><span class="n">6</span>Suyu ölçen ve yöneten sistemler (önceki literatür)</h2>
+<table>
+  <tr><th style="width:15%">Sistem</th><th style="width:31%">Ne yapıyor</th><th style="width:27%">Artısı</th><th style="width:27%">Eksisi</th></tr>
+  <tr><td class="name">OpenET (ABD)</td><td>Landsat ile tarla bazında ET; 6 modelin ortalaması, ücretsiz.</td><td class="plus">Çok olgun; sayaçla farkı %7–17 [1].</td><td class="minus">Çiftçiye plan vermiyor; Türkiye'yi kapsamıyor.</td></tr>
+  <tr><td class="name">La Mancha Oriental (İspanya)</td><td>Sulayıcı birliği uyduyla sulanan alanı ve ürünü belirleyip kuyu tahsisi yapıyor.</td><td class="plus">Çiftçinin kendi örgütü kullanıyor; uydu sınıflandırması mahkemede delil kabul edildi (2012) [2].</td><td class="minus">Su miktarını tarla bazında hesaplamıyor.</td></tr>
+  <tr><td class="name">NRAR (Avustralya)</td><td>Sentinel ile şüpheli çiftlikleri işaretleyip sahaya gidiyor.</td><td class="plus">Uydu kanıtıyla mahkûmiyet alındı [3].</td><td class="minus">Saf denetim; çiftçiye fayda yok.</td></tr>
+  <tr><td class="name">IrriWatch (Hollanda/ABD)</td><td>Termal uyduyla günlük tarla bazında sulama tavsiyesi; abonelik.</td><td class="plus">Termal veri sayesinde stres ölçümü doğrudan [4].</td><td class="minus">Ücretli; havza bakışı yok.</td></tr>
+  <tr><td class="name">FAO WaPOR</td><td>Açık ET ve su verimliliği verisi.</td><td class="plus">Ücretsiz altyapı, veri kaynağı olabilir [5].</td><td class="minus">Kaba çözünürlük; ürün değil.</td></tr>
+  <tr><td class="name">Doñana (İspanya)</td><td>Uyduyla kaçak sulanan alan ve kuyu tespiti.</td><td class="plus">Kaçak kuyu tespitinde işe yarıyor [6].</td><td class="minus">1.000+ kaçak kuyudan ≈300'ü kapatıldı.</td></tr>
+  <tr><td class="name">PM-KUSUM (Hindistan)</td><td>Güneş enerjili pompaları sübvanse ediyor.</td><td class="plus">Tezimizi destekliyor: ölçümsüz güneş pompası çekimi artırıyor [7].</td><td class="minus">İzleme zorunlu değil.</td></tr>
+  <tr><td class="name">SPICE (Hindistan)</td><td>Güneş pompalı çiftçiler artan elektriği şebekeye satıyor.</td><td class="plus">“Bedava su” sorununa ekonomik çözüm [8].</td><td class="minus">Küçük köy pilotu; ölçüm yok.</td></tr>
+  <tr><td class="name">Sheridan-6 LEMA (ABD)</td><td>Çiftçiler kotayı kendileri önerdi; sayaçla izleniyor.</td><td class="plus">Çekim %23–35 azaldı, düşüş 2,0 ft'ten 0,5 ft'e indi [9].</td><td class="minus">Bölge geneline yayılınca etkisi görülmedi.</td></tr>
+  <tr><td class="name">Akıllı sayaç (İran)</td><td>Ruhsatlı kuyulara zorunlu sayaç, kota.</td><td class="plus">Bir ovada düşüş %46 yavaşladı [10].</td><td class="minus">Kapsam %18–65; çiftçi tepeden dayatmadan şikâyetçi.</td></tr>
+</table>
+
+<h2><span class="n">7</span>Bizim farkımız ve eksiklerimiz</h2>
+<div class="key"><b>Fark tek bir parçada değil, birleşimde.</b> Yöntemimiz (NDVI-Kc + FAO-56) IrriSAT ile aynı ailede; bu bir zayıflık değil, sahada sınanmış bir yöntem kullandığımızın kanıtı. Bulduğumuz sistemlerin hiçbiri şunları birlikte yapmıyor: (1) tarlanın geçmiş sezonda kuyudan gerçekte ne kadar çektiğini uydudan ölçüp benzer tarlalarla kıyaslamak, (2) planı <b>güneş saatlerine</b> göre kurmak, (3) bunu <b>kuyu derinleşmesi ve elektrik faturası</b> diliyle çiftçiye anlatmak, (4) Konya gibi kapalı bir havzada havza bütçesine bağlamak.</div>
+<ul>
+  <li class="minus"><b>Eksik:</b> saha doğrulaması yok (SEBAL ile ≈%30 fark); pilot küçük (586 km², 3.448 tarla); termal veri yok; tasarruf ölçülmedi; dağıtım kanalı belirsiz.</li>
+  <li class="plus"><b>Fırsat:</b> TAGEM-SuET rakip olduğu kadar olası bir ortak: istasyon bazlı sisteme tarla bazlı uydu katsayısı eklemek iki tarafı da güçlendirir.</li>
+</ul>
+
+<footer class="refs">
+  <b>Kaynaklar</b>
+  <ol>
+    <li>DRI, OpenET ile yeraltı suyu kullanımı izleme: https://dri.edu/groundwater-use-can-be-accurately-monitoredwith-satellites-using-openet</li>
+    <li>Eurisy, La Mancha Oriental: https://www.eurisy.eu/stories/the-central-irrigation-board-of-la-mancha-oriental-uses-satellite-imagery-to-monitor-irrigation-water-consumption_23/</li>
+    <li>NRAR: https://www.nrar.nsw.gov.au/news/nrar-uses-satellites-to-watch-for-illegal-floodplain-harvesting</li>
+    <li>Hydrosat / IrriWatch: https://payloadspace.com/hydrosat-acquires-irriwatch</li>
+    <li>FAO WaPOR: https://www.fao.org/newsroom/detail/fao-broadens-scope-of-innovative-water-monitoring-tool-to-include-the-whole-world/en</li>
+    <li>FreshPlaza, Doñana: https://www.freshplaza.com/europe/article/9877963/spain-tackles-illegal-water-extraction-in-fruit-growing-region/</li>
+    <li>Mongabay India: https://india.mongabay.com/2025/06/running-on-sunshine-but-running-out-of-water</li>
+    <li>IndiaSpend / IWMI, SPICE: https://indiaspend.com/gujarats-solar-irrigation-cooperative-has-a-solution-for-indias-groundwater-crisis-50323</li>
+    <li>Kansas Geological Survey: https://news.ku.edu/news/article/2023/12/06/kansas-geological-survey-report-assesses-health-high-plains-aquifer</li>
+    <li>Financial Tribune: https://financialtribune.com/node/110218 ve Darab çalışması: https://magiran.com/paper/2637519/?lang=en</li>
+    <li>Ekonomi Gazetesi, Doktar: https://www.ekonomigazetesi.com/sektor-haberleri/tarimin-doktari-20-ulkede-tarlalarin-verimini-artiriyor-23472</li>
+    <li>Rivulis, Manna: https://www.rivulis.com/irrigation-intelligence-from-outer-space-for-indian-farmers/ ve Deccan Chronicle: https://deccanchronicle.com/business/companies/310819/israeli-firm-brings-in-irrigation-intelligence.html</li>
+    <li>EEA Climate-ADAPT, IRRINET: https://climate-adapt.eea.europa.eu/en/metadata/case-studies/irrinet-it-irrigation-system-for-agricultural-water-management-in-emilia-romagna-italy/ ve Interreg Europe: https://interregeurope.eu/good-practices/irrinet-expert-system-for-irrigation-scheduling</li>
+    <li>CSIRO, IrriSAT: https://blog.csiro.au/?p=10140 ve SRA sunumu (2025): https://reefcatchments.com.au/files/2025/06/11_Dylan-Wedel_IrriSAT-V2-Presentation-.pdf</li>
+    <li>FreshPlaza, SOWIT: https://www.freshplaza.com/europe/article/9517088/study-moroccan-mobile-app-helps-reduce-water-consumption-by-20-25/ ve WE4F: https://we4f.org/innovators/sowit</li>
+    <li>Tarım ve Orman Bakanlığı, TAGEM-SuET (07.11.2025): https://www.tarimorman.gov.tr/TAGEM/Haber/945/Tagem-Suet-_sulama-Yonetimi-Ve-Bitki-Su-Tuketimi_-Sistemi-Faodan-Uluslararasi-Odul-Aldi</li>
+    <li>Mynet Finans, TürkTraktör “Tarlam Cepte”: https://finans.mynet.com/haber/detay/finans/turktraktorden-tarlam-cepte-hizmeti/287843/</li>
+    <li>Car, N. J. vd. (2012), SMS ile sulama programlama – çiftçi katılımı: https://rune.une.edu.au/web/handle/1959.11/14259</li>
+    <li>Allen, R. G. vd. (1998), Crop evapotranspiration, FAO Irrigation and Drainage Paper 56. SunWater sayıları: docs/METHODOLOGY.md, docs/VALIDATION.md</li>
+  </ol>
+</footer>
+
+</body>
+</html>

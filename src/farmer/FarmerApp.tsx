@@ -1,19 +1,23 @@
-// Farmer app (/): pick your field on the map or by location, see this week's irrigation and your season.
+// Farmer app (/): enter with your field (code, location or map), then a simple home screen for that field.
+// The chosen field is remembered in the browser, so the next visit opens the home screen directly.
+// This is a convenience, not an account: field codes are not secret.
 
-import { LocateFixed, Search, Send, Sprout, SunMedium } from 'lucide-react';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AppSwitch } from '../components/AppSwitch';
-import { fmt } from '../components/ui';
-import FieldsMap from '../panel/FieldsMap';
+import { lang, t } from '../i18n';
 import { loadFields, loadManifest, loadShapes, type Manifest } from '../panel/data';
-import FieldCard, { FARMER_STATUS } from './FieldCard';
-import { findFields, type PilotField } from './pilot';
+import FieldCard from './FieldCard';
+import Landing from './Landing';
+import Login, { normaliseCode, type Notice } from './Login';
+import { findFields, type FieldShapes, type PilotField } from './pilot';
 import type { PilotManifest } from './weekPlan';
 
-/** A sugar beet field near Karapınar used for "Örnek tarla". */
-const EXAMPLE_FIELD = 'F01412';
-
-type Notice = { text: string; planLink?: boolean } | null;
+/**
+ * "Örnek tarla": a 34-decare sugar beet field over its efficient-irrigation budget, small enough for the
+ * assumed pump to irrigate on sunny hours in its demo week (a large field needs the pump day and night).
+ */
+const EXAMPLE_FIELD = 'F03053';
+const FIELD_KEY = 'sunwater.field';
 
 const median = (xs: number[]) => {
   if (!xs.length) return null;
@@ -22,115 +26,41 @@ const median = (xs: number[]) => {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
-function Home({
-  fields,
-  locating,
-  notice,
-  onLocate,
-  onExample,
-  onSearch,
-}: {
-  fields: number;
-  locating: boolean;
-  notice: Notice;
-  onLocate: () => void;
-  onExample: () => void;
-  onSearch: (id: string) => void;
-}) {
-  const [text, setText] = useState('');
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    if (text.trim()) onSearch(text.trim());
-  };
-  return (
-    <div className="space-y-6">
-      <div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Karapınar · {fmt(fields)} tarla uydudan izleniyor
-        </span>
-        <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-stone-900 sm:text-4xl">
-          Tarlanı seç,
-          <br />
-          ne zaman sulayacağını öğren.
-        </h1>
-        <p className="mt-3 text-stone-600">Uydu tarlanın ne kadar su kullandığını ölçer, plan güneşli saatlere göre hazırlanır.</p>
-      </div>
+function rememberedField(): string | null {
+  const fromUrl = new URLSearchParams(window.location.search).get('field');
+  if (fromUrl) return fromUrl;
+  try {
+    return window.localStorage.getItem(FIELD_KEY);
+  } catch {
+    return null;
+  }
+}
 
-      <div className="space-y-2">
-        <button
-          onClick={onLocate}
-          disabled={locating}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-900 px-4 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-950 disabled:opacity-70"
-        >
-          <LocateFixed size={20} /> {locating ? 'Konum alınıyor…' : 'Konumumla tarlamı bul'}
-        </button>
-        <button
-          onClick={onExample}
-          className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-base font-semibold text-stone-800 transition hover:border-stone-300 hover:bg-stone-50"
-        >
-          Örnek tarlayı aç
-        </button>
-        <form onSubmit={submit} className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white px-3 py-2 focus-within:border-emerald-700">
-          <Search size={18} className="text-stone-400" />
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Tarla numarası (ör. F01412)"
-            className="min-w-0 flex-1 bg-transparent py-1 text-sm outline-none placeholder:text-stone-400"
-            aria-label="Tarla numarası"
-          />
-        </form>
-        <p className="text-center text-xs text-stone-500">ya da haritada tarlana dokun</p>
-      </div>
-
-      {notice && (
-        <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
-          {notice.text}
-          {notice.planLink && (
-            <a href="/planla" className="mt-1 block font-semibold underline">
-              Tarlanı çizerek plan al →
-            </a>
-          )}
-        </div>
-      )}
-
-      <ol className="grid grid-cols-3 gap-2 text-center text-xs text-stone-600">
-        {[
-          { Icon: Sprout, text: 'Tarlanı seç' },
-          { Icon: SunMedium, text: 'Haftalık planı gör' },
-          { Icon: Send, text: "Telegram'dan al" },
-        ].map(({ Icon, text: label }, i) => (
-          <li key={label} className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5">
-            <Icon size={20} className="mx-auto text-emerald-800" />
-            <span className="mt-1.5 block font-medium">
-              {i + 1}. {label}
-            </span>
-          </li>
-        ))}
-      </ol>
-
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-600">
-        {(['within', 'borderline', 'over'] as const).map((s) => (
-          <li key={s} className="flex items-center gap-1.5">
-            <span className={`h-2.5 w-2.5 rounded-sm ${FARMER_STATUS[s].dot}`} /> {FARMER_STATUS[s].label}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+function remember(id: string | null) {
+  try {
+    if (id) window.localStorage.setItem(FIELD_KEY, id);
+    else window.localStorage.removeItem(FIELD_KEY);
+  } catch {
+    // private mode: the field stays in the address instead
+  }
 }
 
 export default function FarmerApp() {
   const [manifest, setManifest] = useState<(Manifest & PilotManifest) | null>(null);
   const [rows, setRows] = useState<PilotField[] | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('field'));
+  const [shapes, setShapes] = useState<FieldShapes | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(rememberedField);
+  // Off-season sample week (?demo=1), kept while moving between fields
+  const [demo, setDemo] = useState(() => new URLSearchParams(window.location.search).get('demo') === '1');
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [telegramUrl, setTelegramUrl] = useState<string | null>(null);
+  /** The bot itself (product page "Telegram'dan başla"); null when the bot is not configured. */
+  const [botUrl, setBotUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    document.title = 'SunWater · Tarlam';
+    document.title = t('SunWater · Tarlam', 'SunWater · My field');
     loadManifest()
       .then(async (m) => {
         setManifest(m as Manifest & PilotManifest);
@@ -143,6 +73,24 @@ export default function FarmerApp() {
   const byId = useMemo(() => new Map((rows ?? []).map((r) => [r.field_id, r])), [rows]);
   const selected = selectedId ? (byId.get(selectedId) ?? null) : null;
 
+  // A valid field is remembered however it was opened (code, map, or a /?field= link from Telegram);
+  // a remembered or linked code that is not a pilot field goes back to the entry screen
+  useEffect(() => {
+    if (!rows || !selectedId) return;
+    if (byId.has(selectedId)) {
+      remember(selectedId);
+      return;
+    }
+    setNotice({ text: t(`${selectedId} numaralı bir tarla bulamadık.`, `No field numbered ${selectedId}.`) });
+    setSelectedId(null);
+    remember(null);
+  }, [rows, selectedId, byId]);
+
+  // The outline for the field photo (and for "Konumumla bul")
+  useEffect(() => {
+    if (selected && !shapes) loadShapes().then(setShapes, () => undefined);
+  }, [selected, shapes]);
+
   const peerMedian = useMemo(() => {
     const byClass = new Map<string, number[]>();
     for (const r of rows ?? []) {
@@ -152,11 +100,15 @@ export default function FarmerApp() {
     return new Map([...byClass].map(([c, xs]) => [c, median(xs)]));
   }, [rows]);
 
-  // Keep the address shareable: /?field=F01234
+  // Keep the address shareable: /?field=F01234 (&demo=1&lang=en)
   useEffect(() => {
-    const url = selectedId ? `/?field=${selectedId}` : '/';
+    const params = new URLSearchParams();
+    if (selectedId) params.set('field', selectedId);
+    if (demo) params.set('demo', '1');
+    if (lang === 'en') params.set('lang', 'en');
+    const url = params.toString() ? `/?${params}` : '/';
     if (window.location.pathname + window.location.search !== url) window.history.replaceState(null, '', url);
-  }, [selectedId]);
+  }, [selectedId, demo]);
 
   useEffect(() => {
     setTelegramUrl(null);
@@ -171,21 +123,33 @@ export default function FarmerApp() {
     };
   }, [selectedId]);
 
-  const select = (id: string | null) => {
+  useEffect(() => {
+    fetch(`/api/telegram-link?field=${EXAMPLE_FIELD}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { botUsername?: string } | null) => setBotUrl(j?.botUsername ? `https://t.me/${j.botUsername}` : null))
+      .catch(() => undefined);
+  }, []);
+
+  const enter = (id: string) => {
     setNotice(null);
     setSelectedId(id);
+    remember(id);
   };
 
-  const search = (text: string) => {
-    const id = text.toUpperCase().replace(/^F?/, 'F');
-    const padded = /^F\d+$/.test(id) ? `F${id.slice(1).padStart(5, '0')}` : id;
-    if (byId.has(padded)) select(padded);
-    else setNotice({ text: `${text} numaralı bir tarla bulamadık.` });
+  const leave = () => {
+    setSelectedId(null);
+    remember(null);
+  };
+
+  const enterCode = (text: string) => {
+    const id = normaliseCode(text);
+    if (byId.has(id)) enter(id);
+    else setNotice({ text: t(`${text.trim()} numaralı bir tarla bulamadık.`, `No field numbered ${text.trim()}.`) });
   };
 
   const locate = () => {
     if (!navigator.geolocation) {
-      setNotice({ text: 'Tarayıcın konum paylaşmayı desteklemiyor. Haritada tarlana dokunabilirsin.' });
+      setNotice({ text: t('Tarayıcın konum paylaşmayı desteklemiyor. Haritadan seçebilirsin.', 'Your browser cannot share its location. Pick on the map instead.') });
       return;
     }
     setLocating(true);
@@ -193,74 +157,86 @@ export default function FarmerApp() {
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         try {
-          const shapes = await loadShapes();
-          const [id] = findFields(shapes, rows ?? [], coords.longitude, coords.latitude);
-          if (id) select(id);
-          else setNotice({ text: 'Bulunduğun yerde kayıtlı bir tarla yok.', planLink: true });
+          const all = shapes ?? (await loadShapes());
+          setShapes(all);
+          const [id] = findFields(all, rows ?? [], coords.longitude, coords.latitude);
+          if (id) enter(id);
+          else setNotice({ text: t('Bulunduğun yerde kayıtlı bir tarla yok.', 'There is no pilot field where you are.'), planLink: true });
         } catch {
-          setNotice({ text: 'Tarlalar yüklenemedi, haritada tarlana dokunabilirsin.' });
+          setNotice({ text: t('Tarlalar yüklenemedi, haritadan seçebilirsin.', 'Fields could not be loaded; pick on the map.') });
         } finally {
           setLocating(false);
         }
       },
       () => {
         setLocating(false);
-        setNotice({ text: 'Konum alınamadı. Haritada tarlana dokunabilirsin.' });
+        setNotice({ text: t('Konum alınamadı. Haritadan seçebilirsin.', 'Could not get your location. Pick on the map.') });
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
   };
 
+  const loading = !manifest || !rows;
+
   return (
     <div className="flex h-dvh flex-col bg-stone-50">
-      <AppSwitch current="/" />
+      <AppSwitch current="/">
+        {!selected && (
+          <button
+            onClick={() => document.getElementById('tarlan')?.scrollIntoView({ behavior: 'smooth' })}
+            className="rounded-full bg-emerald-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-950"
+          >
+            {t('Tarlama gir', 'Open my field')}
+          </button>
+        )}
+        {selected && (
+          <button
+            onClick={leave}
+            className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-semibold text-stone-700 hover:bg-stone-100"
+          >
+            {t('Tarla değiştir', 'Change field')}
+          </button>
+        )}
+      </AppSwitch>
       {error ? (
-        <p className="p-6 text-stone-600">Veriler yüklenemedi. Sayfayı yenileyin.</p>
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <aside className="order-2 overflow-y-auto p-5 lg:order-1 lg:w-[440px] lg:shrink-0 lg:p-6">
-            {!manifest || !rows ? (
-              <div className="space-y-3">
-                <div className="h-6 w-1/2 animate-pulse rounded bg-stone-200" />
-                <div className="h-24 animate-pulse rounded-2xl bg-stone-200" />
-              </div>
-            ) : selected ? (
-              <FieldCard
-                key={selected.field_id}
-                field={selected}
-                peerMedianMm={peerMedian.get(selected.class) ?? null}
-                season={season}
-                manifest={manifest}
-                classNames={manifest.classes}
-                telegramUrl={telegramUrl}
-                onBack={() => select(null)}
-              />
-            ) : (
-              <Home
-                fields={rows.length}
-                locating={locating}
-                notice={notice}
-                onLocate={locate}
-                onExample={() => select(EXAMPLE_FIELD)}
-                onSearch={search}
-              />
-            )}
-          </aside>
-          <div className="order-1 h-[42vh] shrink-0 p-2 lg:order-2 lg:h-auto lg:flex-1 lg:p-3 lg:pl-0">
-            {manifest && (
-              <FieldsMap
-                season={season}
-                scenario="s1"
-                visibleIds={null}
-                selected={selected}
-                onSelect={select}
-                classNames={manifest.classes}
-                player={null}
-                className="h-full w-full overflow-hidden rounded-2xl"
-              />
-            )}
-          </div>
+        <p className="p-6 text-stone-600">{t('Veriler yüklenemedi. Sayfayı yenileyin.', 'Data could not be loaded. Please reload the page.')}</p>
+      ) : loading ? (
+        <div className="mx-auto w-full max-w-md space-y-3 p-5">
+          <div className="aspect-square animate-pulse rounded-3xl bg-stone-200" />
+          <div className="h-24 animate-pulse rounded-2xl bg-stone-200" />
         </div>
+      ) : selected ? (
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-6xl px-4 py-5 lg:px-6">
+            <FieldCard
+              key={selected.field_id}
+              field={selected}
+              rings={shapes?.[selected.field_id] ?? null}
+              peerMedianMm={peerMedian.get(selected.class) ?? null}
+              season={season}
+              manifest={manifest}
+              classNames={manifest.classes}
+              telegramUrl={telegramUrl}
+              demo={demo}
+              onDemo={setDemo}
+            />
+          </div>
+        </main>
+      ) : (
+        <Landing botUrl={botUrl}>
+          <Login
+            embedded
+          season={season}
+          rows={byId}
+          classNames={manifest.classes}
+          notice={notice}
+          locating={locating}
+          onCode={enterCode}
+          onLocate={locate}
+          onPick={enter}
+          exampleId={EXAMPLE_FIELD}
+          />
+        </Landing>
       )}
     </div>
   );

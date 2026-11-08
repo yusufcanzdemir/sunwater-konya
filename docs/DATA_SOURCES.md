@@ -86,6 +86,24 @@ the abstracts.
    Basin, Turkey. Geosciences, 14(1), 5. doi:10.3390/geosciences14010005 — Sentinel-1 2014–2022:
    "widespread subsidence zones with rates as high as 90 mm/y".
 
+## Solar irrigation pumps and groundwater (problem framing)
+
+Used only to frame the risk that solar pumping (near-zero marginal cost) can raise groundwater
+abstraction, and that grid feed-in may counter it under some conditions. Not used in any calculation;
+for Konya this is a risk to be investigated, not a result.
+
+1. Alam, M. F., Varshney, D., Pavelic, P., Sikka, A., Krishnan, S., Dodiya, M. (2026). Do
+   grid-connected solar irrigation pumps help promote groundwater sustainability?: Evidence from
+   India. Energy Nexus. https://www.sciencedirect.com/science/article/pii/S277242712600118X (PII
+   S277242712600118X; summary: https://solar.iwmi.org/2026/08/19/do-grid-connected-solar-irrigation-pumps-help-promote-groundwater-sustainability-evidence-from-india-2/) —
+   Gujarat, about 220–240 farmers, seasons 2021–22 and 2022–23. In Anand (alluvial aquifer)
+   grid-connected solar farmers used about 556–608 mm less irrigation water per season than
+   non-solar farmers; in Botad (hard-rock aquifer) no significant difference ("water not energy is the
+   primary constraint"). Part of the Anand difference may come from shifts in local water markets;
+   the authors call the effect highly context-specific. Read on the IWMI summary page on 2026-11-05;
+   the ScienceDirect page was not accessible, so check volume, article number and DOI there before
+   formal citation.
+
 ## Method references
 
 See the reference list in `docs/METHODOLOGY.md`.

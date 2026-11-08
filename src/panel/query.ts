@@ -1,6 +1,7 @@
 // Field filter: the structured query the map, cards, table and CSV share. Pure: also used by the
 // serverless natural-language parser to sanitise Gemini output.
 
+import { lang, locale, t } from '../i18n.js';
 import { STATUSES, budgetOf, ratioOf, statusOf, type FieldRow, type Scenario, type Status } from './data.js';
 
 export const CLASS_IDS = [
@@ -20,11 +21,11 @@ export const REGIONS = ['north', 'south', 'east', 'west', 'center'] as const;
 export type Region = (typeof REGIONS)[number];
 
 export const REGION_NAMES: Record<Region, string> = {
-  north: 'kuzey yarı',
-  south: 'güney yarı',
-  east: 'doğu yarı',
-  west: 'batı yarı',
-  center: 'orta kesim',
+  north: t('kuzey yarı', 'northern half'),
+  south: t('güney yarı', 'southern half'),
+  east: t('doğu yarı', 'eastern half'),
+  west: t('batı yarı', 'western half'),
+  center: t('orta kesim', 'centre'),
 };
 
 /** Locative forms written out (vowel harmony is not generated). */
@@ -40,11 +41,11 @@ export const SORT_KEYS = ['ratio', 'blue_mm', 'blue_m3', 'area_ha', 'excess_m3']
 export type SortKey = (typeof SORT_KEYS)[number];
 
 export const SORT_NAMES: Record<SortKey, string> = {
-  ratio: 'hedefe oran',
-  blue_mm: 'mavi su (mm)',
-  blue_m3: 'mavi su (m³)',
-  area_ha: 'alan',
-  excess_m3: 'hedef üstü tüketim (m³)',
+  ratio: t('hedefe oran', 'ratio to target'),
+  blue_mm: t('mavi su (mm)', 'blue water (mm)'),
+  blue_m3: t('mavi su (m³)', 'blue water (m³)'),
+  area_ha: t('alan', 'area'),
+  excess_m3: t('hedef üstü tüketim (m³)', 'use above target (m³)'),
 };
 
 export interface FieldQuery {
@@ -177,8 +178,33 @@ const STATUS_WORDS: Record<Status, string> = {
   not_assessed: 'değerlendirilmeyen',
 };
 
-/** Turkish one-line reading of the query, shown so the user can check what was understood. */
+const STATUS_WORDS_EN: Record<Status, string> = {
+  within: 'within-target',
+  borderline: 'borderline',
+  over: 'over-target',
+  not_assessed: 'unassessed',
+};
+
+function describeQueryEn(q: FieldQuery, classNames: Record<string, string>): string {
+  const parts: string[] = [];
+  if (q.statuses.length) parts.push(q.statuses.map((s) => STATUS_WORDS_EN[s]).join(' or '));
+  const what = q.classes.length ? q.classes.map((c) => classNames[c] ?? c).join(', ').toLocaleLowerCase(locale) : 'all';
+  parts.push(`${what} fields`);
+  if (q.stress_only) parts.push('with a SEBAL stress flag');
+  if (q.area_min_ha != null && q.area_max_ha != null) parts.push(`of ${q.area_min_ha}–${q.area_max_ha} ha`);
+  else if (q.area_min_ha != null) parts.push(`of at least ${q.area_min_ha} ha`);
+  else if (q.area_max_ha != null) parts.push(`of at most ${q.area_max_ha} ha`);
+  if (q.region) parts.push(`in the ${REGION_NAMES[q.region]} of the pilot area`);
+  if (!q.include_uncertain) parts.push('(uncertain crops excluded)');
+  let text = parts.join(' ');
+  if (q.sort_by) text += `, sorted by ${SORT_NAMES[q.sort_by]}, ${q.sort_desc ? 'highest' : 'lowest'} first`;
+  if (q.limit != null) text += `, first ${q.limit}`;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** One-line reading of the query (Turkish or English), shown so the user can check what was understood. */
 export function describeQuery(q: FieldQuery, classNames: Record<string, string>): string {
+  if (lang === 'en') return describeQueryEn(q, classNames);
   const parts: string[] = [];
   if (q.region) parts.push(`pilot alanın ${REGION_LOCATIVE[q.region]}`);
   if (q.statuses.length) parts.push(q.statuses.map((s) => STATUS_WORDS[s]).join(' veya '));

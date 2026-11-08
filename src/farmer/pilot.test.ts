@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checkExplanation } from '../ai/explain';
 import { CROPS } from '../engine/crops';
 import type { FieldRow } from '../panel/data';
-import { buildSummaryPayload, calibratedCrop, distanceM, fieldBbox, findFields, imageryUrl, templateSummary } from './pilot';
+import { buildSummaryPayload, calibratedCrop, distanceM, fieldBbox, fieldOutlineSvg, findFields, imageryUrl, templateSummary } from './pilot';
 
 const square = (lon: number, lat: number, d = 0.002): [number, number][][] => [
   [
@@ -41,6 +41,20 @@ describe('fieldBbox / imageryUrl', () => {
     expect(w).toBeLessThan(33.4);
     expect(n).toBeGreaterThan(37.802);
     expect(imageryUrl([w, s, e, n])).toContain('World_Imagery/MapServer/export?bbox=');
+  });
+
+  it('draws the outline in snapshot pixels: bbox corners at the image corners, field in the middle', () => {
+    const rings = square(33.4, 37.8);
+    const bbox = fieldBbox(rings);
+    const corners: [number, number][][] = [[[bbox[0], bbox[3]], [bbox[2], bbox[1]]]];
+    expect(fieldOutlineSvg(corners, bbox, 512)).toContain('M0.0,0.0L512.0,512.0Z');
+    const pts = [...fieldOutlineSvg(rings, bbox, 512).matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+    for (const [x, y] of pts) {
+      expect(x).toBeGreaterThan(100);
+      expect(x).toBeLessThan(412);
+      expect(y).toBeGreaterThan(100);
+      expect(y).toBeLessThan(412);
+    }
   });
 });
 

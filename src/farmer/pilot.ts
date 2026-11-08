@@ -6,7 +6,7 @@ import type { CropId, CropParams } from '../engine/crops.js';
 import { addDays } from '../engine/dates.js';
 import { STATUS_NAMES, type FieldRow } from '../panel/data.js';
 import { defaultAssumptions, type Assumptions } from '../state/assumptions.js';
-import { demoForm, validateFarmForm, type FarmInput } from '../state/farm.js';
+import { demoForm, validateFarmForm, type FarmForm, type FarmInput } from '../state/farm.js';
 
 /** Satellite crop calendar columns exported with the field table (day offsets from the season start). */
 export interface PilotField extends FieldRow {
@@ -95,6 +95,22 @@ export function imageryUrl([w, s, e, n]: [number, number, number, number], size 
   return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?${p}`;
 }
 
+const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+
+/** The field's outline as an SVG the size of the `imageryUrl` snapshot (Web Mercator pixels). */
+export function fieldOutlineSvg(rings: [number, number][][], [w, s, e, n]: [number, number, number, number], size = 512): string {
+  const px = ([lon, lat]: [number, number]) =>
+    `${(((lon - w) / (e - w)) * size).toFixed(1)},${(((mercY(n) - mercY(lat)) / (mercY(n) - mercY(s))) * size).toFixed(1)}`;
+  const d = rings.map((r) => `M${r.map(px).join('L')}Z`).join('');
+  // A dark halo under a bright line stays visible on both dark crops and bare soil
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">` +
+    `<path d="${d}" fill="none" stroke="#000" stroke-opacity="0.55" stroke-width="7" stroke-linejoin="round"/>` +
+    `<path d="${d}" fill="#facc15" fill-opacity="0.12" fill-rule="evenodd" stroke="#facc15" stroke-width="3" stroke-linejoin="round"/>` +
+    `</svg>`
+  );
+}
+
 const MIN_STAGE_DAYS = 10;
 
 /**
@@ -128,11 +144,13 @@ export function calibratedCrop(
  * Engine farm for a pilot field: crop and calendar from the satellite season, area from the field
  * polygon; method, soil, pump and solar values are the demo defaults (not observed per field, same
  * defaults as the budget, PLAN.md D19). Null when the engine has no parameters for the crop.
+ * `profile`: the farmer's own pump and method (farmer app), replacing those defaults.
  */
 export function pilotEngineFarm(
   f: PilotField,
   manifest: { season_start_mmdd: string; kcb_max: Record<string, number> },
   year: number,
+  profile?: Partial<FarmForm>,
 ): { input: FarmInput; assumptions: Assumptions } | null {
   const crop = ENGINE_CROP[f.class];
   if (!crop) return null;
@@ -147,6 +165,7 @@ export function pilotEngineFarm(
     plantingDate: cal.plantingDate,
     areaDecare: String(Math.round(f.area_ha * 100) / 10).replace('.', ','),
     irrigationMethod: 'sprinkler',
+    ...profile,
   });
   return input ? { input, assumptions } : null;
 }

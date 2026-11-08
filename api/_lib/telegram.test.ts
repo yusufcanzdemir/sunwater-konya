@@ -23,17 +23,23 @@ function forecastJson() {
 }
 
 const sent: { method: string; body: Record<string, unknown> }[] = [];
+/** Esri snapshot served to the bot; null makes the imagery request fail (plain URL fallback). */
+let esriImage: Buffer | null = null;
 
 function fakeFetch(url: string | URL | Request, init?: RequestInit): Promise<Response> {
   const u = String(url instanceof Request ? url.url : url);
   const ok = (body: unknown) => Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
   if (u.startsWith('https://api.telegram.org/')) {
     const method = u.split('/').pop()!;
-    sent.push({ method, body: JSON.parse(String(init?.body ?? '{}')) });
+    const body = init?.body instanceof FormData ? Object.fromEntries(init.body) : JSON.parse(String(init?.body ?? '{}'));
+    sent.push({ method, body });
     if (method === 'getMe') return ok({ ok: true, result: { username: 'test_bot' } });
     return ok({ ok: true, result: {} });
   }
   if (u.startsWith('https://api.open-meteo.com/v1/forecast')) return ok(forecastJson());
+  // last season's what-if of an off-season field; the dates do not matter here
+  if (u.startsWith('https://archive-api.open-meteo.com/v1/archive')) return ok(forecastJson());
+  if (u.includes('World_Imagery/MapServer/export') && esriImage) return Promise.resolve(new Response(new Uint8Array(esriImage), { status: 200 }));
   return Promise.reject(new Error(`unexpected fetch ${u}`));
 }
 
@@ -67,7 +73,10 @@ const farm = {
   savedAt: today,
 };
 
-const messages = () => sent.filter((s) => s.method === 'sendMessage').map((s) => String(s.body.text));
+/** Messages and photo cards the farmer sees, in order. */
+const outgoing = () => sent.filter((s) => s.method === 'sendMessage' || s.method === 'sendPhoto');
+/** Text of each message, or the caption of a photo card. */
+const messages = () => outgoing().map((s) => String(s.method === 'sendPhoto' ? s.body.caption : s.body.text));
 const chat = { id: 42 };
 const tap = (data: string) => handleUpdate({ callback_query: { id: 'cb', data, message: { chat } } });
 
@@ -79,14 +88,36 @@ describe('telegram bot', () => {
     expect(texts[0]).toContain('"Karapınar – Şeker pancarı, 100 dekar" tarlasına bağlandı');
     expect(texts[1].split('\n')[0]).toBe('🌱 Karapınar – Şeker pancarı tarlası');
     expect(texts[1].split('\n').length).toBeLessThanOrEqual(5);
-    const alert = sent.filter((s) => s.method === 'sendMessage')[1];
+    // the bottom menu comes with the greeting, the plan is a picture card with "Suladım" under it
+    expect(JSON.stringify(outgoing()[0].body.reply_markup)).toContain('💧 Bugün');
+    const alert = outgoing()[1];
+    expect(alert.method).toBe('sendPhoto');
+    expect(alert.body.photo).toBeInstanceOf(Blob);
     expect(JSON.stringify(alert.body.reply_markup)).toContain('irrigated');
+    // no rain button: rain comes from the weather data
+    expect(JSON.stringify(alert.body.reply_markup)).not.toContain('rain');
   });
 
-  it('"Suladım" records the planned amount and reports the water left', async () => {
-    await tap('irrigated');
+  it('"Suladım" records the planned amount, turns the button into "Sulandı" and reports the water left', async () => {
+    await handleUpdate({ callback_query: { id: 'cb', data: 'irrigated', message: { chat, message_id: 5 } } });
     expect(sent[0].method).toBe('answerCallbackQuery');
+    const edit = sent.find((s) => s.method === 'editMessageReplyMarkup')!;
+    expect(edit.body.message_id).toBe(5);
+    expect(JSON.stringify(edit.body.reply_markup)).toContain('Sulandı');
     expect(messages()[0]).toMatch(/kaydedildi.*Toprağınızda (yaklaşık \d+|en az \d+) günlük su var/s);
+  });
+
+  it('the menu buttons need no "/" command: "Bugün" sends the plan card, "Bu hafta" the 7 days', async () => {
+    await handleUpdate({ message: { chat, text: '💧 Bugün' } });
+    expect(outgoing()[0].method).toBe('sendPhoto');
+    expect(messages()[0].split('\n')[0]).toBe('🌱 Karapınar – Şeker pancarı tarlası');
+    sent.length = 0;
+    await handleUpdate({ message: { chat, text: '📅 Bu hafta' } });
+    expect(messages()[0].split('\n')[0]).toBe('📅 7 günlük plan');
+    sent.length = 0;
+    await handleUpdate({ message: { chat, text: 'merhaba' } });
+    expect(messages()[0]).toContain('Aşağıdaki düğmelere');
+    expect(JSON.stringify(outgoing()[0].body.reply_markup)).toContain('📊 Tarlam');
   });
 
   it('a typed duration replaces the irrigation with Q × hours / area × efficiency', async () => {
@@ -95,31 +126,44 @@ describe('telegram bot', () => {
     expect(messages()[0]).toContain('6 saatlik sulama kaydedildi (yaklaşık 3 mm)');
   });
 
-  it('"Yağmur yağdı" asks how much, then records the assumed amount', async () => {
-    await tap('rain');
-    expect(JSON.stringify(sent.at(-1)!.body.reply_markup)).toContain('rain:orta');
-    sent.length = 0;
+  it('a rain button of an older message explains that rain comes from the weather data, and records nothing', async () => {
     await tap('rain:orta');
-    expect(messages()[0]).toContain('yaklaşık 15 mm yağmur kaydedildi');
+    expect(messages()[0]).toContain('Yağmuru artık hava verisinden ben takip ediyorum');
+    expect(messages()[0]).not.toContain('kaydedildi');
   });
 
-  it('"Haftalık plan" lists 7 days', async () => {
+  it('"Haftalık plan" lists 7 days and the measured / forecast rain', async () => {
     await tap('weekly');
     const lines = messages()[0].split('\n');
     expect(lines[0]).toBe('📅 7 günlük plan');
-    expect(lines).toHaveLength(8);
+    expect(lines).toHaveLength(9);
+    // the fake weather is dry
+    expect(lines[8]).toBe('🌧 Yağış: son 7 günde 0 mm ölçüldü, önümüzdeki 7 günde 0 mm bekleniyor (Open-Meteo). Plan bunu hesaba katıyor.');
+  });
+
+  it('out of season "Suladım" is hidden; an older button says when the plan starts again', async () => {
+    const past = { ...farm, id: 'f-past', input: { ...farm.input, plantingDate: addDays(today, -300) } };
+    await saveFarm(past);
+    const offChat = { id: 43 };
+    await handleUpdate({ message: { chat: offChat, text: '/start f-past' } });
+    const markups = outgoing().filter((s) => s.body.reply_markup).map((s) => JSON.stringify(s.body.reply_markup));
+    expect(markups.length).toBeGreaterThan(0);
+    for (const m of markups) expect(m).not.toContain('irrigated');
+    sent.length = 0;
+    await handleUpdate({ callback_query: { id: 'cb', data: 'irrigated', message: { chat: offChat } } });
+    expect(messages()[0]).toMatch(/sulama sezonu dışındayız.*ayında ekimle yeniden başlayacak/s);
   });
 
   it('answers voice messages with the typing hint', async () => {
     await handleUpdate({ message: { chat, voice: {} } });
-    expect(messages()).toEqual(['Şimdilik lütfen yazarak anlatın.']);
+    expect(messages()).toEqual(['Sesli mesajı henüz anlayamıyorum 🙏 Aşağıdaki düğmeleri kullanabilirsiniz.']);
   });
 
   it('web "send alert" reaches the linked chat and the demo chat', async () => {
     const res = await sendAlertEndpoint(new Request('http://x/api/send-alert', { method: 'POST', body: JSON.stringify({ farmId: 'f1' }) }));
     const body = (await res.json()) as { sent: number };
     expect(body.sent).toBe(2);
-    const targets = sent.filter((s) => s.method === 'sendMessage').map((s) => s.body.chat_id);
+    const targets = outgoing().map((s) => s.body.chat_id);
     expect(new Set(targets)).toEqual(new Set(['42', '999']));
   });
 
@@ -168,6 +212,24 @@ describe('pilot fields (stage 14)', () => {
     expect(String(photo.body.photo)).toContain('World_Imagery/MapServer/export');
     expect(String(photo.body.caption)).toMatch(/^F\d+ – /);
     expect(JSON.stringify(photo.body.reply_markup)).toContain('link:F');
+  });
+
+  it('with the imagery available, the photo is uploaded with the field outline drawn on it', async () => {
+    const { default: sharp } = await import('sharp');
+    esriImage = await sharp({ create: { width: 512, height: 512, channels: 3, background: '#556b2f' } }).jpeg().toBuffer();
+    try {
+      await handleUpdate({ message: { chat: pilotChat, location: inside(beet.field_id) } });
+    } finally {
+      esriImage = null;
+    }
+    const photo = sent.find((s) => s.method === 'sendPhoto')!;
+    expect(photo.body.photo).toBeInstanceOf(Blob);
+    expect(String(photo.body.caption)).toContain('sarı çizgiyle işaretli');
+    expect(String(photo.body.reply_markup)).toContain('link:F');
+    // the yellow outline is in the picture (the background is olive)
+    const { data } = await sharp(Buffer.from(await (photo.body.photo as Blob).arrayBuffer())).raw().toBuffer({ resolveWithObject: true });
+    const yellowish = Array.from({ length: data.length / 3 }, (_, i) => i).filter((i) => data[i * 3] > 180 && data[i * 3 + 1] > 160 && data[i * 3 + 2] < 120);
+    expect(yellowish.length).toBeGreaterThan(200);
   });
 
   it('a location outside the pilot fields is refused', async () => {
